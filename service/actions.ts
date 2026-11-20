@@ -164,15 +164,15 @@ export function firstWhenIdle(hub: Hub, addr: string, text: string, every = 2000
 async function run(cmd: string[]) {
   // a program that isn't there (herdr-app on a web-only install) fails as any other: its code, not a throw
   let p: ReturnType<typeof Bun.spawn<"ignore", "pipe", "pipe">>;
-  // the window's herdr-app: SHEPHERDR_HERDR_APP in tests (as SHEPHERDR_HC for hc)
-  if (cmd[0] === "herdr-app" && process.env.SHEPHERDR_HERDR_APP) cmd = [process.env.SHEPHERDR_HERDR_APP, ...cmd.slice(1)];
+  // the window's herdr-app: HERDR_ORCH_HERDR_APP in tests (as HERDR_ORCH_HC for hc)
+  if (cmd[0] === "herdr-app" && process.env.HERDR_ORCH_HERDR_APP) cmd = [process.env.HERDR_ORCH_HERDR_APP, ...cmd.slice(1)];
   try { p = Bun.spawn(cmd, { stdout: "pipe", stderr: "pipe", stdin: "ignore" }); }
   catch (e) { return { code: 127, stdout: "", stderr: String(e) }; }
   const [stdout, stderr] = await Promise.all([new Response(p.stdout).text(), new Response(p.stderr).text()]);
   return { code: await p.exited, stdout, stderr };
 }
 
-export const hc = (args: string[]) => run([process.env.SHEPHERDR_HC || "hc", ...args]);
+export const hc = (args: string[]) => run([process.env.HERDR_ORCH_HC || "hc", ...args]);
 
 /** Settings › Machines › Find machines (#967): what it would try (go false: contacts nothing), or one run now, as
  *  herdr-task machines find gives it on this machine; its refusals (add-on off, ran recently) come back as error */

@@ -41,7 +41,7 @@ async function withForeground(addr: string, t: any) {
   if (!c || Date.now() - c.at > 10_000) {
     let foreground = null;
     try {
-      const p = Bun.spawn([process.env.SHEPHERDR_HC || "hc", "get", addr, "--json"], { stdout: "pipe", stderr: "ignore", stdin: "ignore" });
+      const p = Bun.spawn([process.env.HERDR_ORCH_HC || "hc", "get", addr, "--json"], { stdout: "pipe", stderr: "ignore", stdin: "ignore" });
       foreground = JSON.parse(await new Response(p.stdout).text())?.foreground ?? null;
     } catch {}
     fg.set(addr, (c = { at: Date.now(), foreground }));

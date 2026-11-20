@@ -1,6 +1,6 @@
 // The Web page (Shepherdr 3.1): Shepherdr in a browser on phone, tablet and desktop, private to the tailnet. Its link
-// and a QR code to open it on a phone, as the service last wrote them (~/.local/state/shepherdr/service/web.json: the service shares
-// /shepherdr with tailscale serve and draws the QR picture under data/). On or off: the Web add-on, under Window.
+// and a QR code to open it on a phone, as the service last wrote them (~/.local/state/herdr-orchestrator/service/web.json: the service shares
+// /herdr-orchestrator with tailscale serve and draws the QR picture under data/). On or off: the Web add-on, under Window.
 // Serve from (core/host.js): the machine that serves it, picked from this computer and every linked one (its line says
 // its system, and Offline when it is), then confirmed under the list; the service moves it (shepherdr web serve-from)
 // and says how it goes in web.json. The web app's twin: its Settings › Web row and screens/ServeFrom.tsx.

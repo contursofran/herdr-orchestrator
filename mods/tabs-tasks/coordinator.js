@@ -110,7 +110,7 @@ function folderOf(space) {
 }
 
 // Shepherdr settings (mods/shepherdr-settings writes them; herdr-task reads them too):
-// Shepherdr's settings file (~/.config/shepherdr/settings.json) = { version, everywhere: SETTINGS, machines: { <machine>: SETTINGS },
+// Shepherdr's settings file (~/.config/herdr-orchestrator/settings.json) = { version, everywhere: SETTINGS, machines: { <machine>: SETTINGS },
 //   spaces: { <space id>: { folder, name, machine, ...SETTINGS } } }
 // with SETTINGS = { coordinator, worker, reviewer: { agent, model, effort, fast, perm },
 //   tasks: { merge: "auto"|"checks"|"ask", review_rounds, must_fix: "blocker"|"major"|"minor", max_running,
@@ -120,12 +120,12 @@ function folderOf(space) {
 // machine its share (with "here": its name) for its herdr-task. Settings edits only Everywhere and
 // spaces now; a machine's layer holds its machine-only rows (machine, home) and is still read for
 // anything it set for all its spaces before machine scope went.
-export const SHEPHERDR_FILE = () => dirs().settings;   // ~/.config/shepherdr/settings.json (lib/dirs.js)
+export const HERDR_ORCH_FILE = () => dirs().settings;   // ~/.config/herdr-orchestrator/settings.json (lib/dirs.js)
 export const SHEPHERDR_DEFAULTS = { tasks: { merge: "ask", review_rounds: 0, must_fix: "major", max_running: 10, archive_after: 7 }, automations: { enabled: true },
   agents: { reactions: true, suggestions: true, feedback: true, feedback_repo: "" } };
 export const LOCAL_MACHINE = "local";
 export async function readShepherdr() {
-  try { return JSON.parse((await readTextFile(SHEPHERDR_FILE())) ?? "{}") ?? {}; } catch { return {}; }
+  try { return JSON.parse((await readTextFile(HERDR_ORCH_FILE())) ?? "{}") ?? {}; } catch { return {}; }
 }
 // A scope: null (Everywhere), "m:<machine>" (a machine), or a space id.
 export const machineOfSpace = (id) => (String(id).includes("/") ? String(id).split("/")[0] : LOCAL_MACHINE);

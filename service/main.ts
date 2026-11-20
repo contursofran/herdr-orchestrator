@@ -1,16 +1,16 @@
 // The Shepherdr service: one per machine, always on (user systemd / launchd). It does Shepherdr's background work
 // and serves the web app with its live updates, on 127.0.0.1 only; the tailnet reaches it through
-// tailscale serve --set-path /shepherdr (never funnel).
+// tailscale serve --set-path /herdr-orchestrator (never funnel).
 //
 //   bun service/main.ts            run it (systemd and launchd run exactly this)
-//   SHEPHERDR_PORT=7788            the port on 127.0.0.1
-//   SHEPHERDR_WEB=on|off           serve the web app and share it on the tailnet (default on)
+//   HERDR_ORCH_PORT=7789            the port on 127.0.0.1
+//   HERDR_ORCH_WEB=on|off           serve the web app and share it on the tailnet (default on)
 // Serve from (service/host.ts): one machine serves the web app and holds the shared data; on the others the service
-// reads and writes it there, keeps their settings in step (service/sync.ts) and doesn't share /shepherdr.
+// reads and writes it there, keeps their settings in step (service/sync.ts) and doesn't share the mount.
 import { existsSync, readFileSync, writeFileSync, mkdirSync, statSync, rmSync, watchFile } from "node:fs";
 import { join, normalize } from "node:path";
 import { randomBytes } from "node:crypto";
-import { DATA, SOCK, TOKEN, PORT, HOME, ensureData, settingsFile, where } from "./paths.ts";
+import { DATA, SOCK, TOKEN, PORT, HOME, ensureData, servicePath, settingsFile, where } from "./paths.ts";
 import { holdLock } from "./lock.ts";
 import { gate, localCaller, type Gate } from "./auth.ts";
 import { refusedWhy, trustedPeer } from "./peer.ts";
@@ -98,7 +98,7 @@ function reachOf(machine: string | null) {
 }
 
 const ROOT = join(import.meta.dir, "..");
-const WEB = process.env.SHEPHERDR_WEB_DIR || join(ROOT, "web", "dist");
+const WEB = process.env.HERDR_ORCH_WEB_DIR || join(ROOT, "web", "dist");
 export const VERSION = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")).version as string;
 
 ensureData();
@@ -356,18 +356,18 @@ model.onBuild = (b) => {
 };
 model.start();
 
-// The Web add-on (Shepherdr settings > Window > Add-ons, Everywhere's "off" in ~/.config/shepherdr/settings.json): off, the web
-// app stops and /shepherdr is no longer shared; the service keeps its background work.
-const APP_DATA = join(process.env.HERDR_APP_HOME || join(HOME, ".config", "herdr-app"), "data", "shepherdr");
+// The Web add-on (Shepherdr settings > Window > Add-ons, Everywhere's "off" in ~/.config/herdr-orchestrator/settings.json): off, the web
+// app stops and /herdr-orchestrator is no longer shared; the service keeps its background work.
+const APP_DATA = join(process.env.HERDR_APP_HOME || join(HOME, ".config", "herdr-app"), "data", "herdr-orchestrator");
 /** where files from a page's message box are kept (the window keeps pasted ones there too) */
 const ATTACH = join(process.env.HERDR_APP_HOME || join(HOME, ".config", "herdr-app"), "data", "chat-attach");
 function webOn() {
-  if (process.env.SHEPHERDR_WEB === "off") return false;
+  if (process.env.HERDR_ORCH_WEB === "off") return false;
   try { return !(JSON.parse(readFileSync(settingsFile(), "utf8"))?.everywhere?.off ?? []).includes("web"); } catch { return true; }
 }
 
-// Tailscale can come up after the service: look again now and then, and keep /shepherdr shared while web is on. What
-// the window's Shepherdr settings > Web shows goes into ~/.local/state/shepherdr/service/web.json (the link, its QR code).
+// Tailscale can come up after the service: look again now and then, and keep /herdr-orchestrator shared while web is on. What
+// the window's Shepherdr settings > Web shows goes into ~/.local/state/herdr-orchestrator/service/web.json (the link, its QR code).
 let wasOn: boolean | null = null;
 // Serve from: a move this service started (shepherdr web serve-from), until it ends; what went wrong, for a while
 let moving: { to: string; at: number; error?: string } | null = null;
@@ -414,7 +414,7 @@ function serveNow() {
   return { rows, host: by ? (by.here ? null : by.name) : null, reachable: host.reachable(), moving: moving && !moving.error ? moving.to : null, error: moving?.error ?? null };
 }
 
-/** Moves the web app to a machine (null: this one): the installer does it (bin/shepherdr web serve-from). */
+/** Moves the web app to a machine (null: this one): the installer does it (bin/herdr-orchestrator web serve-from). */
 async function serveFrom(machine: string | null) {
   if (moving && !moving.error) throw new Error(`Already moving it to ${moving.to}.`);
   const target = machine ?? host.me?.name ?? "here";
@@ -705,9 +705,9 @@ const server = Bun.serve<{ who: string }>({
   idleTimeout: 180,
   async fetch(req, srv) {
     const url = new URL(req.url);
-    const path = url.pathname.startsWith("/shepherdr/") ? url.pathname.slice(10) : url.pathname;
+    const path = servicePath(url.pathname);
     // the window asks this (lib/service.js): while jobs is true it leaves its background work to the service
-    if (path === "/api/health") return json({ ok: true, app: "shepherdr", ...(localCaller(req, PORT) ? { id: SERVICE_ID, calls: callsOn() } : {}), version: VERSION, core: hub.up, jobs: jobs.on && hub.up, serving: host.serving(), host: host.hubName() ?? null, reachable: host.reachable(),
+    if (path === "/api/health") return json({ ok: true, app: "herdr-orchestrator", ...(localCaller(req, PORT) ? { id: SERVICE_ID, calls: callsOn() } : {}), version: VERSION, core: hub.up, jobs: jobs.on && hub.up, serving: host.serving(), host: host.hubName() ?? null, reachable: host.reachable(),
       // the other machines this service ticks (Serve from: the host the ones with no service of their own)
       ticks: jobs.on ? host.tickOn() : [] });
     // the Web add-on switched off: nothing for the tailnet (this machine's own callers still get the API)
@@ -719,7 +719,7 @@ const server = Bun.serve<{ who: string }>({
     }
     const socket = path === "/api/ws" || path === "/api/terminal" || path === "/api/browser" || path === "/api/voice";
     const viaTailnet = req.headers.has("tailscale-user-login");
-    // the glance feed (SHEP-246) is read by the phone's own app: checked as a write (its origin, x-shepherdr: 1)
+    // the glance feed (SHEP-246) is read by the phone's own app: checked as a write (its origin, x-herdr-orch: 1)
     const native = path === "/api/glance" && url.searchParams.get("native") === "1";
     const pass = gate(req, g, socket, viaTailnet && trustedPeer(srv.requestIP(req)?.port, PORT), path === "/api/glance");
     if (!pass.ok) {
@@ -1010,7 +1010,7 @@ console.log(`herdr-orchestrator ${VERSION} on http://127.0.0.1:${server.port} (d
 // the port is ours now: say where and this start's id (only this user can read it)
 writeFileSync(SERVICE_FILE, JSON.stringify({ port: server.port, id: SERVICE_ID, pid: process.pid, version: VERSION }) + "\n", { mode: 0o600 });
 
-// SHEP-173: an update while a call is on (bin/shepherdr) leaves this file instead of restarting the service, which
+// SHEP-173: an update while a call is on (bin/herdr-orchestrator) leaves this file instead of restarting the service, which
 // would cut the call: the service starts again on the new code by itself once no call is on (launchd's KeepAlive,
 // systemd's Restart=always bring it back).
 const RESTART_WHEN_FREE = join(DATA, "restart-when-free");

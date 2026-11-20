@@ -7,7 +7,7 @@
 //   2. the vault there, if any, backed up as vault.json.before-move-<time>, its entries this one lacks kept;
 //   3. the vault written there whole (owner-only, over herdr-core's link: never in a command line or a log) and read
 //      back: the same bytes, or nothing changes;
-//   4. the record ("shepherdr.secrets" = { id, at, by }) written here, there and on every machine linked from here;
+//   4. the record ("herdr-orchestrator.secrets" = { id, at, by }) written here, there and on every machine linked from here;
 //      each service hands it on. From then the new machine answers every agent's request, and this one refuses;
 //   5. a few seconds later (requests under way here finish), the vault here set aside as vault.json.moved-<time>
 //      (owner-only: the backup to roll back to) and this machine marked remote.
@@ -38,10 +38,10 @@ function fail(s: string): never { if (json) console.log(JSON.stringify({ ok: fal
 const HERDR = join(HOME, ".herdr");   // an older Shepherdr's backups are here
 const VAULT = where().vault, MARK = where()["secret-remote"], SECRETS = dirname(VAULT);
 // herdr-secret and hc there, wherever they were installed (PATH over herdr-core's exec may not have them)
-const PATHS = 'PATH="$HOME/.local/bin:$HOME/.local/share/shepherdr/bin:${HERDR_APP_HOME:-$HOME/.config/herdr-app}/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"; export PATH; ';
+const PATHS = 'PATH="$HOME/.local/bin:$HOME/.local/share/herdr-orchestrator/bin:${HERDR_APP_HOME:-$HOME/.config/herdr-app}/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"; export PATH; ';
 
 // the hc session as hc and herdr-secret take it (HC_SESSION), else the default one
-const c = await CoreClient.endpoint({ binary: process.env.SHEPHERDR_HC || "hc", ...(process.env.HC_SESSION ? { session: process.env.HC_SESSION } : {}) }).catch((e) => fail(`herdr-core isn't answering here: ${(e as Error).message}`));
+const c = await CoreClient.endpoint({ binary: process.env.HERDR_ORCH_HC || "hc", ...(process.env.HC_SESSION ? { session: process.env.HC_SESSION } : {}) }).catch((e) => fail(`herdr-core isn't answering here: ${(e as Error).message}`));
 const call = <T = any>(method: string, params: Record<string, unknown> = {}, timeout = 20_000) => c.call<T>(method, params, timeout);
 const at = (on: string | null) => (on ? { on } : {});
 const getDoc = (name: string, on: string | null) => call<{ value: any; version: number }>("doc.get", { name, ...at(on) });
@@ -185,7 +185,7 @@ const key = (e: any) => `${e?.name}|${e?.scope}|${e?.machine ?? ""}|${e?.space ?
 let there: string | null = null;
 // wherever that machine keeps it (its Shepherdr folders, or ~/.herdr on an older one)
 {
-  const r = await exec(["sh", "-c", SH + '[ -e "$SHEP_VAULT" ] || exit 3; cat "$SHEP_VAULT"'], to).catch((e) => fail(`couldn't read the vault on ${to}: ${(e as Error).message}`));
+  const r = await exec(["sh", "-c", SH + '[ -e "$ORCH_VAULT" ] || exit 3; cat "$ORCH_VAULT"'], to).catch((e) => fail(`couldn't read the vault on ${to}: ${(e as Error).message}`));
   if (r.code === 0) there = r.stdout;
   else if (r.code !== 3) fail(`couldn't read the vault on ${to}: ${r.stderr.trim()}`);
 }
@@ -196,7 +196,7 @@ if (there !== null && there.trim()) {
   if (!t || !Array.isArray(t.secrets)) fail(`The vault on ${to} isn't readable: move it aside there first.`);
   if (t.secrets.length) {
     backup = `vault.json.before-move-${stamp()}`;
-    const b = await exec(["sh", "-c", SH + 'd=$(dirname "$SHEP_VAULT"); cp -p "$SHEP_VAULT" "$d/$1" && chmod 600 "$d/$1"', "sh", backup], to);
+    const b = await exec(["sh", "-c", SH + 'd=$(dirname "$ORCH_VAULT"); cp -p "$ORCH_VAULT" "$d/$1" && chmod 600 "$d/$1"', "sh", backup], to);
     if (b.code !== 0) fail(`couldn't back up the vault on ${to}: ${b.stderr.trim()}`);
     const ours = new Set(moved.map(key));
     keptThere = t.secrets.filter((e: any) => !ours.has(key(e)));
@@ -205,14 +205,14 @@ if (there !== null && there.trim()) {
 const text = JSON.stringify({ ...mine, secrets: [...moved, ...keptThere] }, null, 1);
 
 // ---- 3. written there whole, and read back --------------------------------------------------------------------------
-const WRITE = `${SH}set -e; umask 077; mkdir -p "$(dirname "$SHEP_VAULT")"; f="$SHEP_VAULT"; cat > "$f.move-tmp"
+const WRITE = `${SH}set -e; umask 077; mkdir -p "$(dirname "$ORCH_VAULT")"; f="$ORCH_VAULT"; cat > "$f.move-tmp"
 python3 -c 'import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' "$f.move-tmp"`;
 const wr = await exec(["sh", "-c", WRITE], to, text);
 if (wr.code !== 0 || wr.stdout.trim() !== sha(text)) {
-  await exec(["sh", "-c", SH + 'rm -f "$SHEP_VAULT.move-tmp"'], to).catch(() => {});
+  await exec(["sh", "-c", SH + 'rm -f "$ORCH_VAULT.move-tmp"'], to).catch(() => {});
   fail(`the vault didn't arrive whole on ${to}: nothing changed.`);
 }
-const sw = await exec(["sh", "-c", SH + 'set -e; chmod 600 "$SHEP_VAULT.move-tmp"; mv "$SHEP_VAULT.move-tmp" "$SHEP_VAULT"; rm -f "$SHEP_SECRET_REMOTE"'], to);
+const sw = await exec(["sh", "-c", SH + 'set -e; chmod 600 "$ORCH_VAULT.move-tmp"; mv "$ORCH_VAULT.move-tmp" "$ORCH_VAULT"; rm -f "$ORCH_SECRET_REMOTE"'], to);
 if (sw.code !== 0) fail(`couldn't put the vault in place on ${to}: ${sw.stderr.trim()}`);
 say(`Copied ${moved.length} secret${moved.length === 1 ? "" : "s"} to ${to}${keptThere.length ? ` (kept ${keptThere.length} it had)` : ""}${backup ? `; its old vault is ${backup} there` : ""}.`);
 

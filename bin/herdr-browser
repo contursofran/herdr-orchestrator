@@ -4,7 +4,7 @@
 # sign-ins stay with the task:
 #   session  herdr-<task>               (agent-browser --session; a <task> over 32 characters is cut to its
 #            last 20 and a hash of the task's key: herdr-<tail>-<8 hex>, as agent-browser's socket path is short)
-#   profile  ~/.local/state/shepherdr/browser/<task>    (a Chrome profile folder: cookies and sign-ins kept;
+#   profile  ~/.local/state/herdr-orchestrator/browser/<task>    (a Chrome profile folder: cookies and sign-ins kept;
 #            ~/.herdr/browser/<task> on a machine whose Shepherdr data hasn't moved to its own folders yet)
 # <task> is the task's herdr.task key (<slug>#<id>) made safe for a name: ".config-herdr-app#57"
 # is "config-herdr-app-57". Which task: --task <key>, else $HERDR_BROWSER_TASK (herdr-task gives
@@ -19,7 +19,7 @@
 # --name: prints the session and profile it would use, as JSON, and runs nothing.
 #
 # agent-browser itself (SHEP-156): any 0.41.x from the pin on, found on the PATH, or Shepherdr's own copy in
-# ~/.local/share/shepherdr/agent-browser/<pin>/ (preferred once there). When there's none, an agent's first command
+# ~/.local/share/herdr-orchestrator/agent-browser/<pin>/ (preferred once there). When there's none, an agent's first command
 # installs it there: agent-browser's own release binary for this machine, checked against the pin's checksum (no
 # npm, no sudo), and Chrome for Testing with `agent-browser install` when no Chrome is found. Install and update run
 # --install too. A failed try isn't repeated for 10 minutes, except by --install.
@@ -40,8 +40,8 @@ sha_for() {
   esac
 }
 # Shepherdr's state folder once this machine's data moved there (herdr_task/layout.py), else the old ~/.herdr/browser
-if [ -n "${SHEPHERDR_HOME:-}" ]; then shep_data="$SHEPHERDR_HOME/data"; shep_state="$SHEPHERDR_HOME/state"
-else shep_data="${XDG_DATA_HOME:-$HOME/.local/share}/shepherdr"; shep_state="${XDG_STATE_HOME:-$HOME/.local/state}/shepherdr"; fi
+if [ -n "${HERDR_ORCH_HOME:-}" ]; then shep_data="$HERDR_ORCH_HOME/data"; shep_state="$HERDR_ORCH_HOME/state"
+else shep_data="${XDG_DATA_HOME:-$HOME/.local/share}/herdr-orchestrator"; shep_state="${XDG_STATE_HOME:-$HOME/.local/state}/herdr-orchestrator"; fi
 if [ "$(cut -c1 "$shep_data/LAYOUT" 2>/dev/null)" = 2 ] && [ ! -e "$HOME/.herdr/.layout-rollback" ]; then root="$shep_state/browser"
 else root="$HOME/.herdr/browser"; fi
 # Shepherdr's own agent-browser (always in its data folder, whatever the layout)
@@ -74,7 +74,7 @@ version_of() {
 # Which agent-browser: $HERDR_BROWSER_BIN, else Shepherdr's own, else the PATH's. Sets bin, ver, from.
 pick() {
   if [ -n "${HERDR_BROWSER_BIN:-}" ]; then bin=$HERDR_BROWSER_BIN; from=env
-  elif [ -x "$mine" ]; then bin=$mine; from=shepherdr
+  elif [ -x "$mine" ]; then bin=$mine; from=herdr-orchestrator
   else bin=$(command -v agent-browser 2>/dev/null); from=path; fi
   ver=
   if [ -n "$bin" ]; then ver=$(version_of "$bin"); else from=; fi

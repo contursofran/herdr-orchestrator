@@ -1,11 +1,11 @@
 // Where Shepherdr keeps its data on this computer, for the window's mods (core/paths.js; the move:
-// mods/tasks/bin/herdr_task/layout.py): ~/.local/share/shepherdr/tasks, ~/.config/shepherdr/settings.json, ... once
+// mods/tasks/bin/herdr_task/layout.py): ~/.local/share/herdr-orchestrator/tasks, ~/.config/herdr-orchestrator/settings.json, ... once
 // this computer's data moved there, else the old ~/.herdr paths. A mod has no environment of its own, so the first use
-// asks a shell once (SHEPHERDR_HOME, XDG_*, the LAYOUT file); until it answers, dirs() gives the old paths, which link
+// asks a shell once (HERDR_ORCH_HOME, XDG_*, the LAYOUT file); until it answers, dirs() gives the old paths, which link
 // to the new ones once moved, so a read is right either way.
 //   dirs().tasks, dirs().settings, dirs().artifacts, ...     now (sync)
 //   await dirsReady()                                          the answer, then dirs() is exact
-// On another machine: put SH (core/paths.js) first in the script and use $SHEP_TASKS, $SHEP_SETTINGS, ...
+// On another machine: put SH (core/paths.js) first in the script and use $ORCH_TASKS, $ORCH_SETTINGS, ...
 // Shared: the source is lib/dirs.js; bin/sync-shared copies it into each mod in lib/COPIES.
 
 import { home, exec } from "herdr";
@@ -17,7 +17,7 @@ let at = 0;
 
 const fallback = () => {
   const h = home();
-  return pathsFrom(h, { config: `${h}/.config/shepherdr`, data: `${h}/.local/share/shepherdr`, state: `${h}/.local/state/shepherdr` }, false);
+  return pathsFrom(h, { config: `${h}/.config/herdr-orchestrator`, data: `${h}/.local/share/herdr-orchestrator`, state: `${h}/.local/state/herdr-orchestrator` }, false);
 };
 
 /** Asks this computer's shell once (again after `again`, e.g. once the data moved). */

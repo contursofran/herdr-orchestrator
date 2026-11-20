@@ -99,7 +99,7 @@ export function liveSession(token: Promise<string | null>, make: (url: string) =
 /** a single-use token for the live words (null: not now; the recording is uploaded at Done instead) */
 async function liveTokenFor(): Promise<string | null> {
   try {
-    const r = await fetch('api/dictate/live', { method: 'POST', headers: { 'x-shepherdr': '1' } })
+    const r = await fetch('api/dictate/live', { method: 'POST', headers: { 'x-herdr-orch': '1' } })
     const j = await r.json().catch(() => null)
     return r.ok && typeof j?.token === 'string' ? j.token : null
   } catch {
@@ -155,7 +155,7 @@ export function dictate(end: (text: string | null) => void, fail: (why: string) 
     if (!audio.size) return { error: 'Nothing was recorded.' }
     upload = new AbortController()
     try {
-      const x = await fetch('api/dictate', { method: 'POST', body: audio, signal: upload.signal, headers: { 'x-shepherdr': '1', 'content-type': audio.type } })
+      const x = await fetch('api/dictate', { method: 'POST', body: audio, signal: upload.signal, headers: { 'x-herdr-orch': '1', 'content-type': audio.type } })
       return heard(x.status, await x.text())
     } catch {
       return heard(0, '')

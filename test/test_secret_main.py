@@ -1,4 +1,4 @@
-"""Which machine keeps the secrets (SHEP-11): herdr-core's record "shepherdr.secrets" names it, the remote mark counts
+"""Which machine keeps the secrets (SHEP-11): herdr-core's record "herdr-orchestrator.secrets" names it, the remote mark counts
 only while none is named, a copy installed elsewhere is never marked remote on the machine that keeps them, and
 another machine's set/rm/names go there over hc with the value on stdin and the scopes in that machine's words.
 Everything runs on throwaway folders; hc is a recorder."""
@@ -63,9 +63,9 @@ class Machine(unittest.TestCase):
     def be(self, me, record=None, mark=False, vault=None, host=None):
         with open(os.path.join(self.core, "core.json"), "w") as f:
             json.dump({"id": me, "name": me[3:]}, f)
-        docs = {"shepherdr.secrets": {"value": record, "version": 1}} if record else {}
+        docs = {"herdr-orchestrator.secrets": {"value": record, "version": 1}} if record else {}
         if host:
-            docs["shepherdr.host"] = {"value": {"id": host, "at": 1}, "version": 1}
+            docs["herdr-orchestrator.host"] = {"value": {"id": host, "at": 1}, "version": 1}
         with open(os.path.join(self.core, "docs.json"), "w") as f:
             json.dump(docs, f)
         mk = os.path.join(self.herdr, "secret-remote")

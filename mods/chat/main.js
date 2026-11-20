@@ -4344,7 +4344,7 @@ export default class Chat extends View {
     this.artsLoading = true;
     cx.spawn(async (cx) => {
       try {
-        const r = await exec("sh", ["-c", SH + 'cd "$SHEP_ARTIFACTS" 2>/dev/null || exit 0; for f in *.json .*.json; do [ -f "$f" ] && cat "$f" && printf "\\n\\036\\n"; done; true'], this.machine ? { on: this.machine } : {});
+        const r = await exec("sh", ["-c", SH + 'cd "$ORCH_ARTIFACTS" 2>/dev/null || exit 0; for f in *.json .*.json; do [ -f "$f" ] && cat "$f" && printf "\\n\\036\\n"; done; true'], this.machine ? { on: this.machine } : {});
         const arts = [];
         for (const part of r.stdout.split("\x1e")) { try { arts.push(...(JSON.parse(part).artifacts ?? [])); } catch {} }
         this.arts = arts;

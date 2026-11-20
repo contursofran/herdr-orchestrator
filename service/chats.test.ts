@@ -86,8 +86,8 @@ test("a local agent's chat is found when the live list lacks its foreground", as
   const dir = mkdtempSync(join(tmpdir(), "chats-hc-"));
   const fake = join(dir, "hc");
   writeFileSync(fake, `#!/bin/sh\necho '{"foreground":{"name":"claude","pid":4242,"argv":["claude"],"cwd":"/work/demo"}}'\n`, { mode: 0o755 });
-  const was = process.env.SHEPHERDR_HC;
-  process.env.SHEPHERDR_HC = fake;
+  const was = process.env.HERDR_ORCH_HC;
+  process.env.HERDR_ORCH_HC = fake;
   try {
     const h = hub();
     feed(h, "restarted", "t5", { address: "t5", state: "live", argv: ["claude"], cwd: "/work/demo", labels: {}, foreground: null });
@@ -97,7 +97,7 @@ test("a local agent's chat is found when the live list lacks its foreground", as
     expect(chats.reader("t5")!.state).toBe("ready");
     expect(chats.reader("t5")!.path).toBe(log);
   } finally {
-    if (was === undefined) delete process.env.SHEPHERDR_HC; else process.env.SHEPHERDR_HC = was;
+    if (was === undefined) delete process.env.HERDR_ORCH_HC; else process.env.HERDR_ORCH_HC = was;
     rmSync(dir, { recursive: true, force: true });
   }
 });

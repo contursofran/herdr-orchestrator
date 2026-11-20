@@ -13,7 +13,7 @@ import { DEFAULT_TOPICS, PUSH_TOPICS, deviceState, type DeviceState, type PushTo
 type Server = { on: boolean; topics: PushTopic[]; muted: string[]; devices: number }
 
 const post = (path: string, body: unknown) =>
-  fetch(`api/push/${path}`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-shepherdr': '1' }, body: JSON.stringify(body) }).then(async (r) => {
+  fetch(`api/push/${path}`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-herdr-orch': '1' }, body: JSON.stringify(body) }).then(async (r) => {
     const j = await r.json().catch(() => ({}))
     if (!r.ok) throw new Error(j.error ?? 'That did not work. Try again.')
     return j

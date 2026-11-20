@@ -47,7 +47,7 @@ Left to right, on the theme's `canvas` background, no title bar:
   holds the look switches and the add-on switches: Artifacts, Voice and dictation, Reactions, Task browser, Autopilot,
   Other machines, Web and Usage insights can be turned off; the rest is always on in 0.1.0. Web shows the web app's link and Serve
   from, the machine that serves it.
-- The web app (`https://<this machine>/shepherdr/`, your tailnet only): the same spaces, Assistants, tasks, cards,
+- The web app (`https://<this machine>/herdr-orchestrator/`, your tailnet only): the same spaces, Assistants, tasks, cards,
   artifacts and settings on a phone, a tablet or another browser, on the same data.
 
 ## Built from
@@ -64,7 +64,7 @@ Left to right, on the theme's `canvas` background, no title bar:
   (mods/artifacts/bin), `herdr-secret` and `herdr-browser` (bin/), linked into `~/.local/bin`; the role instructions
   in `~/.config/herdr-core/templates` (assistant.md, worker.md, reviewer.md); `keys.json`.
 - The web app: `web/` (React), served with the background work by one always-on service (`service/`, Bun on
-  `127.0.0.1:7788`, systemd or launchd) and shared with `tailscale serve`; `core/` holds the logic it shares with the
+  `127.0.0.1:7789`, systemd or launchd) and shared with `tailscale serve`; `core/` holds the logic it shares with the
   mods. `./install.sh --web` installs it alone.
 - The mods run programs (`exec`: herdr-task, git, gh, hc, agent-browser, bun), read files outside their
   folders (`~/.herdr`, the agents' logs, `~/.config/herdr-core/templates`) and reach the network through those

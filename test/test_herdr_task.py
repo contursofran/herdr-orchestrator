@@ -73,7 +73,7 @@ class Autopilot(unittest.TestCase):
         def never(*a, **k):
             raise AssertionError("ran a program")
         import herdr_task.settings as settings
-        self.settings_file = os.path.join(self.tmp, "shepherdr.json")
+        self.settings_file = os.path.join(self.tmp, "herdr-orchestrator.json")
         p = mock.patch.object(settings, "SETTINGS", self.settings_file)
         p.start()
         self.addCleanup(p.stop)
@@ -2348,7 +2348,7 @@ class NewWorktrees(unittest.TestCase):
         self.commit(self.main, "first")
         self.git(self.main, "push", "-q", "origin", "main")
         self.git(self.root, "clone", "-q", self.origin, self.other)
-        self.settings_file = os.path.join(self.root, "shepherdr.json")
+        self.settings_file = os.path.join(self.root, "herdr-orchestrator.json")
         for mod, name, value in ((launch, "WORKTREES", os.path.join(self.root, "wt")), (settings, "SETTINGS", self.settings_file)):
             p = mock.patch.object(mod, name, value)
             p.start()
@@ -3598,7 +3598,7 @@ class MachineHoldFollowsSettings(unittest.TestCase):
         import herdr_task.settings as settings
         self.queues, self.tmp = queues, tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.tmp, True)
-        self.settings = os.path.join(self.tmp, "shepherdr.json")
+        self.settings = os.path.join(self.tmp, "herdr-orchestrator.json")
         busy = {"memory": 40, "load": 0.1, "cores": 4, "cpu": 3, "disk": 96}
         for mod, name, value in ((settings, "SETTINGS", self.settings), (queues, "HOLD_FILE", os.path.join(self.tmp, "machine-hold.json")),
                                  (machine, "sample", lambda: busy), (queues, "_hold", {})):
@@ -4366,7 +4366,7 @@ class AgentReactions(unittest.TestCase):
         import herdr_task.news as news
         self.settings, self.reactions, self.aset = settings, reactions, aset
         self.dir = tempfile.mkdtemp()
-        self.file = os.path.join(self.dir, "shepherdr.json")
+        self.file = os.path.join(self.dir, "herdr-orchestrator.json")
         self.terminals, self.sent = {}, []
 
         def hc_json(*args):
@@ -4471,7 +4471,7 @@ class AssistantSettings(unittest.TestCase):
         import herdr_task.news as news
         self.settings, self.aset, self.news = settings, aset, news
         self.dir = tempfile.mkdtemp()
-        self.file = os.path.join(self.dir, "shepherdr.json")
+        self.file = os.path.join(self.dir, "herdr-orchestrator.json")
         self.terminals, self.labelled, self.sent = {}, [], []
         self.auto = {}  # space -> (on, schedule, direction)
 
@@ -4724,7 +4724,7 @@ class Feedback(unittest.TestCase):
         self.cli, self.fb, self.io, self.mock = cli, fb, io, mock
         self.queue = fb.queue_news  # the real one (faked below)
         self.dir = tempfile.mkdtemp()
-        self.file = os.path.join(self.dir, "shepherdr.json")
+        self.file = os.path.join(self.dir, "herdr-orchestrator.json")
         self.held, self.gh, self.issues = [], [], []
         self.caller = {"labels": {"herdr.task": "dev#7", "herdr.task.space": "sp1", "herdr.agent": "codex"}, "name": "shep-7-fix"}
         with open(os.path.join(self.dir, "dev.json"), "w") as f:
@@ -5293,7 +5293,7 @@ class TaskFlow(unittest.TestCase):
 
     def settings(self, d):
         import herdr_task.settings as settings
-        f = os.path.join(self.root, "shepherdr.json")
+        f = os.path.join(self.root, "herdr-orchestrator.json")
         with open(f, "w") as fh:
             json.dump(d, fh)
         self.patch(settings, "SETTINGS", f)

@@ -61,7 +61,7 @@ export function callArgs(kind, inRate, outRate, helper = HELPER) {
 export const PLIST = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
-  <key>CFBundleIdentifier</key><string>dev.herdr.shepherdr.audio</string>
+  <key>CFBundleIdentifier</key><string>dev.herdr.herdr-orchestrator.audio</string>
   <key>CFBundleName</key><string>${HELPER}</string>
   <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
   <key>NSMicrophoneUsageDescription</key><string>Herdr listens for dictation and voice calls, only while you use them.</string>

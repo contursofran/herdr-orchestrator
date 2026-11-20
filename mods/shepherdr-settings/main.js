@@ -9,7 +9,7 @@
 // row some spaces set their own of says so in one dim line that lists them. Pages that are one for
 // every space (Machines, Window, Web) say so. Machine-only settings are rows under Machines; values
 // a machine set for everything before (the old machine scope) still apply and show there, with Reset.
-// Writes ~/.config/shepherdr/settings.json at once, no Save step (coordinator.js documents the shape;
+// Writes ~/.config/herdr-orchestrator/settings.json at once, no Save step (coordinator.js documents the shape;
 // herdr-task reads it too). Other machines get their share pushed (pushRemotes) for their
 // herdr-task. Agents use the chat's own model button (settings.js and agent.js from lib/).
 // The window draws its own frame (frame: "none"), most of Herdr's height, at most 900.
@@ -18,7 +18,7 @@ import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, Scrollbar, TextareaState, Textarea, InputState, Input } from "gpui-base";
 import { props, theme, machines, home, exec, readTextFile, writeTextFile, closeOverlay, openOverlay, shared } from "herdr";
 import { spaces, inRender } from "./live.js";
-import { SHEPHERDR_FILE, SHEPHERDR_DEFAULTS, LOCAL_MACHINE, shepherdrFor, shepherdrLayers, machineOfSpace } from "./coordinator.js";
+import { HERDR_ORCH_FILE, SHEPHERDR_DEFAULTS, LOCAL_MACHINE, shepherdrFor, shepherdrLayers, machineOfSpace } from "./coordinator.js";
 import * as models from "./settings.js";
 import { layoutSection } from "./layout.js";
 import { manifest } from "./addons.js";
@@ -63,7 +63,7 @@ const daysWord = (d) => plural(d, "day", "days");
 const roundsWord = (n) => plural(n, "round", "rounds");
 // A pushed copy's mark: a machine whose file lacks it keeps its own settings, and is left alone.
 // Its settings file wherever that machine keeps it (its Shepherdr folders, or ~/.herdr on an older one: core/paths.js SH).
-const PUSH = `${SH}f="$SHEP_SETTINGS"; mkdir -p "$(dirname "$f")" || exit 1
+const PUSH = `${SH}f="$ORCH_SETTINGS"; mkdir -p "$(dirname "$f")" || exit 1
 if [ -f "$f" ] && ! grep -q '"pushed_from"' "$f"; then echo own; exit 0; fi
 if [ -f "$f" ] && [ "$(cat "$f")" = "$1" ]; then exit 0; fi
 umask 077; printf '%s\n' "$1" > "$f.tmp" && mv "$f.tmp" "$f"`;
@@ -139,7 +139,7 @@ export default class ShepherdrSettings extends View {
   }
 
   async load() {
-    this.raw = await readTextFile(SHEPHERDR_FILE()).catch(() => null);
+    this.raw = await readTextFile(HERDR_ORCH_FILE()).catch(() => null);
     try { this.cfg = this.raw ? JSON.parse(this.raw) : {}; } catch { this.cfg = {}; }
     // SHEP-42's assistant.reactions read as agents.reactions: the next change writes it there
     upgradeReactions(this.cfg);
@@ -152,7 +152,7 @@ export default class ShepherdrSettings extends View {
     cx.spawn(async (cx) => { await this.apply(edit); cx.notify(); });
   }
 
-  // Other machines' herdr-task read their own ~/.config/shepherdr/settings.json: each gets Everywhere, its
+  // Other machines' herdr-task read their own ~/.config/herdr-orchestrator/settings.json: each gets Everywhere, its
   // machine's and its spaces' (by their ids there), marked so it knows which machine it is.
   // A file there without the mark is that machine's own (its own Herdr window): left alone.
   // Unreachable machines are skipped; the next change or opening catches them up.
@@ -180,7 +180,7 @@ export default class ShepherdrSettings extends View {
       next.version = 1;
       edit(next);
       try {
-        await writeTextFile(SHEPHERDR_FILE(), JSON.stringify(next, null, 2) + "\n", this.raw);
+        await writeTextFile(HERDR_ORCH_FILE(), JSON.stringify(next, null, 2) + "\n", this.raw);
         this.cfg = next;
         this.pushRemotes();
         return true;

@@ -1098,7 +1098,7 @@ export interface Alert {
 /** A folder on a machine, for adding a space from the sidebar (home only) */
 export interface FolderEntry {
   name: string
-  /** as the human writes it: ~/dev/shepherdr */
+  /** as the human writes it: ~/dev/herdr-orchestrator */
   path: string
   /** has its own .git */
   repo: boolean

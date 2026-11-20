@@ -203,7 +203,7 @@ def trim(text):
 
 def shepherdr_version():
     try:
-        with open(os.path.join(APP_HOME, "data", "shepherdr", "installed.json")) as f:
+        with open(os.path.join(APP_HOME, "data", "herdr-orchestrator", "installed.json")) as f:
             return str(json.load(f).get("version") or "unknown")
     except (OSError, ValueError, AttributeError):
         return "unknown"

@@ -96,7 +96,7 @@ export async function flush(keepalive = false) {
   const events = buf
   buf = []
   try {
-    const r = await fetch('api/action', { method: 'POST', keepalive, headers: { 'content-type': 'application/json', 'x-shepherdr': '1' }, body: JSON.stringify({ type: 'usage', events }) })
+    const r = await fetch('api/action', { method: 'POST', keepalive, headers: { 'content-type': 'application/json', 'x-herdr-orch': '1' }, body: JSON.stringify({ type: 'usage', events }) })
     if ((await r.json().catch(() => ({})))?.on === false) followOff(['insights'])
   } catch {
     /* offline: these are dropped, never worth a retry */

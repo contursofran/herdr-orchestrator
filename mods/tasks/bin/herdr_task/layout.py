@@ -3,22 +3,22 @@
 Shepherdr's data lives in its own `shepherdr` folders (XDG, on macOS too; caches in ~/Library/Caches
 there), never under Herdr's name:
 
-  config  ~/.config/shepherdr/          settings.json, model-picks.json
-  data    ~/.local/share/shepherdr/     tasks/, artifacts/, secrets/{vault.json,remote}, worktrees/ (new
+  config  ~/.config/herdr-orchestrator/          settings.json, model-picks.json
+  data    ~/.local/share/herdr-orchestrator/     tasks/, artifacts/, secrets/{vault.json,remote}, worktrees/ (new
                                         tasks' worktrees; a setting picks another root), tools.json, LAYOUT
-  state   ~/.local/state/shepherdr/     service/ (the web service's token, socket, log, usage), browser/
+  state   ~/.local/state/herdr-orchestrator/     service/ (the web service's token, socket, log, usage), browser/
                                         (task browsers' sign-ins), secret-drop/, cli-check.json,
                                         machine-hold.json, migrate.json (the move's journal)
-  cache   ~/.cache/shepherdr/ (macOS: ~/Library/Caches/shepherdr/), with CACHEDIR.TAG
+  cache   ~/.cache/herdr-orchestrator/ (macOS: ~/Library/Caches/herdr-orchestrator/), with CACHEDIR.TAG
 
-SHEPHERDR_HOME=<root> puts all four under <root>/{config,data,state,cache}; else XDG_CONFIG_HOME,
+HERDR_ORCH_HOME=<root> puts all four under <root>/{config,data,state,cache}; else XDG_CONFIG_HOME,
 XDG_DATA_HOME, XDG_STATE_HOME and XDG_CACHE_HOME are honoured. Every process must see the same ones:
 one without them still lands right through the old paths' links (below).
 
 The move (migrate()) runs once per machine, by itself: the installer runs it on install and update,
 and herdr-task runs it on its first start after a sync brought a new copy to another machine. Each
 kind moves in one rename (same disk), with a link left at its old place (~/.herdr/tasks ->
-~/.local/share/shepherdr/tasks), so an older herdr-task, a Herdr window not yet reloaded, another
+~/.local/share/herdr-orchestrator/tasks), so an older herdr-task, a Herdr window not yet reloaded, another
 machine on an older Shepherdr (which reads $HOME/.herdr/... over herdr-core) and absolute paths in
 old briefs all keep working. On another disk, a file (settings, the vault) is copied, checked,
 then swapped (the old copy kept beside as <old>.pre-layout2); a folder (tasks, artifacts, browsers) stays
@@ -39,7 +39,7 @@ version on the old paths (no move by itself) until `shepherdr migrate` is run ag
 until `shepherdr migrate --cleanup-legacy`, which refuses while a linked machine might still read them.
 
 Standalone on purpose (no other herdr_task module): the herdr-task entry runs it before anything
-reads a path, and bin/shepherdr imports it from the source it installs.
+reads a path, and bin/herdr-orchestrator imports it from the source it installs.
 """
 
 import errno
@@ -61,14 +61,14 @@ FS_SHARED = {"nfs", "nfs4", "cifs", "smbfs", "smb3", "afpfs", "fuse.sshfs", "9p"
 # kind: (old path under home, base, new path under base, "dir" | "file", big)
 # big: on another disk it stays where it is (the new path links to it) instead of being copied.
 KINDS = {
-    "settings": (".herdr/shepherdr.json", "config", "settings.json", "file", False),
+    "settings": (".herdr/herdr-orchestrator.json", "config", "settings.json", "file", False),
     "model-picks": (".herdr/model-picks.json", "config", "model-picks.json", "file", False),
     "tasks": (".herdr/tasks", "data", "tasks", "dir", False),
     "artifacts": (".herdr/artifacts", "data", "artifacts", "dir", True),
     "vault": (".herdr/vault.json", "data", "secrets/vault.json", "file", False),
     "secret-remote": (".herdr/secret-remote", "data", "secrets/remote", "file", False),
     "tools": (".herdr/tools.json", "data", "tools.json", "file", False),
-    "service": (".herdr/shepherdr", "state", "service", "dir", False),
+    "service": (".herdr/herdr-orchestrator", "state", "service", "dir", False),
     "browser": (".herdr/browser", "state", "browser", "dir", True),
     "secret-drop": (".herdr/secret-drop", "state", "secret-drop", "dir", False),
     "secret-served": (".herdr/secret-served", "state", "secret-served", "dir", False),
@@ -86,19 +86,19 @@ def _abs(p):
 
 
 def roots(home=None, env=None, mac=None):
-    """{config, data, state, cache} for this home. SHEPHERDR_HOME first, then XDG_*, then defaults.
+    """{config, data, state, cache} for this home. HERDR_ORCH_HOME first, then XDG_*, then defaults.
     A home that isn't the real one (an installer --root, a test) ignores the variables."""
     env = os.environ if env is None else env
     home = home or os.path.expanduser("~")
     mac = sys.platform == "darwin" if mac is None else mac
-    one = _abs(env.get("SHEPHERDR_HOME"))
+    one = _abs(env.get("HERDR_ORCH_HOME"))
     if one:
         return {k: os.path.join(one, k) for k in ("config", "data", "state", "cache")}
-    x = lambda var, *dflt: os.path.join(_abs(env.get(var)) or os.path.join(home, *dflt), "shepherdr")
+    x = lambda var, *dflt: os.path.join(_abs(env.get(var)) or os.path.join(home, *dflt), "herdr-orchestrator")
     cache = _abs(env.get("XDG_CACHE_HOME"))
     return {"config": x("XDG_CONFIG_HOME", ".config"), "data": x("XDG_DATA_HOME", ".local", "share"),
             "state": x("XDG_STATE_HOME", ".local", "state"),
-            "cache": os.path.join(cache, "shepherdr") if cache else os.path.join(home, *(("Library", "Caches") if mac else (".cache",)), "shepherdr")}
+            "cache": os.path.join(cache, "herdr-orchestrator") if cache else os.path.join(home, *(("Library", "Caches") if mac else (".cache",)), "herdr-orchestrator")}
 
 
 class Where:
@@ -163,15 +163,15 @@ def path(kind):
 
 
 # Shell: the same paths on any machine, old or new, for commands run there over herdr-core.
-# Sets SHEP_CONFIG, SHEP_DATA, SHEP_STATE and one variable per kind (SHEP_TASKS, SHEP_SETTINGS, ...):
+# Sets ORCH_CONFIG, ORCH_DATA, ORCH_STATE and one variable per kind (ORCH_TASKS, ORCH_SETTINGS, ...):
 # the new path once that machine is migrated, else its old one.
 def _sh():
-    var = lambda k: "SHEP_" + k.upper().replace("-", "_")
-    lines = ['if [ -n "${SHEPHERDR_HOME:-}" ]; then SHEP_CONFIG="$SHEPHERDR_HOME/config"; SHEP_DATA="$SHEPHERDR_HOME/data"; '
-             'SHEP_STATE="$SHEPHERDR_HOME/state"; else SHEP_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/shepherdr"; '
-             'SHEP_DATA="${XDG_DATA_HOME:-$HOME/.local/share}/shepherdr"; SHEP_STATE="${XDG_STATE_HOME:-$HOME/.local/state}/shepherdr"; fi',
-             f'if [ "$(cat "$SHEP_DATA/LAYOUT" 2>/dev/null | cut -c1)" = "{LAYOUT}" ] && [ ! -e "$HOME/{LEGACY}/{ROLLBACK}" ]; then',
-             " ".join(f'{var(k)}="$SHEP_{b.upper()}/{rel}";' for k, (_, b, rel, _, _) in KINDS.items()),
+    var = lambda k: "ORCH_" + k.upper().replace("-", "_")
+    lines = ['if [ -n "${HERDR_ORCH_HOME:-}" ]; then ORCH_CONFIG="$HERDR_ORCH_HOME/config"; ORCH_DATA="$HERDR_ORCH_HOME/data"; '
+             'ORCH_STATE="$HERDR_ORCH_HOME/state"; else ORCH_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/herdr-orchestrator"; '
+             'ORCH_DATA="${XDG_DATA_HOME:-$HOME/.local/share}/herdr-orchestrator"; ORCH_STATE="${XDG_STATE_HOME:-$HOME/.local/state}/herdr-orchestrator"; fi',
+             f'if [ "$(cat "$ORCH_DATA/LAYOUT" 2>/dev/null | cut -c1)" = "{LAYOUT}" ] && [ ! -e "$HOME/{LEGACY}/{ROLLBACK}" ]; then',
+             " ".join(f'{var(k)}="$ORCH_{b.upper()}/{rel}";' for k, (_, b, rel, _, _) in KINDS.items()),
              "else", " ".join(f'{var(k)}="$HOME/{old}";' for k, (old, _, _, _, _) in KINDS.items()), "fi"]
     return "\n".join(lines) + "\n"
 
@@ -187,11 +187,11 @@ def _py():
 def SHEP(rel, _t={table!r}):
     H, E = os.path.expanduser("~"), os.environ
     a = lambda v: E.get(v) if (E.get(v) or "").startswith("/") else None
-    one = a("SHEPHERDR_HOME")
+    one = a("HERDR_ORCH_HOME")
     R = dict((k, os.path.join(one, k)) for k in ("config", "data", "state")) if one else {{
-        "config": os.path.join(a("XDG_CONFIG_HOME") or os.path.join(H, ".config"), "shepherdr"),
-        "data": os.path.join(a("XDG_DATA_HOME") or os.path.join(H, ".local", "share"), "shepherdr"),
-        "state": os.path.join(a("XDG_STATE_HOME") or os.path.join(H, ".local", "state"), "shepherdr")}}
+        "config": os.path.join(a("XDG_CONFIG_HOME") or os.path.join(H, ".config"), "herdr-orchestrator"),
+        "data": os.path.join(a("XDG_DATA_HOME") or os.path.join(H, ".local", "share"), "herdr-orchestrator"),
+        "state": os.path.join(a("XDG_STATE_HOME") or os.path.join(H, ".local", "state"), "herdr-orchestrator")}}
     try:
         with open(os.path.join(R["data"], "LAYOUT")) as f:
             on = int((f.read().split() or ["0"])[0]) >= {LAYOUT} and not os.path.lexists(os.path.join(H, "{LEGACY}", "{ROLLBACK}"))
@@ -871,9 +871,9 @@ def status(home=None, env=None, mac=None):
 
 def ensure(quiet=True):
     """herdr-task's start: moves the data once (the first run after an update brought this code), and
-    heals old-path writes. Never in a test's world (HERDR_TASK_STORE / SHEPHERDR_NO_MIGRATE) and never
+    heals old-path writes. Never in a test's world (HERDR_TASK_STORE / HERDR_ORCH_NO_MIGRATE) and never
     fails the command: on any problem it stays on the old paths and `shepherdr doctor` says why."""
-    if os.environ.get("HERDR_TASK_STORE") or os.environ.get("SHEPHERDR_NO_MIGRATE") or os.environ.get("HERDR_TASK_SETTINGS"):
+    if os.environ.get("HERDR_TASK_STORE") or os.environ.get("HERDR_ORCH_NO_MIGRATE") or os.environ.get("HERDR_TASK_SETTINGS"):
         return None
     try:
         w = Where()

@@ -1,4 +1,4 @@
-// Shepherdr settings for the web app: ~/.config/shepherdr/settings.json as the window's settings show it (core/settings.js: the
+// Shepherdr settings for the web app: ~/.config/herdr-orchestrator/settings.json as the window's settings show it (core/settings.js: the
 // same words and choices), as 2.1's settings sections, and a change from the web written back to the same file,
 // keeping everything else in it. The window's settings read the file when they open; herdr-task reads it each time.
 // Levels as the window's scopes: Everywhere ("everywhere"), a space ("spaces"[its id], with its repo folder, which is
@@ -53,7 +53,7 @@ const ON = (v: unknown) => (v ? "on" : "off");
 // the window's push to other machines (mods/shepherdr-settings): each gets Everywhere, its machine's and its spaces'
 // (by their ids there), marked so it knows which machine it is; a file there without the mark is that machine's own
 // (its settings file wherever that machine keeps it: Shepherdr's folders, or ~/.herdr on an older one: core/paths.js SH)
-export const PUSH = `${SH}f="$SHEP_SETTINGS"; mkdir -p "$(dirname "$f")" || exit 1
+export const PUSH = `${SH}f="$ORCH_SETTINGS"; mkdir -p "$(dirname "$f")" || exit 1
 if [ -f "$f" ] && ! grep -q '"pushed_from"' "$f"; then echo own; exit 0; fi
 if [ -f "$f" ] && [ "$(cat "$f")" = "$1" ]; then exit 0; fi
 umask 077; printf '%s\\n' "$1" > "$f.tmp" && mv "$f.tmp" "$f"`;
@@ -95,7 +95,7 @@ export class Settings {
 
   start() {
     this.read();
-    // the file by the name it has now (SHEP-263: this still waited for "shepherdr.json", its name before SHEP-141, so a
+    // the file by the name it has now (SHEP-263: this still waited for "herdr-orchestrator.json", its name before SHEP-141, so a
     // change made in the window's Settings never reached the service: an Assistant started from the web ran on what
     // Settings said when the service started). A writer renames a temporary file onto it, so any name that starts
     // with the file's counts, and one the watcher can't name too.

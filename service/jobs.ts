@@ -36,10 +36,10 @@ async function run(cmd: string[]) {
 /** Whether the window installed here leaves this work to the service: no Shepherdr window at all, or one whose tab bar
  *  asks first. */
 export function windowLeavesIt() {
-  if (process.env.SHEPHERDR_JOBS === "off") return false;
-  if (process.env.SHEPHERDR_JOBS === "on") return true;
+  if (process.env.HERDR_ORCH_JOBS === "off") return false;
+  if (process.env.HERDR_ORCH_JOBS === "on") return true;
   // no Shepherdr layout installed here (no Herdr at all, or Herdr's own mods only): no window here does it
-  if (!existsSync(join(appHome(), "data", "shepherdr", "installed.json"))) return true;
+  if (!existsSync(join(appHome(), "data", "herdr-orchestrator", "installed.json"))) return true;
   return existsSync(join(appHome(), "mods", "tabs-tasks", "service.js"));
 }
 

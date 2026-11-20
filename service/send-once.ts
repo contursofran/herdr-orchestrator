@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { DATA } from "./paths.ts";
 
 const KEEP = 60 * 60_000;
-const FILE = () => join(process.env.SHEPHERDR_DATA || DATA, "sent.json");
+const FILE = () => join(process.env.HERDR_ORCH_DATA || DATA, "sent.json");
 
 type Done = { at: number; result: unknown };
 let done: Map<string, Done> | null = null;

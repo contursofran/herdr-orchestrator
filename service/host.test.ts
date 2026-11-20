@@ -35,12 +35,12 @@ test("the newest host record reaches every machine, and the one that slept learn
   await laptop.poll(); await mini.poll();
   expect(laptop.serving()).toBe(true);                 // no record: each serves itself
   w.up.L = false;                                      // the laptop sleeps; the move happens on the mini
-  w.docs.M.set("shepherdr.host", { value: { id: "M", at: 100 }, version: 1 });
+  w.docs.M.set("herdr-orchestrator.host", { value: { id: "M", at: 100 }, version: 1 });
   await mini.poll();
   expect(mini.serving()).toBe(true);
   w.up.L = true;                                       // it wakes: the mini hands the record on
   await mini.poll();
-  expect(w.docs.L.get("shepherdr.host")?.value).toEqual({ id: "M", at: 100 });
+  expect(w.docs.L.get("herdr-orchestrator.host")?.value).toEqual({ id: "M", at: 100 });
   await laptop.poll();
   expect(laptop.serving()).toBe(false);
   expect(laptop.hubName()).toBe("mac-mini");
@@ -52,13 +52,13 @@ test("the newest host record reaches every machine, and the one that slept learn
 
 test("a pin made on the laptop is the mini's pin, in the mini's words, and back", async () => {
   const w = world();
-  w.docs.L.set("shepherdr.host", { value: { id: "M", at: 1 }, version: 1 });
-  w.docs.M.set("shepherdr.host", { value: { id: "M", at: 1 }, version: 1 });
+  w.docs.L.set("herdr-orchestrator.host", { value: { id: "M", at: 1 }, version: 1 });
+  w.docs.M.set("herdr-orchestrator.host", { value: { id: "M", at: 1 }, version: 1 });
   const laptop = new Host(w.hub("L") as any, "t"), mini = new Host(w.hub("M") as any, "t");
   await mini.poll(); await laptop.poll();
   const onLaptop = new Store(w.hub("L") as any, laptop), onMini = new Store(w.hub("M") as any, mini);
   await onLaptop.set("spaces-chat", { pinned: ["sp1", "mac-mini/sp2"], icons: { sp1: "🐑" }, sections: [] });
-  expect(w.docs.L.get("shepherdr")).toBe(undefined);   // nothing written on the laptop: the mini holds it
+  expect(w.docs.L.get("herdr-orchestrator")).toBe(undefined);   // nothing written on the laptop: the mini holds it
   const there = (await onMini.load()).value["spaces-chat"] as any;
   expect(there.pinned).toEqual(["m3/sp1", "sp2"]);
   expect(there.icons).toEqual({ "m3/sp1": "🐑" });
@@ -74,15 +74,15 @@ test("a pin made on the laptop is the mini's pin, in the mini's words, and back"
 test("a machine this one only links can't make itself the host; a record from the future doesn't count", async () => {
   const w = world();
   const laptop = new Host(w.hub("L") as any, "t");
-  w.docs.M.set("shepherdr.host", { value: { id: "M", at: Date.now() }, version: 1 });
+  w.docs.M.set("herdr-orchestrator.host", { value: { id: "M", at: Date.now() }, version: 1 });
   await laptop.poll();
   expect(laptop.serving()).toBe(true);                 // the mini's own claim: not believed by the laptop
-  w.docs.L.set("shepherdr.host", { value: { id: "M", at: Date.now() + 3_600_000 }, version: 1 });
+  w.docs.L.set("herdr-orchestrator.host", { value: { id: "M", at: Date.now() + 3_600_000 }, version: 1 });
   await laptop.poll();
   expect(laptop.serving()).toBe(true);                 // an hour ahead: not a real record
-  w.docs.L.set("shepherdr.host", { value: { id: "M", at: 5 }, version: 2 });
-  w.docs.M.set("shepherdr.host", { value: { id: "L", at: 9 }, version: 2 });
+  w.docs.L.set("herdr-orchestrator.host", { value: { id: "M", at: 5 }, version: 2 });
+  w.docs.M.set("herdr-orchestrator.host", { value: { id: "L", at: 9 }, version: 2 });
   await laptop.poll();
   expect(laptop.serving()).toBe(true);                 // the host itself handed it back
-  expect(w.docs.L.get("shepherdr.host")?.value).toEqual({ id: "L", at: 9 });
+  expect(w.docs.L.get("herdr-orchestrator.host")?.value).toEqual({ id: "L", at: 9 });
 });

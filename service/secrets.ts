@@ -17,7 +17,7 @@ const { HOST_DOC, newestHost } = HC as any;
 const VAULT = where().vault;
 const MARK = where()["secret-remote"];
 const APP = process.env.HERDR_APP_HOME || join(HOME, ".config", "herdr-app");
-const BIN = [join(APP, "bin", "herdr-secret"), join(HOME, ".local", "share", "shepherdr", "bin", "herdr-secret"), join(HOME, ".local", "bin", "herdr-secret")].find(existsSync) ?? "herdr-secret";
+const BIN = [join(APP, "bin", "herdr-secret"), join(HOME, ".local", "share", "herdr-orchestrator", "bin", "herdr-secret"), join(HOME, ".local", "bin", "herdr-secret")].find(existsSync) ?? "herdr-secret";
 
 /** herdr-secret as installed here. */
 export const secretBin = () => BIN;
@@ -29,7 +29,7 @@ async function run(args: string[], input?: string) {
   return { code: await p.exited, out, err };
 }
 async function hc(args: string[]) {
-  const p = Bun.spawn([process.env.SHEPHERDR_HC || "hc", ...args], { stdout: "ignore", stderr: "ignore", stdin: "ignore" });
+  const p = Bun.spawn([process.env.HERDR_ORCH_HC || "hc", ...args], { stdout: "ignore", stderr: "ignore", stdin: "ignore" });
   return p.exited;
 }
 
@@ -116,7 +116,7 @@ function localVault() {
 export class SecretsHome {
   me: { id: string; name: string } | null = null;
   record: { id: string; at: number; by?: string; auto?: boolean } | null = null;
-  /** the id of the machine serving the web app (shepherdr.host), which the secrets follow unless the person picked one */
+  /** the id of the machine serving the web app (herdr-orchestrator.host), which the secrets follow unless the person picked one */
   host: string | null = null;
   machines = new Map<string, { id: string | null; state: string }>();
   private busy = false;

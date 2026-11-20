@@ -5,7 +5,7 @@ ways to work when you ask ("How do I use herdr-orchestrator? Any tips?").
 
 ## The promise
 
-- **Yours alone.** The log stays on your own machines, in `~/.local/state/shepherdr/service/`. It is never sent to herdr-orchestrator's
+- **Yours alone.** The log stays on your own machines, in `~/.local/state/herdr-orchestrator/service/`. It is never sent to herdr-orchestrator's
   makers, to any server or to anyone else. No analytics library, no telemetry. The only hop is the web app handing
   its events to your own herdr-orchestrator service, the same one it already talks to, which writes them on its machine.
 - **Never your words.** It keeps kinds, ids, counts and times: which screen, for how long, which button, which
@@ -34,7 +34,7 @@ Every line has `at` (ms) and, when known, `from`: `web`, `phone`, `window`, `voi
 dropped before it is written (`core/usage.js`).
 
 What herdr-orchestrator already keeps is read where it lives, not copied: tasks and their timings (`herdr-task list --all
---json`), Autopilot's wakes (`~/.local/share/shepherdr/tasks/.autopilot.json`) and when you wrote to agents (their own logs). The
+--json`), Autopilot's wakes (`~/.local/share/herdr-orchestrator/tasks/.autopilot.json`) and when you wrote to agents (their own logs). The
 Assistant's instructions (`templates/assistant.md`, Usage insights) say where each is.
 
 ## Size

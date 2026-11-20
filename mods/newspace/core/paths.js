@@ -1,10 +1,10 @@
 // Where Shepherdr keeps its own data (SHEP-141): its own `shepherdr` folders, never under Herdr's name. The one
 // source is mods/tasks/bin/herdr_task/layout.py (the move, healing, rollback); this is its table and its shell for
 // the window's mods, the service and the web app. test/test_layout.py checks both say the same.
-//   config ~/.config/shepherdr        settings.json, model-picks.json
-//   data   ~/.local/share/shepherdr   tasks/, artifacts/, secrets/, worktrees/, tools.json, LAYOUT
-//   state  ~/.local/state/shepherdr   service/, browser/, secret-drop/, secret-served/, cli-check.json, machine-hold.json
-// SHEPHERDR_HOME=<root> puts them under <root>/{config,data,state,cache}; else XDG_* are honoured. Until a machine's
+//   config ~/.config/herdr-orchestrator        settings.json, model-picks.json
+//   data   ~/.local/share/herdr-orchestrator   tasks/, artifacts/, secrets/, worktrees/, tools.json, LAYOUT
+//   state  ~/.local/state/herdr-orchestrator   service/, browser/, secret-drop/, secret-served/, cli-check.json, machine-hold.json
+// HERDR_ORCH_HOME=<root> puts them under <root>/{config,data,state,cache}; else XDG_* are honoured. Until a machine's
 // data moved (data/LAYOUT says 2) every kind is its old ~/.herdr path; after, the old paths link to the new ones, so
 // a reader on either is right on any machine, old or new.
 // Shared core: the source is core/paths.js; bin/sync-shared copies it into the mods in lib/COPIES.
@@ -15,14 +15,14 @@ export const ROLLBACK = ".layout-rollback";
 
 // kind: [old path under home, base, new path under base]
 export const KINDS = {
-  "settings": [".herdr/shepherdr.json", "config", "settings.json"],
+  "settings": [".herdr/herdr-orchestrator.json", "config", "settings.json"],
   "model-picks": [".herdr/model-picks.json", "config", "model-picks.json"],
   "tasks": [".herdr/tasks", "data", "tasks"],
   "artifacts": [".herdr/artifacts", "data", "artifacts"],
   "vault": [".herdr/vault.json", "data", "secrets/vault.json"],
   "secret-remote": [".herdr/secret-remote", "data", "secrets/remote"],
   "tools": [".herdr/tools.json", "data", "tools.json"],
-  "service": [".herdr/shepherdr", "state", "service"],
+  "service": [".herdr/herdr-orchestrator", "state", "service"],
   "browser": [".herdr/browser", "state", "browser"],
   "secret-drop": [".herdr/secret-drop", "state", "secret-drop"],
   "secret-served": [".herdr/secret-served", "state", "secret-served"],
@@ -32,13 +32,13 @@ export const KINDS = {
 
 const abs = (p) => (typeof p === "string" && p.startsWith("/") ? p.replace(/\/+$/, "") : null);
 
-/** { config, data, state, cache } for a home and its environment (SHEPHERDR_HOME, then XDG_*, then defaults). */
+/** { config, data, state, cache } for a home and its environment (HERDR_ORCH_HOME, then XDG_*, then defaults). */
 export function roots(home, env = {}, mac = false) {
-  const one = abs(env.SHEPHERDR_HOME);
+  const one = abs(env.HERDR_ORCH_HOME);
   if (one) return { config: `${one}/config`, data: `${one}/data`, state: `${one}/state`, cache: `${one}/cache` };
-  const x = (v, dflt) => `${abs(env[v]) ?? `${home}/${dflt}`}/shepherdr`;
+  const x = (v, dflt) => `${abs(env[v]) ?? `${home}/${dflt}`}/herdr-orchestrator`;
   return { config: x("XDG_CONFIG_HOME", ".config"), data: x("XDG_DATA_HOME", ".local/share"), state: x("XDG_STATE_HOME", ".local/state"),
-           cache: abs(env.XDG_CACHE_HOME) ? `${abs(env.XDG_CACHE_HOME)}/shepherdr` : `${home}/${mac ? "Library/Caches" : ".cache"}/shepherdr` };
+           cache: abs(env.XDG_CACHE_HOME) ? `${abs(env.XDG_CACHE_HOME)}/herdr-orchestrator` : `${home}/${mac ? "Library/Caches" : ".cache"}/herdr-orchestrator` };
 }
 
 /** Every kind's path: the new one when `migrated`, else the old one. Plus worktrees (where new ones go).
@@ -70,20 +70,20 @@ export const isMigrated = (layoutText, rolledBack = false) => !rolledBack && Num
 
 /** A task worktree's path (any machine, any root this or an older Shepherdr made them in): kept out of the lists of
  *  folders people work in. */
-export const WORKTREE_RE = /\/(\.herdr|shepherdr)\/worktrees\//;
+export const WORKTREE_RE = /\/(\.herdr|herdr-orchestrator)\/worktrees\//;
 export const isWorktreePath = (p) => !!p && WORKTREE_RE.test(`${p}/`);
 
-const shVar = (k) => "SHEP_" + k.toUpperCase().replace(/-/g, "_");
+const shVar = (k) => "ORCH_" + k.toUpperCase().replace(/-/g, "_");
 
-// Shell (any machine, old or new, run over herdr-core): sets SHEP_CONFIG, SHEP_DATA, SHEP_STATE and one variable per
-// kind (SHEP_TASKS, SHEP_SETTINGS, SHEP_ARTIFACTS, ...), each the new path once that machine's data moved, else its
+// Shell (any machine, old or new, run over herdr-core): sets ORCH_CONFIG, ORCH_DATA, ORCH_STATE and one variable per
+// kind (ORCH_TASKS, ORCH_SETTINGS, ORCH_ARTIFACTS, ...), each the new path once that machine's data moved, else its
 // old one. Put it first in a `sh -c` script.
 export const SH = [
-  'if [ -n "${SHEPHERDR_HOME:-}" ]; then SHEP_CONFIG="$SHEPHERDR_HOME/config"; SHEP_DATA="$SHEPHERDR_HOME/data"; '
-    + 'SHEP_STATE="$SHEPHERDR_HOME/state"; else SHEP_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/shepherdr"; '
-    + 'SHEP_DATA="${XDG_DATA_HOME:-$HOME/.local/share}/shepherdr"; SHEP_STATE="${XDG_STATE_HOME:-$HOME/.local/state}/shepherdr"; fi',
-  `if [ "$(cat "$SHEP_DATA/LAYOUT" 2>/dev/null | cut -c1)" = "${LAYOUT}" ] && [ ! -e "$HOME/${LEGACY}/${ROLLBACK}" ]; then`,
-  Object.entries(KINDS).map(([k, [, b, rel]]) => `${shVar(k)}="$SHEP_${b.toUpperCase()}/${rel}";`).join(" "),
+  'if [ -n "${HERDR_ORCH_HOME:-}" ]; then ORCH_CONFIG="$HERDR_ORCH_HOME/config"; ORCH_DATA="$HERDR_ORCH_HOME/data"; '
+    + 'ORCH_STATE="$HERDR_ORCH_HOME/state"; else ORCH_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/herdr-orchestrator"; '
+    + 'ORCH_DATA="${XDG_DATA_HOME:-$HOME/.local/share}/herdr-orchestrator"; ORCH_STATE="${XDG_STATE_HOME:-$HOME/.local/state}/herdr-orchestrator"; fi',
+  `if [ "$(cat "$ORCH_DATA/LAYOUT" 2>/dev/null | cut -c1)" = "${LAYOUT}" ] && [ ! -e "$HOME/${LEGACY}/${ROLLBACK}" ]; then`,
+  Object.entries(KINDS).map(([k, [, b, rel]]) => `${shVar(k)}="$ORCH_${b.toUpperCase()}/${rel}";`).join(" "),
   "else",
   Object.entries(KINDS).map(([k, [old]]) => `${shVar(k)}="$HOME/${old}";`).join(" "),
   "fi",
@@ -96,11 +96,11 @@ export const PY = `
 def SHEP(rel, _t=${pyTable}):
     H, E = os.path.expanduser("~"), os.environ
     a = lambda v: E.get(v) if (E.get(v) or "").startswith("/") else None
-    one = a("SHEPHERDR_HOME")
+    one = a("HERDR_ORCH_HOME")
     R = dict((k, os.path.join(one, k)) for k in ("config", "data", "state")) if one else {
-        "config": os.path.join(a("XDG_CONFIG_HOME") or os.path.join(H, ".config"), "shepherdr"),
-        "data": os.path.join(a("XDG_DATA_HOME") or os.path.join(H, ".local", "share"), "shepherdr"),
-        "state": os.path.join(a("XDG_STATE_HOME") or os.path.join(H, ".local", "state"), "shepherdr")}
+        "config": os.path.join(a("XDG_CONFIG_HOME") or os.path.join(H, ".config"), "herdr-orchestrator"),
+        "data": os.path.join(a("XDG_DATA_HOME") or os.path.join(H, ".local", "share"), "herdr-orchestrator"),
+        "state": os.path.join(a("XDG_STATE_HOME") or os.path.join(H, ".local", "state"), "herdr-orchestrator")}
     try:
         with open(os.path.join(R["data"], "LAYOUT")) as f:
             on = int((f.read().split() or ["0"])[0]) >= ${LAYOUT} and not os.path.lexists(os.path.join(H, "${LEGACY}", "${ROLLBACK}"))
@@ -114,5 +114,5 @@ def SHEP(rel, _t=${pyTable}):
 `;
 
 /** A script that prints this machine's paths as JSON, for callers with no environment of their own (the window). */
-export const SH_PRINT = SH + 'printf \'{"home":"%s","config":"%s","data":"%s","state":"%s","on":%s}\\n\' "$HOME" "$SHEP_CONFIG" "$SHEP_DATA" "$SHEP_STATE" '
-  + `"$( [ "$SHEP_TASKS" = "$SHEP_DATA/tasks" ] && echo true || echo false )"`;
+export const SH_PRINT = SH + 'printf \'{"home":"%s","config":"%s","data":"%s","state":"%s","on":%s}\\n\' "$HOME" "$ORCH_CONFIG" "$ORCH_DATA" "$ORCH_STATE" '
+  + `"$( [ "$ORCH_TASKS" = "$ORCH_DATA/tasks" ] && echo true || echo false )"`;

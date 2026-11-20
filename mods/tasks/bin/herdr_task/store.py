@@ -54,20 +54,20 @@ def slug_of(folder):
 
 # ---- a repo's stable id (SHEP-141) ------------------------------------------------------------
 # A repo's tasks are kept by its folder's name (the slug), so renaming or moving the folder would lose them. Each
-# repo gets an id of its own in its .git/config (`git config --local shepherdr.id`: never committed, shared by its
+# repo gets an id of its own in its .git/config (`git config --local herdr-orchestrator.id`: never committed, shared by its
 # worktrees, moved with it), recorded in its task list as "project_id": a folder with no list of its own finds the
 # list whose repo it is, when that list's folder is gone, and goes on with it (same slug, so its tasks' keys stay).
 
 def project_id(folder, make=False):
     """The repo's id (None outside git); make: give it one when it has none."""
-    ok, out, _ = git(folder, "config", "--local", "--get", "shepherdr.id")
+    ok, out, _ = git(folder, "config", "--local", "--get", "herdr-orchestrator.id")
     if ok and out.strip():
         return out.strip()
     if not make:
         return None
     import uuid
     new = str(uuid.uuid4())
-    return new if git(folder, "config", "--local", "shepherdr.id", new)[0] else None
+    return new if git(folder, "config", "--local", "herdr-orchestrator.id", new)[0] else None
 
 
 def moved_list(folder):

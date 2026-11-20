@@ -40,7 +40,7 @@ const CLI = () => `${appHome()}/mods/tasks/bin/herdr-task`;
 const DONE_SHOWN = 5; // Done rows a group shows before "Show N more"
 // Task ids in monospace, small and dim at the start of a row's second line (Herdr ships JetBrains Mono).
 const ID_FONT = "JetBrains Mono", ID_SIZE = TEXT.id;
-// Every list in ~/.local/share/shepherdr/tasks on a machine is read with READ_LISTS and kept by taskLists (one
+// Every list in ~/.local/share/herdr-orchestrator/tasks on a machine is read with READ_LISTS and kept by taskLists (one
 // rule with herdr-task's: tasklists.js).
 // Pinned tasks, as Pinned spaces (mods/spaces-chat): a view choice, never a change to the task.
 // Shared "tasks.pinned" = ["<machine, empty here>:<folder>#<id>"] (shared.json: survives
@@ -140,7 +140,7 @@ export default class Tasks extends View {
         cx.notify();
       }
     });
-    // This computer's lists, read again whenever ~/.local/share/shepherdr/tasks changes; every other machine's
+    // This computer's lists, read again whenever ~/.local/share/herdr-orchestrator/tasks changes; every other machine's
     // (their files can't be watched) now and then.
     cx.spawn(async (cx) => this.load(cx, null));
     this.watch(cx);
@@ -152,7 +152,7 @@ export default class Tasks extends View {
     cx.timer.every(60000, (cx) => cx.notify());
   }
 
-  // ~/.local/share/shepherdr/tasks here changes: read again. One watch for the panel's life.
+  // ~/.local/share/herdr-orchestrator/tasks here changes: read again. One watch for the panel's life.
   watch(cx) {
     if (this.watching) return;
     this.watching = true;
@@ -803,7 +803,7 @@ export default class Tasks extends View {
       if (!slug || this.prefixes.has(at) || this.listOf(slug, m)) continue;
       this.prefixes.set(at, null);
       cx.spawn(async (cx) => {
-        const text = m ? (await exec("sh", ["-c", SH + 'cat "$SHEP_TASKS/$1.json"', "sh", slug], { on: m }).catch(() => null))?.stdout ?? null
+        const text = m ? (await exec("sh", ["-c", SH + 'cat "$ORCH_TASKS/$1.json"', "sh", slug], { on: m }).catch(() => null))?.stdout ?? null
           : await readTextFile(`${dirs().tasks}/${slug}.json`).catch(() => null);
         let d = null;
         try { d = JSON.parse(text || "null"); } catch {}

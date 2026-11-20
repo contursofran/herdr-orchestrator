@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 
 const dir = mkdtempSync(join(tmpdir(), "glance-"));
-process.env.SHEPHERDR_DATA = dir;
+process.env.HERDR_ORCH_DATA = dir;
 const { Push, alertsOf } = await import("./push.ts");
 const { GlanceFeed, glanceOf, buttonChoices, openUrlOk, CALM_MS, NATIVE_GRACE_MS } = await import("./glance.ts");
 const { Live } = await import("./live.ts");
@@ -313,11 +313,11 @@ test("open: only a Shepherdr alert link", () => {
 
 /* ---------- the gate ---------- */
 
-test("the glance feed is checked as a write: origin and x-shepherdr from the tailnet", () => {
-  const g = { owner: "me@example.test", dns: "box.tailnet.example", port: 7788, token: "t" };
-  const req = (h: Record<string, string>) => new Request("http://127.0.0.1:7788/api/glance?stream=1&native=1", { headers: { host: g.dns, "tailscale-user-login": g.owner, ...h } });
+test("the glance feed is checked as a write: origin and x-herdr-orch from the tailnet", () => {
+  const g = { owner: "me@example.test", dns: "box.tailnet.example", port: 7789, token: "t" };
+  const req = (h: Record<string, string>) => new Request("http://127.0.0.1:7789/api/glance?stream=1&native=1", { headers: { host: g.dns, "tailscale-user-login": g.owner, ...h } });
   expect(gate(req({}), g, false, true, true)).toMatchObject({ ok: false, why: "wrong origin" });
-  expect(gate(req({ origin: `https://${g.dns}` }), g, false, true, true)).toMatchObject({ ok: false, why: "missing x-shepherdr" });
-  expect(gate(req({ origin: `https://${g.dns}`, "x-shepherdr": "1" }), g, false, true, true)).toMatchObject({ ok: true, via: "tailnet" });
-  expect(gate(req({ origin: `https://${g.dns}`, "x-shepherdr": "1", "tailscale-user-login": "other@example.test" }), g, false, true, true)).toMatchObject({ ok: false });
+  expect(gate(req({ origin: `https://${g.dns}` }), g, false, true, true)).toMatchObject({ ok: false, why: "missing x-herdr-orch" });
+  expect(gate(req({ origin: `https://${g.dns}`, "x-herdr-orch": "1" }), g, false, true, true)).toMatchObject({ ok: true, via: "tailnet" });
+  expect(gate(req({ origin: `https://${g.dns}`, "x-herdr-orch": "1", "tailscale-user-login": "other@example.test" }), g, false, true, true)).toMatchObject({ ok: false });
 });

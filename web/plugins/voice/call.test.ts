@@ -9,7 +9,7 @@ const doc = { visibilityState: 'visible', addEventListener: (e: string, f: () =>
 const fire = (e: string) => (listeners[e] ?? []).forEach((f) => f())
 Object.assign(globalThis, {
   document: doc,
-  location: { href: 'https://box.example.ts.net/shepherdr/' },
+  location: { href: 'https://box.example.ts.net/herdr-orchestrator/' },
   addEventListener: doc.addEventListener,
 })
 
@@ -197,7 +197,7 @@ test('the socket drops: the call goes back to it quietly, says Reconnecting mean
   await new Promise((r) => setTimeout(r, 300))
   const again = FakeSocket.all.at(-1)!
   expect(again).not.toBe(ws)
-  expect(again.url).toBe('wss://box.example.ts.net/shepherdr/api/voice?chat=p%3Ah1&resume=call-1')
+  expect(again.url).toBe('wss://box.example.ts.net/herdr-orchestrator/api/voice?chat=p%3Ah1&resume=call-1')
   again.open()
   again.say({ type: 'resumed', id: 'call-1' })
   expect(call.callPhase()).toBe('listening')
@@ -331,7 +331,7 @@ test('SHEP-251: handed on to Shepherdr Wake: the page lets go quietly (no end, n
   // Take it back: the same call by its id
   const back = call.startCall('p:h1', (m) => errors.push(m), undefined, undefined, (why) => endedWhy.push(why), null, (id) => handed.push(id), 'call-9')
   const again = FakeSocket.all.at(-1)!
-  expect(again.url).toBe('wss://box.example.ts.net/shepherdr/api/voice?chat=p%3Ah1&resume=call-9')
+  expect(again.url).toBe('wss://box.example.ts.net/herdr-orchestrator/api/voice?chat=p%3Ah1&resume=call-9')
   again.open()
   again.say({ type: 'resumed', id: 'call-9' })
   await back

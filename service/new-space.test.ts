@@ -19,11 +19,11 @@ let SP: typeof import("./spaces.ts");
 const was = process.env.HERDR_APP_HOME;
 beforeAll(async () => {
   process.env.HERDR_APP_HOME = APP;
-  process.env.SHEPHERDR_HERDR_APP = join(BIN, "herdr-app");
+  process.env.HERDR_ORCH_HERDR_APP = join(BIN, "herdr-app");
   SP = await import("./spaces.ts");
 });
 afterAll(() => {
-  delete process.env.SHEPHERDR_HERDR_APP;
+  delete process.env.HERDR_ORCH_HERDR_APP;
   if (was === undefined) delete process.env.HERDR_APP_HOME; else process.env.HERDR_APP_HOME = was;
 });
 

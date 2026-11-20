@@ -2,7 +2,7 @@
 // Herdr's other menus (new-menu-tasks), made for any number of agents with any number of models:
 // a tab per installed agent (only when more than one), a search over every agent's models (the
 // keys go to it at once; ↑/↓ and Enter pick, Esc closes), the agent's pinned and recent models on
-// top (core/agents.js modelSections) with a star to pin one (~/.config/shepherdr/model-picks.json, the web's
+// top (core/agents.js modelSections) with a star to pin one (~/.config/herdr-orchestrator/model-picks.json, the web's
 // too), one word no model has offered as an id to start on; then Reasoning (that model's levels),
 // Fast (where the model has it), Permissions (a small sub-menu), and, only when a choice differs
 // from what runs now, one Restart button, said first to start a new conversation when it switches

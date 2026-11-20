@@ -7,7 +7,7 @@ import vm from 'node:vm'
 import { alreadyHandled } from '@shared/alerts.ts'
 
 const SRC = readFileSync(join(import.meta.dir, '../public/sw.js'), 'utf8')
-const SCOPE = 'https://box.example.test/shepherdr/'
+const SCOPE = 'https://box.example.test/herdr-orchestrator/'
 
 type Shown = { title: string; options: any }
 function worker(answer: (body: any) => { status: number; body: unknown }, opts: { max?: number; reply?: boolean } = {}) {
@@ -63,7 +63,7 @@ test("Accept on a ready task's alert accepts it as the Tasks panel does, and say
   await w.push(ready)
   expect(w.shown[0].options.actions).toEqual([{ action: 'accept', title: 'Accept' }])
   await w.click('accept')
-  expect(w.posted).toEqual([{ url: `${SCOPE}api/action`, headers: { 'content-type': 'application/json', 'x-shepherdr': '1' }, body: { type: 'accept', task: 'HERD-4' } }])
+  expect(w.posted).toEqual([{ url: `${SCOPE}api/action`, headers: { 'content-type': 'application/json', 'x-herdr-orch': '1' }, body: { type: 'accept', task: 'HERD-4' } }])
   expect(w.shown.at(-1)!.title).toBe('Accepted ✓')
   expect(w.shown.at(-1)!.options).toMatchObject({ tag: 'HERD-4', silent: true })
   // gone by itself a moment later

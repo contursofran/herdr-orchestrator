@@ -1,6 +1,6 @@
 """herdr-artifact open and link (SHEP-99): an agent shows the person an artifact wherever they are. With no Herdr window
 on the machine (a VM) open never crashes: it asks the person's web app page through the core label herdr.show and
-prints the artifact's link, which the web app's host wrote in herdr-core's document shepherdr.web. Runs the real
+prints the artifact's link, which the web app's host wrote in herdr-core's document herdr-orchestrator.web. Runs the real
 command in a throwaway home with a fake hc first on PATH and no herdr-app; nothing is installed."""
 import home_guard  # noqa: F401  (first: every test on a throwaway home, never the real one)
 import json
@@ -13,9 +13,9 @@ import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOOL = os.path.join(ROOT, "mods", "artifacts", "bin", "herdr-artifact")
-LINK = "https://hub.example.test/shepherdr/"
+LINK = "https://hub.example.test/herdr-orchestrator/"
 
-# hc as herdr-artifact uses it: connect answers hello and doc.get (shepherdr.web: $FAKE_WEB, JSON, or unset);
+# hc as herdr-artifact uses it: connect answers hello and doc.get (herdr-orchestrator.web: $FAKE_WEB, JSON, or unset);
 # label is logged to $FAKE_LOG; get knows no labels.
 FAKE_HC = r'''#!/usr/bin/env python3
 import json, os, sys
@@ -25,7 +25,7 @@ if cmd == ["connect"]:
         m = json.loads(line)
         if m["method"] == "hello":
             r = {"generation": 1, "framed": False, "methods": ["doc.get"]}
-        elif m["method"] == "doc.get" and m["params"]["name"] == "shepherdr.web" and os.environ.get("FAKE_WEB"):
+        elif m["method"] == "doc.get" and m["params"]["name"] == "herdr-orchestrator.web" and os.environ.get("FAKE_WEB"):
             r = {"value": json.loads(os.environ["FAKE_WEB"]), "version": 3}
         else:
             r = {"value": None, "version": 0}
@@ -105,11 +105,11 @@ class Show(unittest.TestCase):
         self.assertEqual(self.labels(), [])
 
     def test_no_host_word_then_this_machines_own_service(self):
-        os.makedirs(os.path.join(self.home, ".herdr", "shepherdr"))
-        with open(os.path.join(self.home, ".herdr", "shepherdr", "web.json"), "w") as f:
-            json.dump({"on": True, "link": "https://laptop.example.test/shepherdr/"}, f)
+        os.makedirs(os.path.join(self.home, ".herdr", "herdr-orchestrator"))
+        with open(os.path.join(self.home, ".herdr", "herdr-orchestrator", "web.json"), "w") as f:
+            json.dump({"on": True, "link": "https://laptop.example.test/herdr-orchestrator/"}, f)
         r = self.run_tool("link", self.aid)
-        self.assertEqual(r.stdout, f"https://laptop.example.test/shepherdr/?artifact={self.aid}\n")
+        self.assertEqual(r.stdout, f"https://laptop.example.test/herdr-orchestrator/?artifact={self.aid}\n")
 
     def test_no_link_known_still_asks_the_screen(self):
         r = self.run_tool("open", self.aid)

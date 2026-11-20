@@ -15,11 +15,11 @@ let act: typeof import("./actions.ts").act;
 const was = process.env.HERDR_APP_HOME;
 beforeAll(async () => {
   process.env.HERDR_APP_HOME = APP;
-  process.env.SHEPHERDR_HERDR_APP = join(BIN, "herdr-app");   // never a real window's, even on a machine with one
+  process.env.HERDR_ORCH_HERDR_APP = join(BIN, "herdr-app");   // never a real window's, even on a machine with one
   ({ act } = await import("./actions.ts"));
 });
 afterAll(() => {
-  delete process.env.SHEPHERDR_HERDR_APP;
+  delete process.env.HERDR_ORCH_HERDR_APP;
   if (was === undefined) delete process.env.HERDR_APP_HOME; else process.env.HERDR_APP_HOME = was;
 });
 

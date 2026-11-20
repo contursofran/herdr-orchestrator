@@ -6,7 +6,7 @@ snapshot (~720 KB) on every change, about 12.7 MB a minute: far too much for a p
 out only when what the person sees changes, and calmly. Added in SHEP-246; the code is `service/glance.ts`.
 
 All three endpoints go through the web app's gate like the page's own writes: from the tailnet, the machine owner's
-login, on the machine's tailnet name, with `Origin: https://<name>[:port]` and `x-shepherdr: 1`. Only the machine that
+login, on the machine's tailnet name, with `Origin: https://<name>[:port]` and `x-herdr-orch: 1`. Only the machine that
 serves the web app answers (another one redirects there).
 
 ## `GET /api/glance`

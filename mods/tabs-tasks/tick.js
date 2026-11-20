@@ -23,7 +23,7 @@ async function tick() {
     const ensure = rounds++ % 4 === 0;
     await exec(CLI(), ["tick", "--json"]).catch(() => {});
     if (ensure) await exec(CLI(), ["scheduler", "--ensure", "--json"]).catch(() => {});
-    const r = await exec("sh", ["-c", SH + 'ls "$SHEP_TASKS/.remote" 2>/dev/null; true']).catch(() => null);
+    const r = await exec("sh", ["-c", SH + 'ls "$ORCH_TASKS/.remote" 2>/dev/null; true']).catch(() => null);
     // And each machine running an Assistant: its tick brings it back after a crash (herdr-task revive.py).
     const assisted = terminals().filter((k) => k.state === "live" && k.address.includes("/") && (k.labels?.["herdr.role"] === "coordinator" || k.labels?.["herdr.resume"]))
       .map((k) => k.address.split("/")[0]);

@@ -5,7 +5,7 @@
 import { expect, test } from "bun:test";
 import { SecretsHome } from "./secrets.ts";
 
-const SECRETS = "shepherdr.secrets", HOST = "shepherdr.host";
+const SECRETS = "herdr-orchestrator.secrets", HOST = "herdr-orchestrator.host";
 
 function world(vaults: Record<string, { count: number; remote: boolean } | null>) {
   const docs: Record<string, Map<string, { value: any; version: number }>> = { S: new Map(), L: new Map(), V: new Map() };

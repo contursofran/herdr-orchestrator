@@ -362,7 +362,7 @@ function NoSpaces() {
   )
 }
 
-/** a pane header's quiet line: the folder, which gives way from its start so its own name stays ("…/dev/shepherdr") */
+/** a pane header's quiet line: the folder, which gives way from its start so its own name stays ("…/dev/herdr-orchestrator") */
 function PaneWhere({ where }: { where: string }) {
   return (
     <span className="flex min-w-0">

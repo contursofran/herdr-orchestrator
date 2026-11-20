@@ -36,9 +36,9 @@ const HOME = process.env.HOME;
 // Shepherdr's state folder once this machine's data moved there (herdr_task/layout.py), else the old ~/.herdr/browser
 const ROOT = (() => {
   const env = process.env, abs = (p) => (p && p.startsWith("/") ? p : null);
-  const one = abs(env.SHEPHERDR_HOME);
-  const data = one ? `${one}/data` : `${abs(env.XDG_DATA_HOME) ?? `${HOME}/.local/share`}/shepherdr`;
-  const state = one ? `${one}/state` : `${abs(env.XDG_STATE_HOME) ?? `${HOME}/.local/state`}/shepherdr`;
+  const one = abs(env.HERDR_ORCH_HOME);
+  const data = one ? `${one}/data` : `${abs(env.XDG_DATA_HOME) ?? `${HOME}/.local/share`}/herdr-orchestrator`;
+  const state = one ? `${one}/state` : `${abs(env.XDG_STATE_HOME) ?? `${HOME}/.local/state`}/herdr-orchestrator`;
   let layout = "";
   try { layout = fs.readFileSync(`${data}/LAYOUT`, "utf8"); } catch {}
   return layout.trim().startsWith("2") && !fs.existsSync(path.join(HOME, ".herdr", ".layout-rollback")) ? `${state}/browser` : path.join(HOME, ".herdr", "browser");

@@ -1,6 +1,6 @@
 // This machine's Shepherdr service, found and checked before the window talks to it (GitHub #635). The service writes
-// where it listens and a fresh id each start into its service.json (~/.local/state/shepherdr/service; service/main.ts); its health answers
-// that id to this machine's callers. So the port is never written in here (SHEPHERDR_PORT, `install --port` move it),
+// where it listens and a fresh id each start into its service.json (~/.local/state/herdr-orchestrator/service; service/main.ts); its health answers
+// that id to this machine's callers. So the port is never written in here (HERDR_ORCH_PORT, `install --port` move it),
 // and another app on that port (the service didn't start) never gets the token or the shared state.
 // Shared: the source is lib/local.js; bin/sync-shared copies it into each mod in lib/COPIES.
 // Edit lib/local.js, never a mod's copy, then run bin/sync-shared.

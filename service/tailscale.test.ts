@@ -17,9 +17,9 @@ describe("the web app's tailnet HTTPS port", () => {
     }
   });
   test("links carry the port only when it isn't 443", () => {
-    expect(webLink("box.tailnet.example")).toBe("https://box.tailnet.example/shepherdr/");
-    expect(webLink("box.tailnet.example", 443)).toBe("https://box.tailnet.example/shepherdr/");
-    expect(webLink("box.tailnet.example", 8443)).toBe("https://box.tailnet.example:8443/shepherdr/");
+    expect(webLink("box.tailnet.example")).toBe("https://box.tailnet.example/herdr-orchestrator/");
+    expect(webLink("box.tailnet.example", 443)).toBe("https://box.tailnet.example/herdr-orchestrator/");
+    expect(webLink("box.tailnet.example", 8443)).toBe("https://box.tailnet.example:8443/herdr-orchestrator/");
     expect(webOrigin("box.tailnet.example", 8443)).toBe("https://box.tailnet.example:8443");
   });
 });

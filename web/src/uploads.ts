@@ -32,7 +32,7 @@ export async function postFile(chat: string, file: Blob & { name?: string }, f: 
   const body = new FormData()
   body.append('chat', chat)
   body.append('file', file, file.name ?? 'file')
-  const r = await f('api/upload', { method: 'POST', body, headers: { 'x-shepherdr': '1' }, signal: AbortSignal.timeout(uploadTimeout(file.size)) })
+  const r = await f('api/upload', { method: 'POST', body, headers: { 'x-herdr-orch': '1' }, signal: AbortSignal.timeout(uploadTimeout(file.size)) })
   const text = await r.text()
   let j: { path?: string; error?: string } = {}
   try {

@@ -4,7 +4,7 @@ A layout and a set of tools for the [Herdr app](https://herdr.dev) that coordina
 
 herdr-orchestrator starts from [Shepherdr](https://github.com/eliasstravik/shepherdr) 3.1.44 and becomes its own tool. It does not follow Shepherdr's updates.
 
-> **Status: early work (0.1.0).** The CLI (`herdr-orchestrator`), layout (`layouts/herdr-orchestrator.json`) and visible names are now `herdr-orchestrator`; data folders, env vars and mod names keep `shepherdr` until the remaining rename issues are done.
+> **Status: early work (0.1.0).** The CLI (`herdr-orchestrator`), layout (`layouts/herdr-orchestrator.json`) and visible names are now `herdr-orchestrator`; mod names still use `shepherdr` until the last rename issue is done.
 
 ## What it keeps from Shepherdr
 
@@ -32,7 +32,7 @@ The work is in the epic [#11](https://github.com/contursofran/herdr-orchestrator
 
 ## Install (for now)
 
-Data folders, mod folders and service units still use `shepherdr` for now. Do not install it on a machine where Shepherdr is already installed: both use the same mod folders, links and hooks. Issue #5 solves this.
+Do not install it on a machine where Shepherdr is already installed: both use the same mod folders, links and hooks. Issue #5 solves this.
 
 ```bash
 git clone https://github.com/contursofran/herdr-orchestrator

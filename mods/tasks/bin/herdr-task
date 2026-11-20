@@ -3,7 +3,7 @@
 
 A task is a name and a prompt that belongs to one folder: the repo root when the folder is in
 git (a linked worktree counts as its main repo), else the folder itself. Each folder's tasks are
-one JSON file on the machine where the folder lives, ~/.local/share/shepherdr/tasks/<slug>.json, never inside a
+one JSON file on the machine where the folder lives, ~/.local/share/herdr-orchestrator/tasks/<slug>.json, never inside a
 repo. Every write takes the file's lock and replaces it atomically, so the Tasks panel, agents and
 coordinators never clash.
 

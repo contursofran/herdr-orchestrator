@@ -1,7 +1,7 @@
 // A task's Browser (HERD-57, HERD-69): its agent-browser session, watched live in the Tasks panel's
 // task view, a child of the view's body stack beside Files, Changes and Pull request (taskwhere.js).
 // Each task has one session, driven with bin/herdr-browser (session herdr-<name>, profile
-// ~/.local/state/shepherdr/browser/<name>, <name> its herdr.task key made safe).
+// ~/.local/state/herdr-orchestrator/browser/<name>, <name> its herdr.task key made safe).
 //
 // What it shows is a terminal: bin/herdr-browser-view draws the page's live frames in it (Kitty
 // graphics) and sends the person's clicks, scrolls and keys to the same browser (taking it over:
@@ -10,7 +10,7 @@
 // and, while a viewer runs, a layout terminal block ("-view") showing it, written into the layout's
 // file as the task terminal is (mods/chat/panel.js pointTerm). The viewer starts when the Browser
 // view shows a task and is stopped when it hides or another task shows; it has no tab or pane.
-// This copy keeps ~/.local/state/shepherdr/browser/<name>.view fresh while it wants the viewer: a viewer whose
+// This copy keeps ~/.local/state/herdr-orchestrator/browser/<name>.view fresh while it wants the viewer: a viewer whose
 // file goes stale (this copy reloaded or gone) ends by itself.
 import { View, div } from "gpui-kit";
 import { v_flex } from "gpui-base";

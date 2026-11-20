@@ -1,14 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import { gate, localCaller, type Gate } from "./auth.ts";
 
-const g: Gate = { owner: "me@example.com", dns: "box.tailnet.example", port: 7788, token: "secret-token" };
+const g: Gate = { owner: "me@example.com", dns: "box.tailnet.example", port: 7789, token: "secret-token" };
 const tailnet = (init: { method?: string; headers?: Record<string, string> } = {}) =>
   new Request("http://box.tailnet.example/api/me", {
     method: init.method ?? "GET",
     headers: { host: "box.tailnet.example", "tailscale-user-login": "me@example.com", ...init.headers },
   });
 const local = (headers: Record<string, string> = {}) =>
-  new Request("http://127.0.0.1:7788/api/me", { headers: { host: "127.0.0.1:7788", ...headers } });
+  new Request("http://127.0.0.1:7789/api/me", { headers: { host: "127.0.0.1:7789", ...headers } });
 
 describe("through tailscale serve", () => {
   test("the owner reads", () => expect(gate(tailnet(), g, false, true)).toMatchObject({ ok: true, via: "tailnet" }));
@@ -21,11 +21,11 @@ describe("through tailscale serve", () => {
   test("without Tailscale running nobody gets in", () =>
     expect(gate(tailnet(), { ...g, owner: null }, false, true)).toMatchObject({ ok: false, status: 503 }));
   test("a write needs the page's own origin and the header", () => {
-    const ok = tailnet({ method: "POST", headers: { origin: "https://box.tailnet.example", "x-shepherdr": "1" } });
+    const ok = tailnet({ method: "POST", headers: { origin: "https://box.tailnet.example", "x-herdr-orch": "1" } });
     expect(gate(ok, g, false, true)).toMatchObject({ ok: true });
     const noHeader = tailnet({ method: "POST", headers: { origin: "https://box.tailnet.example" } });
     expect(gate(noHeader, g, false, true)).toMatchObject({ ok: false, status: 403 });
-    const otherOrigin = tailnet({ method: "POST", headers: { origin: "https://evil.example", "x-shepherdr": "1" } });
+    const otherOrigin = tailnet({ method: "POST", headers: { origin: "https://evil.example", "x-herdr-orch": "1" } });
     expect(gate(otherOrigin, g, false, true)).toMatchObject({ ok: false, status: 403 });
   });
   test("a socket from another site is refused", () => {
@@ -39,8 +39,8 @@ describe("through tailscale serve", () => {
     expect(gate(at(), g2, false, true)).toMatchObject({ ok: true, via: "tailnet" });
     expect(gate(tailnet(), g2, false, true)).toMatchObject({ ok: false, status: 421 });
     expect(gate(tailnet({ headers: { host: "box.tailnet.example:443" } }), g2, false, true)).toMatchObject({ ok: false, status: 421 });
-    expect(gate(at("POST", { origin: "https://box.tailnet.example:8443", "x-shepherdr": "1" }), g2, false, true)).toMatchObject({ ok: true });
-    expect(gate(at("POST", { origin: "https://box.tailnet.example", "x-shepherdr": "1" }), g2, false, true)).toMatchObject({ ok: false, status: 403 });
+    expect(gate(at("POST", { origin: "https://box.tailnet.example:8443", "x-herdr-orch": "1" }), g2, false, true)).toMatchObject({ ok: true });
+    expect(gate(at("POST", { origin: "https://box.tailnet.example", "x-herdr-orch": "1" }), g2, false, true)).toMatchObject({ ok: false, status: 403 });
     expect(gate(at("GET", { origin: "https://box.tailnet.example:8443" }), g2, true, true)).toMatchObject({ ok: true });
     expect(gate(at("GET", { origin: "https://box.tailnet.example:9443" }), g2, true, true)).toMatchObject({ ok: false, status: 403 });
   });
@@ -66,7 +66,7 @@ describe("through tailscale serve", () => {
     test("the owner's cross-site link opens the entry page", () => {
       expect(gate(page("/", nav), g, false, true)).toMatchObject({ ok: true, via: "tailnet" });
       expect(gate(page("/?task=abc", nav), g, false, true)).toMatchObject({ ok: true, via: "tailnet" });
-      expect(gate(page("/shepherdr/", nav), g, false, true)).toMatchObject({ ok: true, via: "tailnet" });
+      expect(gate(page("/herdr-orchestrator/", nav), g, false, true)).toMatchObject({ ok: true, via: "tailnet" });
     });
     test("the link still needs the owner, the host and Tailscale's connection", () => {
       expect(gate(page("/", { ...nav, "tailscale-user-login": "other@example.com" }), g, false, true)).toMatchObject({ ok: false, status: 403 });
@@ -75,7 +75,7 @@ describe("through tailscale serve", () => {
     });
     test("a cross-site API read is still refused, even as a navigation", () => {
       expect(gate(page("/api/me", nav), g, false, true)).toMatchObject({ ok: false, status: 403 });
-      expect(gate(page("/shepherdr/api/me", nav), g, false, true)).toMatchObject({ ok: false, status: 403 });
+      expect(gate(page("/herdr-orchestrator/api/me", nav), g, false, true)).toMatchObject({ ok: false, status: 403 });
     });
     test("a cross-site page that isn't a top-level navigation is refused", () => {
       const iframe = { ...nav, "sec-fetch-dest": "iframe" };
@@ -86,9 +86,9 @@ describe("through tailscale serve", () => {
       expect(gate(page("/", fetched), g, false, true)).toMatchObject({ ok: false, status: 403 });
     });
     test("a cross-site write is refused, even when it is a form's navigation", () => {
-      expect(gate(page("/", { ...nav, origin: "https://evil.example", "x-shepherdr": "1" }, "POST"), g, false, true)).toMatchObject({ ok: false, status: 403 });
-      expect(gate(page("/", { ...nav, origin: "https://box.tailnet.example", "x-shepherdr": "1" }, "POST"), g, false, true)).toMatchObject({ ok: false, status: 403 });
-      expect(gate(page("/", { ...nav, origin: "https://box.tailnet.example", "x-shepherdr": "1" }, "PUT"), g, false, true)).toMatchObject({ ok: false, status: 403 });
+      expect(gate(page("/", { ...nav, origin: "https://evil.example", "x-herdr-orch": "1" }, "POST"), g, false, true)).toMatchObject({ ok: false, status: 403 });
+      expect(gate(page("/", { ...nav, origin: "https://box.tailnet.example", "x-herdr-orch": "1" }, "POST"), g, false, true)).toMatchObject({ ok: false, status: 403 });
+      expect(gate(page("/", { ...nav, origin: "https://box.tailnet.example", "x-herdr-orch": "1" }, "PUT"), g, false, true)).toMatchObject({ ok: false, status: 403 });
     });
     test("a cross-site WebSocket is refused, even when it looks like a navigation", () => {
       expect(gate(page("/api/ws", nav), g, true, true)).toMatchObject({ ok: false, status: 403 });
@@ -102,7 +102,7 @@ describe("on this machine", () => {
   test("no token, no entry", () => expect(gate(local(), g)).toMatchObject({ ok: false, status: 401 }));
   test("a wrong token is refused", () => expect(gate(local({ authorization: "Bearer nope" }), g)).toMatchObject({ ok: false, status: 401 }));
   test("a browser page on 127.0.0.1 is refused even with the token", () =>
-    expect(gate(local({ authorization: "Bearer secret-token", origin: "http://127.0.0.1:7788" }), g)).toMatchObject({ ok: false }));
+    expect(gate(local({ authorization: "Bearer secret-token", origin: "http://127.0.0.1:7789" }), g)).toMatchObject({ ok: false }));
   test("another host name is refused", () =>
     expect(gate(new Request("http://x/api", { headers: { host: "evil.example", authorization: "Bearer secret-token" } }), g)).toMatchObject({ ok: false, status: 421 }));
 });
@@ -111,15 +111,15 @@ test("macOS: the caller's side of the exact connection, from netstat -anv (Tails
   const { darwinPids } = await import("./peer.ts");
   const text = [
     "Proto Recv-Q Send-Q  Local Address          Foreign Address        (state)          rxbytes      txbytes  rhiwat  shiwat          process:pid    state  options",
-    "tcp4       0      0  127.0.0.1.7788         127.0.0.1.56078        ESTABLISHED         4440          976  406272  146988              bun:87948  00102 00000004",
-    "tcp4       0      0  127.0.0.1.56078        127.0.0.1.7788         ESTABLISHED         2160         2116  407552  146988 io.tailscale.ipn:3083   00182 00000008",
-    "tcp4       0      0  127.0.0.1.56079        127.0.0.1.7788         TIME_WAIT           2160         2116  407552  146988 curl:4000   00182 00000008",
+    "tcp4       0      0  127.0.0.1.7789         127.0.0.1.56078        ESTABLISHED         4440          976  406272  146988              bun:87948  00102 00000004",
+    "tcp4       0      0  127.0.0.1.56078        127.0.0.1.7789         ESTABLISHED         2160         2116  407552  146988 io.tailscale.ipn:3083   00182 00000008",
+    "tcp4       0      0  127.0.0.1.56079        127.0.0.1.7789         TIME_WAIT           2160         2116  407552  146988 curl:4000   00182 00000008",
   ].join("\n");
-  expect(darwinPids(56078, 7788, text)).toEqual([3083]);
-  expect(darwinPids(56079, 7788, text)).toEqual([]);
+  expect(darwinPids(56078, 7789, text)).toEqual([3083]);
+  expect(darwinPids(56079, 7789, text)).toEqual([]);
   // a name made to look like a pid ("evil:1 x") still reads as its own pid, the last one netstat wrote
-  const forged = "tcp4       0      0  127.0.0.1.56080        127.0.0.1.7788         ESTABLISHED         2160         2116  407552  146988 evil:1 x:4242   00182 00000008 000000000eb4b4f3 00000080 04000800      2      0 000000";
-  expect(darwinPids(56080, 7788, forged)).toEqual([4242]);
+  const forged = "tcp4       0      0  127.0.0.1.56080        127.0.0.1.7789         ESTABLISHED         2160         2116  407552  146988 evil:1 x:4242   00182 00000008 000000000eb4b4f3 00000080 04000800      2      0 000000";
+  expect(darwinPids(56080, 7789, forged)).toEqual([4242]);
 });
 
 test("macOS: netstat giving no socket table is said in the refusal, not a bare 'not from Tailscale' (GitHub #777)", async () => {
@@ -131,10 +131,10 @@ test("macOS: netstat giving no socket table is said in the refusal, not a bare '
 });
 
 describe("health's id only to this machine's callers (GitHub #635)", () => {
-  test("the window on 127.0.0.1 by the service's port", () => expect(localCaller(local(), 7788)).toBe(true));
-  test("not through tailscale serve", () => expect(localCaller(tailnet(), 7788)).toBe(false));
+  test("the window on 127.0.0.1 by the service's port", () => expect(localCaller(local(), 7789)).toBe(true));
+  test("not through tailscale serve", () => expect(localCaller(tailnet(), 7789)).toBe(false));
   test("not a tagged device's request through tailscale serve (the machine's name, no login)", () =>
-    expect(localCaller(tailnet({ headers: { "tailscale-user-login": "" } }), 7788)).toBe(false));
-  test("not a browser page", () => expect(localCaller(local({ origin: "http://127.0.0.1:7788" }), 7788)).toBe(false));
+    expect(localCaller(tailnet({ headers: { "tailscale-user-login": "" } }), 7789)).toBe(false));
+  test("not a browser page", () => expect(localCaller(local({ origin: "http://127.0.0.1:7789" }), 7789)).toBe(false));
   test("not by another port", () => expect(localCaller(local(), 7790)).toBe(false));
 });

@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 
 const dir = mkdtempSync(join(tmpdir(), "push-topics-"));
-process.env.SHEPHERDR_DATA = dir;
+process.env.HERDR_ORCH_DATA = dir;
 const { Push, alertsOf, wants } = await import("./push.ts");
 
 // a real P-256 key per fake device, so each alert really encrypts
