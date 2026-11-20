@@ -44,7 +44,7 @@ export class Sync {
   /** A file on the host (its home), or null when there is none; throws when it can't be read now. */
   private async read(on: string, rel: string): Promise<string | null> {
     if (rel === REL) {
-      // the settings file wherever the host keeps it (its Shepherdr folders, or ~/.herdr on an older one)
+      // the settings file wherever the host keeps it (its herdr-orchestrator folders, or ~/.herdr on an older one)
       const r = await this.hub.call<{ code: number; stdout: string; stderr: string }>("machine.exec", { on, argv: ["sh", "-c", SH + '[ -e "$ORCH_SETTINGS" ] || exit 3; cat "$ORCH_SETTINGS"'], timeout: 20 }, 25_000);
       if (r.code === 3) return null;
       if (r.code !== 0) throw new Error("couldn't read the settings there");

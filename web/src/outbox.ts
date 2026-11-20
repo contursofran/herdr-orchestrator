@@ -14,7 +14,7 @@ export interface Outgoing {
   reply?: ReplyQuote & { id: string }
   /** when Send (or Retry) was tapped, by this screen's clock */
   at: number
-  /** Shepherdr 3: held on purpose (Ctrl+Enter, or a long press on Send): it goes once the agent stops working */
+  /** herdr-orchestrator 3: held on purpose (Ctrl+Enter, or a long press on Send): it goes once the agent stops working */
   hold?: boolean
   /** sending: on its way; sent: in (or waiting for the agent), until it comes back; failed: it didn't go through */
   state: 'sending' | 'sent' | 'failed'
@@ -75,7 +75,7 @@ const SLACK = 5000
 const sameFile = (a: string | undefined, b: string) => a === b || (!!a && a.split('/').pop() === b.split('/').pop())
 
 /** what this chat now shows of the pending ones. One that came back from the agent's log goes: by its id, or (from a
- *  machine on an older Shepherdr, or after its restart) by the very same message of yours: its words and files, new
+ *  machine on an older herdr-orchestrator, or after its restart) by the very same message of yours: its words and files, new
  *  since you sent it, and read after it went in. One the chat shows waiting for the agent stays, hidden behind it, so
  *  nothing blinks while it goes in. */
 export function settle(out: Outgoing[], chat: Chat, now = Date.now()): Outgoing[] {
@@ -275,8 +275,8 @@ export function reasonOf(e: unknown): string {
 }
 
 // .2: once, every screen drops what it kept under the old name (ones with pictures that never matched, SHEP-22)
-const STORE = 'shepherdr.outbox.2'
-const OLD = ['shepherdr.outbox']
+const STORE = 'herdr-orchestrator.outbox.2'
+const OLD = ['herdr-orchestrator.outbox']
 
 export function loadOutbox(): Outgoing[] {
   try {

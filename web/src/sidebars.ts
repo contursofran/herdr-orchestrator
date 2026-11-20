@@ -45,7 +45,7 @@ export function canDock(sb: Sidebars, width: number, panel = false) {
 /** opening the panel on a window narrower than this turns focus on, until it closes again */
 export const FOCUS_BELOW = 1600
 
-const KEY = 'shepherdr.sidebars'
+const KEY = 'herdr-orchestrator.sidebars'
 export const BASE: Sidebars = { left: LEFT.base, right: RIGHT.base, open: true, panel: PANEL.base, panelOpen: false, item: 'terminal', focus: false, focusAuto: false, wide: false }
 
 /** a width within its span and the room the window leaves; the span's min wins over a window too narrow */

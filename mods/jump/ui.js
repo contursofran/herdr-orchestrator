@@ -17,14 +17,14 @@ export const TEXT = { id: 11, label: 12, body: 13, title: 15 };
 export const RADIUS = { control: 6, card: 8, bubble: 12 };
 
 // Status colors -----------------------------------------------------------
-// Shepherdr's own, light and dark, the same as the task dots (dot.js uses these): red needs
+// herdr-orchestrator's own, light and dark, the same as the task dots (dot.js uses these): red needs
 // you (and alerts), green ready, amber working.
 const dark = () => settings()?.dark !== false;
 export const red = () => (dark() ? "#ff6369" : "#e5484d");
 export const green = () => (dark() ? "#3dd68c" : "#30a46c");
 export const amber = () => (dark() ? "#f5b544" : "#e2a336");
 // Text on a red, green or amber fill: white on light's deep fills, black on dark's bright ones
-// (Shepherdr's AttentionBadge).
+// (herdr-orchestrator's AttentionBadge).
 export const onStatus = () => (dark() ? "#000000" : "#ffffff");
 
 // Hover and pointer --------------------------------------------------------
@@ -108,7 +108,7 @@ export function segmented(id, options, value, onPick, { size = "sm", disabled = 
 }
 
 // Menu row -------------------------------------------------------------------
-// A popup menu's row, 32 tall (Shepherdr's MenuItem): a 16 icon (or its empty slot, so labels
+// A popup menu's row, 32 tall (herdr-orchestrator's MenuItem): a 16 icon (or its empty slot, so labels
 // line up), the label, a dim hint, and a check at the right when `check` is true (a choice
 // list; false keeps the check's slot). opts: { icon, hint, check, danger, disabled, onClick }.
 export function menuRow(id, label, { icon = null, hint = null, check = null, danger = false, disabled = false, onClick = null } = {}) {
@@ -127,7 +127,7 @@ export function menuRow(id, label, { icon = null, hint = null, check = null, dan
 }
 
 // Headings -----------------------------------------------------------------------
-// A small dim heading over a group (Shepherdr's Section): 12, medium, sentence case, never
+// A small dim heading over a group (herdr-orchestrator's Section): 12, medium, sentence case, never
 // uppercase. `right` (an element, e.g. a count) sits at the far right.
 export function heading(text, right = null) {
   const t = theme();
@@ -158,7 +158,7 @@ export function dialogFooter({ onCancel, primary, cancelLabel = "Cancel", note =
 }
 
 // Count badge ------------------------------------------------------------------------------
-// The count badge on Tasks, tabs and spaces, as Shepherdr's AttentionBadge: Needs you alone a red
+// The count badge on Tasks, tabs and spaces, as herdr-orchestrator's AttentionBadge: Needs you alone a red
 // dot, Ready alone a green one, both one oval split down the middle (red Needs you left, green
 // Ready right, a 1px line between in `line`, the color behind the badge). Always 16 tall, so a
 // row never jumps when the badge changes kind; each count stops at 9+. 11px digits are an even
@@ -176,10 +176,10 @@ export function countBadge(need, ready, line) {
 }
 
 // Settings ---------------------------------------------------------------------------------
-// The one Settings window (mods/shepherdr-settings): most of the window's height, at most 900
+// The one Settings window (mods/orchestrator-settings): most of the window's height, at most 900
 // (it draws its own frame inside, centred). p: { space?: that space's own settings, section? }.
 export function openSettings(p = {}) {
-  return openOverlay({ mod: "shepherdr-settings", kind: "dialog", frame: "none", width: 860, height: 0.92, props: p });
+  return openOverlay({ mod: "orchestrator-settings", kind: "dialog", frame: "none", width: 860, height: 0.92, props: p });
 }
 
 // Toasts -------------------------------------------------------------------------------------

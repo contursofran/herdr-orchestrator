@@ -100,13 +100,13 @@ test("one that didn't go through stays for Retry", () => {
 })
 
 test('what the old name kept is dropped once', () => {
-  const store = new Map<string, string>([['shepherdr.outbox', JSON.stringify([sent({ at: Date.now() })])]])
+  const store = new Map<string, string>([['herdr-orchestrator.outbox', JSON.stringify([sent({ at: Date.now() })])]])
   const g = globalThis as { localStorage?: unknown }
   const was = g.localStorage
   g.localStorage = { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => store.set(k, v), removeItem: (k: string) => store.delete(k) }
   try {
     expect(loadOutbox()).toEqual([])
-    expect(store.has('shepherdr.outbox')).toBe(false)
+    expect(store.has('herdr-orchestrator.outbox')).toBe(false)
   } finally {
     g.localStorage = was
   }

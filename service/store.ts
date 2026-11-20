@@ -1,4 +1,4 @@
-// Shepherdr's shared data (pins, sidebar sections and icons, Notify, switches, artifact answers): one herdr-core
+// herdr-orchestrator's shared data (pins, sidebar sections and icons, Notify, switches, artifact answers): one herdr-core
 // document, "herdr-orchestrator", on the machine that serves the web app (Serve from: service/host.ts). Here when this machine
 // serves; else the host's, read and written through herdr-core's link and moved between the two machines' names
 // (core/host.js), so everything above this sees it in this machine's words. Writes are versioned, so two writers never

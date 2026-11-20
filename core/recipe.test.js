@@ -14,14 +14,14 @@ test("a button needs a label and a reply, an https link or both", () => {
 });
 
 test("buttons: one to four, each a button", () => {
-  const b = { type: "buttons", items: [{ label: "Open Shepherdr on GitHub", href: "https://github.com/x/y" }, { label: "No thanks", reply: "no", quiet: true }] };
+  const b = { type: "buttons", items: [{ label: "Open herdr-orchestrator on GitHub", href: "https://github.com/x/y" }, { label: "No thanks", reply: "no", quiet: true }] };
   expect(one(b)).toEqual([]);
-  expect(blockName(b)).toBe("the buttons “Open Shepherdr on GitHub”");
+  expect(blockName(b)).toBe("the buttons “Open herdr-orchestrator on GitHub”");
   expect(one({ type: "buttons", items: [] }).length).toBe(1);
   expect(one({ type: "buttons", items: [{ label: "x" }] }).length).toBe(1);
 });
 
-// Shepherdr 3.2 (SHEP-209): a clip, a sound and a PDF are blocks of their own; a pair's sides may be clips
+// herdr-orchestrator 3.2 (SHEP-209): a clip, a sound and a PDF are blocks of their own; a pair's sides may be clips
 const files = ["clip.mp4", "clip.jpg", "a.webm", "b.mov", "song.ogg", "doc.pdf", "shot.png"];
 const check = (b) => problems({ recipe: 1, blocks: [b] }, files);
 

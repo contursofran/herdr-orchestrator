@@ -60,6 +60,7 @@ import hashlib
 import json
 import os
 import pwd
+import runpy
 import shutil
 import subprocess
 import sys
@@ -140,11 +141,11 @@ SKIP = {"__pycache__", ".DS_Store"}
 # Layout blocks Herdr's mods point at whatever is shown now (a task's terminal, an opened artifact):
 # compared without them, so a layout in use still counts as unchanged.
 LIVE_BLOCKS = ("tasks-thread-term", "artifacts-view-body")
-# Blocks an older Shepherdr layout filled with another mod: (layout, node id, old mod, new mod, why). A layout the person
+# Blocks an older herdr-orchestrator layout filled with another mod: (layout, node id, old mod, new mod, why). A layout the person
 # (or Herdr, saving their sizes) changed is kept on update, so only this block's mod changes in it, in place.
 LAYOUT_MOVES = [
-    # The sidebar's top row: Herdr's own top bar has no voice call button; Shepherdr's has it beside Search (#1032).
-    ("herdr-orchestrator", "brand", "workspace-chrome", "workspace-chrome-shepherdr", "the voice call button beside Search"),
+    # The sidebar's top row: Herdr's own top bar has no voice call button; herdr-orchestrator's has it beside Search (#1032).
+    ("herdr-orchestrator", "brand", "workspace-chrome", "workspace-chrome-orchestrator", "the voice call button beside Search"),
 ]
 HOOKS = [  # (file under home, event, entry): the question and permission cards (the "needs" add-on)
     (".claude/settings.json", "SessionStart",
@@ -223,7 +224,7 @@ def version_tuple(v):
 
 def atomic_write(path, data, mode=None):
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    fd, tmp = tempfile.mkstemp(prefix=".shepherdr-", dir=os.path.dirname(path))
+    fd, tmp = tempfile.mkstemp(prefix=".herdr-orchestrator-", dir=os.path.dirname(path))
     with os.fdopen(fd, "wb") as f:
         f.write(data)
     if mode is not None:
@@ -264,7 +265,7 @@ def find_source(given, record):
 # web/dist isn't in git, so a fresh clone has no page: the installer builds it with Bun (which the service runs on
 # anyway) when it's missing or older than what it's built from. A source without web/src (an installed service
 # folder, Serve from's pack) ships its built page and is used as it is.
-WEB_INPUTS = ("web", "core", "package.json", "bun.lock")
+WEB_INPUTS = ("web", "core", "package.json", "bun.lock", "bin/migrate_legacy.py")
 WEB_OUTPUTS = {"dist", "generated", "node_modules"}
 
 
@@ -414,13 +415,13 @@ def tool_dir(name, path):
 
 def managed_unit(root):
     """Where the service's unit links to when something else keeps it (a Nix home-manager unit is a link into
-    /nix/store; Shepherdr only ever writes a plain file there), else None."""
+    /nix/store; herdr-orchestrator only ever writes a plain file there), else None."""
     path = os.path.join(root, PLIST if sys.platform == "darwin" else UNIT)
     return os.readlink(path) if os.path.islink(path) else None
 
 
 def unit_text(root, bun, port=None):
-    """The user service that keeps Shepherdr's service running (Linux), or its launchd agent (macOS). port: install's
+    """The user service that keeps herdr-orchestrator's service running (Linux), or its launchd agent (macOS). port: install's
     --port (HERDR_ORCH_PORT; none: the service's own 7789). The window and the CLI read the port the service really took
     from its service.json, so this is the only place it is set. HERDR_ORCH_HOME and XDG_* as the installer saw them go
     along, so the service finds the same folders."""
@@ -711,7 +712,7 @@ class Run:
 
 
 def move_layout_blocks(text, name):
-    """A layout's text with LAYOUT_MOVES applied to its blocks -> (new text or None when nothing moved, [why])."""
+    """Apply layout block moves and mod ID renames, keeping the person's layout."""
     moves = [m for m in LAYOUT_MOVES if m[0] == name]
     if not moves or text is None:
         return None, []
@@ -719,6 +720,8 @@ def move_layout_blocks(text, name):
         d = json.loads(text)
     except ValueError:
         return None, []
+    migration = os.path.join(os.path.dirname(os.path.realpath(__file__)), "migrate_legacy.py")
+    renames = runpy.run_path(migration)["MOD_RENAMES"]
     said = []
 
     def walk(n):
@@ -728,6 +731,12 @@ def move_layout_blocks(text, name):
                 if n.get("id") == node and isinstance(c, dict) and c.get("mod") == old:
                     c["mod"] = new
                     said.append(why)
+            mod = n.get("mod")
+            if isinstance(mod, str) and mod in renames:
+                n["mod"] = renames[mod]
+                note = f"renamed mod to {renames[mod]}"
+                if note not in said:
+                    said.append(note)
             for v in n.values():
                 walk(v)
         elif isinstance(n, list):
@@ -807,7 +816,7 @@ def retire_mod(r, mod, old_files, changed):
             if rel in changed or n in SKIP or n in GENERATED or n.endswith(".pyc"):
                 continue
             if rel in old_files and fsha(rel, read(r.p(rel))) == old_files[rel]:
-                continue   # as Shepherdr shipped it
+                continue   # as herdr-orchestrator shipped it
             kept.append(rel)
     for rel in kept:
         r.backup(rel)
@@ -998,7 +1007,7 @@ def add_hooks(r, rec):
 
 
 # ---- agent-browser (the task browser, SHEP-156) ------------------------------------------------
-# herdr-browser owns it: which versions work, where Shepherdr's own copy goes, how it's fetched. Install, update and
+# herdr-browser owns it: which versions work, where herdr-orchestrator's own copy goes, how it's fetched. Install, update and
 # doctor only ask it (--install, --status), as the installed copy, with the root's home.
 def browser_helper(root):
     for rel in (f"{APP}/bin/herdr-browser", f"{SHARE}/bin/herdr-browser"):
@@ -1024,7 +1033,7 @@ def browser_off(root):
 
 
 def ensure_agent_browser(r, home):
-    """A working agent-browser and Chrome for the task browser: the one already here when it fits, else Shepherdr's
+    """A working agent-browser and Chrome for the task browser: the one already here when it fits, else herdr-orchestrator's
     own copy (installed, or updated when the pin changed). Never stops the install: a failure is a note with the fix.
     Only for the real home (a scratch --root downloads nothing), unless HERDR_ORCH_AGENT_BROWSER=1."""
     if not home and os.environ.get("HERDR_ORCH_AGENT_BROWSER") != "1":
@@ -1102,7 +1111,7 @@ def check_tools(root_is_home):
     for name in ("git",):
         if not shutil.which(name):
             bad.append(f"{name} isn't on the PATH")
-    # agent-browser isn't here: Shepherdr installs its own (ensure_agent_browser), doctor says how it stands
+    # agent-browser isn't here: herdr-orchestrator installs its own (ensure_agent_browser), doctor says how it stands
     optional = {"gh": "pull requests (tasks)", "node": "the task browser in the window",
                 "bun": "voice calls and dictation"}
     # the window's mic and speaker: PipeWire on Linux; on a Mac its own audio, through a helper built with swiftc
@@ -1141,8 +1150,8 @@ def cmd_install(a, update=False):
     old_files = (rec or {}).get("files", {})
 
     def settle(g, rel, how, data, mode):
-        # A mod file the person changed that Shepherdr changed too since: theirs could no longer load with the rest of the
-        # new mod (#766), so Shepherdr's goes in and theirs to the backup folder, said in the notes.
+        # A mod file the person changed that herdr-orchestrator changed too since: theirs could no longer load with the rest of the
+        # new mod (#766), so herdr-orchestrator's goes in and theirs to the backup folder, said in the notes.
         if how == "keep" and g in mods and rel in old_files and old_files[rel] != fsha(rel, data):
             how = "replace"
         elif how == "keep" and old_helper(rel, read(r.p(rel)), data):
@@ -1205,8 +1214,9 @@ def cmd_install(a, update=False):
             if g == "layout":
                 moved, said = move_layout_blocks(read(r.p(rel)), os.path.basename(rel)[:-len(".json")])
                 if moved is not None:
+                    r.backup(rel)
                     atomic_write(r.p(rel), moved.encode(), mode)
-                    r.notes.append(f"  in your {rel}: {', '.join(said)} (only that block changed)")
+                    r.notes.append(f"  in your {rel}: {', '.join(said)}")
         elif how == "old":
             dest_b = r.backup(rel)
             atomic_write(r.p(rel), data, mode)
@@ -1745,7 +1755,7 @@ def cmd_uninstall(a):
             except FileNotFoundError:
                 pass
         os.remove(r.p(RECORD))
-        # the agent-browser Shepherdr installed for the task browser (not data: nothing of the person's is in it)
+        # the agent-browser herdr-orchestrator installed for the task browser (not data: nothing of the person's is in it)
         shutil.rmtree(os.path.join(where_for(root).roots["data"], "agent-browser"), ignore_errors=True)
         # Folders that only held ours.
         for rel in (f"{APP}/data/herdr-orchestrator", f"{APP}/bin", f"{APP}/lib", f"{APP}/core", SHARE):

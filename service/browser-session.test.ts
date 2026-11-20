@@ -15,7 +15,7 @@ const real = (task: string) => {
 };
 
 test("the same session name as herdr-browser", () => {
-  for (const t of ["dev-shepherdr#168", ".config-herdr-app#57", "tmp-" + "very-long-folder-name-".repeat(6) + "demo#1", "home-someone-dev-a-rather-long-repo#12"])
+  for (const t of ["dev-herdr-orchestrator#168", ".config-herdr-app#57", "tmp-" + "very-long-folder-name-".repeat(6) + "demo#1", "home-someone-dev-a-rather-long-repo#12"])
     expect(sessionOf(t)).toBe(real(t));
   expect(sessionOf("tmp-" + "x".repeat(200) + "#3").length).toBeLessThanOrEqual(40);
 });

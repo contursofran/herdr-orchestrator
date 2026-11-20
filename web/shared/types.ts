@@ -56,7 +56,7 @@ export function nameProblem(name: string, taken: string[] = []): string | undefi
 
 /** what a tab's agent is doing, as Herdr's status: a spinner, needs you, done (a dot), or nothing */
 export type TabState = 'working' | 'blocked' | 'done' | 'idle'
-/** a space's tab other than its Assistant's (Shepherdr 3's tab bar) */
+/** a space's tab other than its Assistant's (herdr-orchestrator 3's tab bar) */
 export interface PlaceTab {
   id?: string
   name: string
@@ -78,16 +78,16 @@ export interface Place {
   id: string
   /** nobody named it: Herdr names it after its folder (its Rename field starts empty, this name its placeholder) */
   unnamed?: boolean
-  /** Shepherdr 3: the space's icon, an emoji the person picked (none: #) */
+  /** herdr-orchestrator 3: the space's icon, an emoji the person picked (none: #) */
   emoji?: string
-  /** Shepherdr 3: the space is a git worktree of another (Remove worktree) */
+  /** herdr-orchestrator 3: the space is a git worktree of another (Remove worktree) */
   worktree?: boolean
-  /** Shepherdr 3: the space's other tabs (a terminal or an agent each), by name, with the key their terminal opens by;
+  /** herdr-orchestrator 3: the space's other tabs (a terminal or an agent each), by name, with the key their terminal opens by;
    *  as 3.0's tab bar: Herdr's tab id, whether a name was given, the agent CLI in it, its status and its folder */
   tabs?: PlaceTab[]
-  /** Shepherdr 3: its Assistant's own tab, first in the tab bar (live: its agent runs) */
+  /** herdr-orchestrator 3: its Assistant's own tab, first in the tab bar (live: its agent runs) */
   assistantTab?: { id?: string; name: string; named: boolean; state: TabState; live: boolean; cli?: string; agent?: string }
-  /** Shepherdr 3: its Autopilot as the Assistant's header shows it (this computer's spaces): on, its next wake, queued
+  /** herdr-orchestrator 3: its Autopilot as the Assistant's header shows it (this computer's spaces): on, its next wake, queued
    *  (pending) or waking (inflight), its events, and blank: its heartbeat still unwritten */
   pilot?: { on: boolean; next_run: number | null; pending: boolean; inflight: boolean; events: string[]; blank: boolean }
   /** its name, Slack-channel style ("my-project"), unique on its machine: the slug its links and commands use */
@@ -105,7 +105,7 @@ export interface Place {
   chat: string
   /** its machine can't be reached: when it went quiet, as shown ("14:02") */
   unreachableSince?: string
-  /** its machine hasn't been reached yet since Shepherdr started (an update): what it showed last, while it connects */
+  /** its machine hasn't been reached yet since herdr-orchestrator started (an update): what it showed last, while it connects */
   connecting?: boolean
   /** does its repo have a GitHub remote */
   githubRemote?: boolean
@@ -144,7 +144,7 @@ export interface Section {
 }
 
 export interface Machine {
-  /** Core native display name, before a Shepherdr-only rename. */
+  /** Core native display name, before a herdr-orchestrator-only rename. */
   ownName?: string
   /** m:<its key>: what its spaces' order and its fold are kept under */
   id: string
@@ -154,7 +154,7 @@ export interface Machine {
   name: string
   /** the emoji the human gave it, before its name as a Slack section's (none: a server icon) */
   emoji?: string
-  /** off: Shepherdr can't reach it */
+  /** off: herdr-orchestrator can't reach it */
   status: 'idle' | 'off'
   unreachableSince?: string
   connecting?: boolean
@@ -163,7 +163,7 @@ export interface Machine {
   /** what is left of the plans its CLIs are signed in to: each machine has its own sign-ins */
   limits?: MachineLimits
   herdrDown?: string
-  /** the machine Shepherdr runs on ("This computer"): a monitor in the sidebar, the others a server */
+  /** the machine herdr-orchestrator runs on ("This computer"): a monitor in the sidebar, the others a server */
   here?: boolean
   /** its reads as the window keeps them (shared "machines.stats"): its header's meter and red dot and its popup read
    *  them with core/machines.js, as the window's do */
@@ -191,7 +191,7 @@ export interface LimitWindow {
   used: number
   /** when it refills (ms) */
   resetsAt?: number
-  /** the CLI's own words, where they name no moment Shepherdr can read */
+  /** the CLI's own words, where they name no moment herdr-orchestrator can read */
   resets?: string
 }
 
@@ -207,7 +207,7 @@ export interface MachineLimits {
   codex?: CliLimitsRead
 }
 
-/** what Shepherdr measures on a machine, as one level each: a share of what it has (CPU: its 1-minute load over its
+/** what herdr-orchestrator measures on a machine, as one level each: a share of what it has (CPU: its 1-minute load over its
  *  cores, so over 100 means more work than cores) */
 export type HealthLevel = 'ok' | 'busy' | 'over'
 
@@ -232,7 +232,7 @@ export interface MachineHealth {
   /** tasks at work now, and how many may be (none: no limit by number) */
   working: number
   max?: number
-  /** tasks Shepherdr holds until there is room, and why the first one waits */
+  /** tasks herdr-orchestrator holds until there is room, and why the first one waits */
   held: number
   heldWhy?: string
   /** when it was sampled ("08:41") */
@@ -257,7 +257,7 @@ export function splitFacts(said: string, facts?: string): { said: string; facts?
   return { said: said.slice(0, at).trim(), facts: facts?.trim() || tail || undefined }
 }
 
-/** What a task's agent last reported of its job (shepherdr status): a status line, how far through it is, the minutes left. */
+/** What a task's agent last reported of its job (herdr-orchestrator status): a status line, how far through it is, the minutes left. */
 export interface Report {
   /** at most STATUS_MAX characters: what it is doing right now */
   msg: string
@@ -271,7 +271,7 @@ export interface Report {
 
 /** need: its agent asks or waits for you; ready: finished, waits for you to merge it; merging: finished and on its way
  * into main, nothing for you to do (GitHub's checks run, it is rebased or merged); work: its agent is at it; queued:
- * it waits for other tasks to be done, then Shepherdr tells its agent to go; todo: its agent waits for a go, or is
+ * it waits for other tasks to be done, then herdr-orchestrator tells its agent to go; todo: its agent waits for a go, or is
  * starting and not yet at work on its brief; done: merged */
 export type TaskStatus = 'need' | 'ready' | 'merging' | 'work' | 'queued' | 'scheduled' | 'todo' | 'done'
 
@@ -320,7 +320,7 @@ export interface Task {
   startsAt?: number
   /** Ready, its accept under way from the window's Accept card: its row and header say "Accepting…" */
   accepting?: boolean
-  /** still Working, its turn over: what Shepherdr itself knows it waits for */
+  /** still Working, its turn over: what herdr-orchestrator itself knows it waits for */
   waitsFor?: 'review'
   age: string
   /** when its first agent started (ms): a task that ran never says it hasn't started */
@@ -477,7 +477,7 @@ export interface MergeEvidence {
 export interface Artifact {
   id: string
   title: string
-  /** Shepherdr 3.1: recipe (recipe.json, drawn here as HTML) or gpui (a custom panel only the Herdr window runs: the
+  /** herdr-orchestrator 3.1: recipe (recipe.json, drawn here as HTML) or gpui (a custom panel only the Herdr window runs: the
    *  web shows its picture); none: 2.1's HTML page. Its latest version's; each version says its own. */
   kind?: 'recipe' | 'gpui'
   /** the place it lives in */
@@ -584,12 +584,12 @@ export interface Message {
   reply?: ReplyQuote
   /** a thin "New session" divider before this message */
   newSession?: boolean
-  /** Shepherdr's update card about a task, drawn as the card; its text ("SHE-4 is done: …") is what a reaction or a
+  /** herdr-orchestrator's update card about a task, drawn as the card; its text ("SHE-4 is done: …") is what a reaction or a
    *  reply quotes */
   card?: UpdateCard
   /** a turn's tool steps, as a few rows in plain words, just before its last reply */
   activity?: TurnActivity
-  /** a secret the agent asked for (shepherdr secret ask): a masked box to give it in */
+  /** a secret the agent asked for (herdr-orchestrator secret ask): a masked box to give it in */
   secret?: SecretAsk
   /** 3.0's quiet row for a message the person didn't type: a launch brief ("New session", "Task brief") or one
    *  another agent sent ("Message from Reviewer"); its words (text) open under it. bare: no preview (a fresh start);
@@ -756,7 +756,7 @@ export interface ReplyQuote {
   artifact?: boolean
 }
 
-/** One small update card Shepherdr posts in a project's coordinator chat. */
+/** One small update card herdr-orchestrator posts in a project's coordinator chat. */
 export interface UpdateCard {
   id: string
   /** the task it is about; none on a mode card */
@@ -847,7 +847,7 @@ export const cardMessage = (card: UpdateCard, at?: number): Message => ({
 
 export interface Chat {
   key: string
-  /** the agent's and yours, and Shepherdr's update cards among them */
+  /** the agent's and yours, and herdr-orchestrator's update cards among them */
   messages: Message[]
   /** herdr says the agent works: the CLI takes what you send at its next step */
   working?: boolean
@@ -901,7 +901,7 @@ export interface RestartHint {
   want: string
 }
 
-/** a CLI the restart sheet offers; models and efforts where Shepherdr passes them (none: it runs on its own) */
+/** a CLI the restart sheet offers; models and efforts where herdr-orchestrator passes them (none: it runs on its own) */
 export interface RestartCli {
   kind: string
   name: string
@@ -1062,7 +1062,7 @@ export interface SettingSection {
   level?: string
   /** one for all machines and projects (alerts, voice): shown once, whatever level is picked */
   global?: boolean
-  /** only words in agents' prompts (What agents are told), not how Shepherdr runs */
+  /** only words in agents' prompts (What agents are told), not how herdr-orchestrator runs */
   told?: boolean
   /** the secrets kept at its level, by name (Secrets): added, replaced and removed in masked boxes */
   secrets?: { name: string; at: number }[]
@@ -1228,7 +1228,7 @@ export interface Snapshot {
   /** Settings › Window's look switches, as the window follows them: the space's tabs, worktree spaces in the sidebar,
    *  bold unread spaces, red and green counts, the Tasks status filters, the space on task rows, subagents above the box */
   look?: { tabs: boolean; worktrees: boolean; unread: boolean; red: boolean; green: boolean; filters: boolean; place: boolean; helpers: boolean }
-  /** Shepherdr 3: Herdr's side panels the tab bar offers beside Tasks (shared "workspace.panels": "files", "changes") */
+  /** herdr-orchestrator 3: Herdr's side panels the tab bar offers beside Tasks (shared "workspace.panels": "files", "changes") */
   panels?: string[]
   /** the web app's plugins left out (their add-on is off in Settings › Window): a page started with others reloads */
   off?: string[]
@@ -1236,7 +1236,7 @@ export interface Snapshot {
   demo?: boolean
   /** where the human's name in chat lines comes from */
   user: string
-  /** when each chat (by its key) last had something new from its agent or Shepherdr (ms): it shows bold until read */
+  /** when each chat (by its key) last had something new from its agent or herdr-orchestrator (ms): it shows bold until read */
   last?: Record<string, number>
   /** how far you have read each chat (ms), the same on every device; '*': since when read marks are kept, so anything
    *  older counts as read */
@@ -1306,7 +1306,7 @@ export type Action =
       Settings say for its role); save: as its space's Settings for its role too */
   /** speed: normal, fast or ultrafast, '' for the CLI's own; left out keeps what it was started on. It lasts as long as this chat, and save leaves it out of Settings. */
   | { type: 'restart'; chat: string; kind?: string; model?: string; effort?: string; speed?: string; save?: boolean }
-  /** mark a task done with nothing merged (shepherdr task close); refused (held) while it holds unmerged work, unless force */
+  /** mark a task done with nothing merged (herdr-orchestrator task close); refused (held) while it holds unmerged work, unless force */
   | { type: 'close'; chat: string; force?: boolean }
   /** undo done or ready (herdr-task reopen): a voice call's act reopen */
   | { type: 'reopen'; chat: string }
@@ -1315,7 +1315,7 @@ export type Action =
   | { type: 'schedule'; chat: string; at?: string; in?: string; off?: boolean; now?: boolean }
   /** delete a task: its agent, herdr space, worktree, branch, chat and record; refused while it holds work, unless force */
   | { type: 'delete'; chat: string; force?: boolean }
-  /** forget a space (shepherdr space remove): its folder and code stay on disk, its coordinator closes, and its open
+  /** forget a space (herdr-orchestrator space remove): its folder and code stay on disk, its coordinator closes, and its open
       tasks and chat come back if it is added again; refused while one of its tasks is working */
   | { type: 'space-remove'; place: string }
   /** the sidebar's order, dragged by the human: the machines (under 'all'), or one machine's spaces
@@ -1363,7 +1363,7 @@ export type ServerEvent =
   /** a tap on the phone app's alert (POST /api/open, SHEP-246): this screen goes where it points, in place */
   | { type: 'go'; url: string }
 
-/** how Shepherdr's last update of itself went (update.json in its folder, written by the supervisor) */
+/** how herdr-orchestrator's last update of itself went (update.json in its folder, written by the supervisor) */
 export interface UpdateStatus {
   /** ok: running the newest commit; failed: kept the running version; restarting: about to come back on a new one */
   state: 'ok' | 'failed' | 'restarting'

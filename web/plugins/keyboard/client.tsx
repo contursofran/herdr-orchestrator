@@ -1,5 +1,5 @@
 import { Search } from './search.tsx'
-// Keys, as the window's: Herdr's and Shepherdr's keys (keys.json) that mean something on the web, under the window's
+// Keys, as the window's: Herdr's and herdr-orchestrator's keys (keys.json) that mean something on the web, under the window's
 // Keybinds names (core/keys.js; Ctrl+Shift+? or the tab bar's menu opens the Keybinds dialog). Those a browser keeps
 // for itself (Ctrl+Tab, Ctrl+1–9, Ctrl+Shift+N, T, W) stay the window's. Ctrl+K jumps.
 import { useState, useSyncExternalStore } from 'react'
@@ -132,7 +132,7 @@ export default definePlugin({
         }
         if (e.shiftKey && e.key === 'F2') {
           e.preventDefault()
-          dispatchEvent(new CustomEvent('shepherdr:rename', { detail: ui.place }))
+          dispatchEvent(new CustomEvent('herdr-orchestrator:rename', { detail: ui.place }))
           return true
         }
         // Alt+1–9 and Alt+←/→: the space's tabs, its chat first, then each other tab's terminal (3.0's tab bar)

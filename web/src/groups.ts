@@ -9,7 +9,7 @@ export type GroupBy = 'status' | 'place'
 
 export { GROUPS }
 
-const KEY = 'shepherdr.tasksBy'
+const KEY = 'herdr-orchestrator.tasksBy'
 
 /** the kept choice: Status until Place is chosen */
 export function loadGroups(): GroupBy {
@@ -28,7 +28,7 @@ export function saveGroups(by: GroupBy) {
   }
 }
 
-const ALL_DONE = 'shepherdr.allDone'
+const ALL_DONE = 'herdr-orchestrator.allDone'
 
 /** the groups showing all their Done tasks ("place|group"), remembered on this device */
 export function loadAllDone(): string[] {
@@ -48,7 +48,7 @@ export function saveAllDone(keys: string[]) {
   }
 }
 
-const SHUT = 'shepherdr.shut'
+const SHUT = 'herdr-orchestrator.shut'
 
 /** the headings folded shut, each a view's own ("place|group", "place|m:machine"), remembered on this device */
 export function loadShut(): string[] {

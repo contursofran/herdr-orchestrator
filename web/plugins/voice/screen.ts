@@ -1,6 +1,6 @@
 // The call's screen on this page (SHEP-51, core/screen.js): what the page shows, read as a screen reader would, as
 // numbered things the voice agent can act on (click, type, select, scroll, a key, back, close), done here on this very
-// page, on whatever device started the call. The voice agent's fallback for what its Shepherdr tools can't do.
+// page, on whatever device started the call. The voice agent's fallback for what its herdr-orchestrator tools can't do.
 // A ref stays with its element for the whole call (resetScreen at its start), so "e12" means the same button after a
 // scroll; an element gone from the page is said to be gone, never guessed.
 import * as S from '@core/screen.js'

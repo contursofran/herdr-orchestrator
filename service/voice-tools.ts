@@ -10,7 +10,7 @@ import { planRows, windowWords, whyWords, healthWords } from "../core/machines.j
 import { SOURCES, scrub, render, at, search, segments, type SourceArgs } from "./voice-data.ts";
 
 /** Where a call comes from: its app, the chat it started from (if any), and what that app shows now (sent by the page or
- *  the window). SHEP-105: a call is with Shepherdr itself, not that chat: "here" is what the screen shows. */
+ *  the window). SHEP-105: a call is with herdr-orchestrator itself, not that chat: "here" is what the screen shows. */
 export type Where = {
   client: "web" | "window";
   /** phone, tablet or desktop (web) */
@@ -18,7 +18,7 @@ export type Where = {
   /** the machine whose window it is (window), or the one serving the web app */
   machine?: string | null;
   /** the chat the call was started from, by its call button (its key: p:<space> for an Assistant, <task>/worker for a
-   *  task's agent); none from the sidebar's Shepherdr row or the phone's voice button. Only "here" while the screen
+   *  task's agent); none from the sidebar's herdr-orchestrator row or the phone's voice button. Only "here" while the screen
    *  shows no chat. */
   call?: string | null;
   /** what the app shows now: a space (place id), a task, the task's tab, an artifact open, Settings */
@@ -29,7 +29,7 @@ export type Where = {
   settings?: boolean;
   /** the web call fills the screen (SHEP-118), else it is minimized */
   full?: boolean;
-  /** SHEP-251: the phone is locked (Shepherdr Wake runs the call); SHEP-261: it can do all an unlocked one can */
+  /** SHEP-251: the phone is locked (the phone companion runs the call); SHEP-261: it can do all an unlocked one can */
   locked?: boolean;
   /** SHEP-251: the phone's screen is on */
   screen?: boolean;
@@ -162,7 +162,7 @@ export function findTask(snap: Snapshot, id: unknown, where: Where): Task | null
 }
 
 /** every name a machine goes by: its name, its own name, its key ("eliass-mac-mini"), and "this computer" for the one
- *  Shepherdr serves from (the Mac mini that serves calls itself "This computer", but the person says "the Mac mini") */
+ *  herdr-orchestrator serves from (the Mac mini that serves calls itself "This computer", but the person says "the Mac mini") */
 export function machineAliases(m: Snapshot["machines"][number]) {
   const out = [m.name, m.ownName ?? "", m.machine, ...(m.here ? ["this computer", "this machine"] : [])].filter(Boolean);
   return [...new Set(out)];

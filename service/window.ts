@@ -7,7 +7,7 @@ import { readSettings, writeSettings } from "./settings.ts";
 import { join } from "node:path";
 import { HOME } from "./paths.ts";
 import type { SettingRow, SettingSection } from "../web/shared/types.ts";
-// the switches' words and an add-on's line: core/settings.js, the window's own (mods/shepherdr-settings/layout.js)
+// the switches' words and an add-on's line: core/settings.js, the window's own (mods/orchestrator-settings/layout.js)
 import * as C from "../core/settings.js";
 
 const { SWITCHES: CORE_SWITCHES, ADDONS, SECTIONS, INSIGHTS, addonAbout } = C as any;

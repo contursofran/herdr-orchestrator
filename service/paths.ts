@@ -1,4 +1,4 @@
-// Where Shepherdr keeps its data (core/paths.js; the move: mods/tasks/bin/herdr_task/layout.py): its own folders,
+// Where herdr-orchestrator keeps its data (core/paths.js; the move: mods/tasks/bin/herdr_task/layout.py): its own folders,
 // ~/.local/state/herdr-orchestrator/service for the service's own files, ~/.local/share/herdr-orchestrator/tasks for herdr-task's lists,
 // ~/.config/herdr-orchestrator/settings.json, ... once this machine's data moved there, else the old ~/.herdr paths (which
 // then link to the new ones). The installer moves the data before it starts the service, so its paths are read once.
@@ -10,7 +10,7 @@ import * as P from "../core/paths.js";
 
 export const HOME = homedir();
 
-/** This machine's Shepherdr paths now (core/paths.js paths(): the new ones once its data moved). Read again each time
+/** This machine's herdr-orchestrator paths now (core/paths.js paths(): the new ones once its data moved). Read again each time
  *  (cheap): the move can happen while the service runs (herdr-task does it on a machine that got a new copy). */
 export function where(home = HOME, env: Record<string, string | undefined> = process.env) {
   const r = P.roots(home, env, process.platform === "darwin");
@@ -89,8 +89,8 @@ const inside = (path: string, dir: string) => {
 // The new layout's paths whether or not this machine moved yet: a test may write neither.
 const paths_new = () => P.pathsFrom(HOME, P.roots(HOME, process.env, process.platform === "darwin"), true);
 
-/** A file to write under Herdr's or Shepherdr's homes: a test is refused anything in the person's real
- *  ~/.config/herdr-app, ~/.herdr or Shepherdr's own folders (test/preload.ts points them away), so no import order can
+/** A file to write under Herdr's or herdr-orchestrator's homes: a test is refused anything in the person's real
+ *  ~/.config/herdr-app, ~/.herdr or herdr-orchestrator's own folders (test/preload.ts points them away), so no import order can
  *  have a test write their data. */
 export function writable(path: string): string {
   const r = paths_new().roots;

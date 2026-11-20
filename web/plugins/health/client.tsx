@@ -245,7 +245,7 @@ function MachinePopup({ m, onClose }: { m: Machine; onClose: () => void }) {
 export default definePlugin({
   name: 'health',
   setup(reg) {
-    // Settings › Machines: Find machines, the only way Shepherdr ever tries hosts you didn't link (#967)
+    // Settings › Machines: Find machines, the only way herdr-orchestrator ever tries hosts you didn't link (#967)
     reg.settingsPages.push({ name: 'Find machines', into: 'Machines', Icon: ServerIcon, when: () => true, View: FindMachines })
   },
 })

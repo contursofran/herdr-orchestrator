@@ -93,7 +93,7 @@ export class Agents {
   }
 
   /** An Assistant that hasn't started (SHEP-263): what its first message starts it on, as the window's chat says it
-   *  on its model button before then. pick: the choice kept for its space, else Shepherdr settings' Assistant
+   *  on its model button before then. pick: the choice kept for its space, else herdr-orchestrator settings' Assistant
    *  ({ agent, model, effort, fast, perm }), else null: the CLI's own. sel is that with what the machine offers;
    *  words the button's ("GPT-6.2 Sol · High · Ultrafast"). Until the machine's CLIs were read, the pick as it is. */
   fresh(machine: string | null, pick: any) {

@@ -4,7 +4,7 @@ Autopilot works like Tasks (docs/settings.md): Everywhere's heartbeat, schedule 
 them; what a space doesn't set is inherited from Everywhere. Settings › Autopilot has the level switch at its top and,
 in a space, "Inherited from Everywhere" or "Set for this space · Reset" under each row. There is no on/off switch and no
 Run now there: a space is switched on or off only by the switch in its Assistant's header. Made from the window's mod
-(`mods/shepherdr-settings/autopilot-section.js`) and herdr-task's data (`mods/tasks/bin/herdr_task/autopilot.py`).
+(`mods/orchestrator-settings/autopilot-section.js`) and herdr-task's data (`mods/tasks/bin/herdr_task/autopilot.py`).
 ✓ matches, ◇ a web-only form on purpose (why), ✗ still differs.
 
 Shared, so the two can't drift: `core/autopilot.js` holds the page's words (title, about line, each row's label and

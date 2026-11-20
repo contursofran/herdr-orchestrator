@@ -390,7 +390,7 @@ function Lifted({ msg, chat }: { msg: Message; chat: string }) {
               >
                 Copy
               </MenuItem>
-              {/* Shepherdr 3: an agent's message forks the conversation into a new tab; yours rewinds it there (the CLI's own) */}
+              {/* herdr-orchestrator 3: an agent's message forks the conversation into a new tab; yours rewinds it there (the CLI's own) */}
               {/* as the window's: Rewind on yours but a /command, Fork on the agent's */}
               {msg.card || (msg.who !== 'agent' && msg.text?.trimStart().startsWith('/')) ? null : msg.who === 'agent' ? (
                 <MenuItem icon={<ForkIcon className={ic} />} onClick={() => leave(() => void forkChat(chat).catch((e) => alert(e.message)))}>

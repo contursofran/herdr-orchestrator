@@ -1,5 +1,5 @@
 // Settings › Machines: a machine's health and what is left of each agent CLI's plan, under its name, as the window's
-// machine blocks (mods/shepherdr-settings/machines-section.js, lib/machines.js machineDetails). The reads and every
+// machine blocks (mods/orchestrator-settings/machines-section.js, lib/machines.js machineDetails). The reads and every
 // word are the shared core's (core/machines.js), as the sidebar's machine popup has them.
 import clsx from 'clsx'
 import { useEffect, useState, type CSSProperties } from 'react'

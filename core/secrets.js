@@ -24,10 +24,10 @@ export const declinedLine = (name) => `<hc from="person" secret="${name}">Declin
 // newer one from the machine that keeps the secrets now (none of its own yet: the newest it's handed).
 // By default they follow Serve from (auto: true, "Same as Serve from" in Settings): nobody named a machine, so the
 // services name the one they're on now (autoKeeper) and the machine serving the web app moves them to itself, the safe
-// way (followTo: `shepherdr secrets move-to`, with its backup and rollback); a later Serve from change carries them along
+// way (followTo: `herdr-orchestrator secrets move-to`, with its backup and rollback); a later Serve from change carries them along
 // the same way. The person picking another machine in Kept on overrides it (a record without auto); picking the Serve
 // from machine follows it again. No record anywhere yet: the machine without ~/.local/share/herdr-orchestrator/secrets/remote keeps them
-// (bin/herdr-secret remote()). `shepherdr secrets move-to <machine>` moves them (service/secrets-move.ts).
+// (bin/herdr-secret remote()). `herdr-orchestrator secrets move-to <machine>` moves them (service/secrets-move.ts).
 export const SECRETS_DOC = "herdr-orchestrator.secrets";
 
 /** A record as it may be believed: { id, at, by?, auto? } with a sane time, else null. */

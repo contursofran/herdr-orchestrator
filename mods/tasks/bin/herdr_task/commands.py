@@ -167,8 +167,8 @@ def ensure_scheduler_quietly():
 
 def set_base(s, t, base, space=None, new=False):
     """--base: the branch a worktree task branches from and merges into (its pull request's base).
-    Without it a new task takes its space's base branch (Shepherdr settings > Tasks > Base branch,
-    as Shepherdr's space.base: captured when added, so a later change only touches new tasks);
+    Without it a new task takes its space's base branch (herdr-orchestrator settings > Tasks > Base branch,
+    as herdr-orchestrator's space.base: captured when added, so a later change only touches new tasks);
     unset, the folder's current branch, kept unmarked. "" goes back to the folder's."""
     if base is None:
         own = space_base(s, space) if new and t.get("mode") == "worktree" else ""
@@ -353,7 +353,7 @@ def folder_desc(t, s):
 
 
 def ready_words(args):
-    """The ready summary in one line, refused past SUMMARY_MAX (as Shepherdr's) before anything
+    """The ready summary in one line, refused past SUMMARY_MAX (as herdr-orchestrator's) before anything
     changes; --details, any length, as written."""
     said = " ".join(str(args.summary or "").split())
     if len(said) > SUMMARY_MAX:
@@ -462,7 +462,7 @@ def rounds_used(t):
 
 
 def review_refusal(s, t, wt):
-    """Why ready is refused for review (as Shepherdr's: `ready` waits for a review of the final
+    """Why ready is refused for review (as herdr-orchestrator's: `ready` waits for a review of the final
     commit), or None. Only tasks whose brief taught `reviewed` (review_gate) and whose Settings
     block says Review: on. A worktree task's final commit must be one a round was recorded on; a
     task in the folder itself needs a round recorded since it started. Out of rounds, only the
@@ -572,7 +572,7 @@ def cmd_reviewed(args):
 
 
 def cmd_review_more(args):
-    """The Assistant gives a task exactly one more review round (as Shepherdr's `task review-more`):
+    """The Assistant gives a task exactly one more review round (as herdr-orchestrator's `task review-more`):
     only once all its rounds are used. The limit stops an agent reviewing for ever, so the task's
     own agent can never raise it. Its agent is told."""
     labels = caller_labels()
@@ -618,7 +618,7 @@ def parse_left(text):
 
 def cmd_status(args):
     """A task agent says what it's doing, how far along it is and the time left, at the start, at
-    each natural step and at least every 5 minutes (as Shepherdr's `shepherdr status`). Herdr guesses nothing: it shows
+    each natural step and at least every 5 minutes (as herdr-orchestrator's `herdr-orchestrator status`). Herdr guesses nothing: it shows
     what the agent said and counts the minutes down while it works."""
     text = " ".join(str(args.text or "").split())
     if not text:
@@ -648,7 +648,7 @@ ALERT = "herdr.alert"
 
 
 def cmd_alert(args):
-    """An agent tells the person something that can't wait (as Shepherdr's `shepherdr alert`): a
+    """An agent tells the person something that can't wait (as herdr-orchestrator's `herdr-orchestrator alert`): a
     toast and a sound in every Herdr window. Never asks permission. A task's agent (or an alert
     --task names) always reaches the person; an Assistant's follows its space's Notify (Off:
     nothing). It sets the core label herdr.alert on the caller's own terminal, which every Herdr

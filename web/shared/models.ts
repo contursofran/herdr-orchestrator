@@ -28,7 +28,7 @@ export interface CliModels {
 export const SPEEDS = ['normal', 'fast', 'ultrafast']
 
 /** a speed as a CLI logs it, in plain words: Claude Code's usage.speed and Codex's service_tier (priority is what its
- *  config calls fast); one Shepherdr doesn't know stays as logged */
+ *  config calls fast); one herdr-orchestrator doesn't know stays as logged */
 export function speedWord(value: unknown): string | undefined {
   const v = typeof value === 'string' ? value.trim().toLowerCase() : ''
   if (!v) return undefined

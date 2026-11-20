@@ -1,5 +1,5 @@
 # herdr-task 3.1.26's sync script, as an older main machine sends it to another machine (machines.py INSTALL),
-# kept here for test/test_layout.py's mixed-version tests. Never edited: it is what older copies really run.
+# kept for mixed-version tests. The test supplies the legacy document key as LEGACY_SECRETS_DOC.
 
 import base64, hashlib, json, os, shutil, subprocess, sys, time
 x = json.loads(sys.stdin.read())
@@ -86,11 +86,11 @@ for l in x["links"]:
             st = "failed: " + str(e)
     out["links"][l["path"]] = st
 def main_here():
-    # the record naming the machine that keeps the secrets ("shepherdr.secrets"), and this one's id
+    # the record naming the machine that keeps the secrets, and this one's id
     core = os.path.join(os.environ.get("XDG_STATE_HOME") or P(".local/state"), "herdr-core", "default")
     try:
         with open(os.path.join(core, "docs.json")) as f:
-            rec = (json.load(f).get("shepherdr.secrets") or {}).get("value") or {}
+            rec = (json.load(f).get(LEGACY_SECRETS_DOC) or {}).get("value") or {}
         with open(os.path.join(core, "core.json")) as f:
             me = json.load(f).get("id")
     except Exception:

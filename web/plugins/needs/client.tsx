@@ -71,7 +71,7 @@ export function NeedsList() {
 
 export default definePlugin({
   name: 'needs',
-  // Shepherdr 3 has no Needs you view: what needs you is the Tasks panel's first section (plugins/tasks), and each card
+  // herdr-orchestrator 3 has no Needs you view: what needs you is the Tasks panel's first section (plugins/tasks), and each card
   // stays in its chat. NeedsList is kept for plugins of the human's own.
   setup() {},
 })

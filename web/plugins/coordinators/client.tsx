@@ -447,7 +447,7 @@ function PanelButton({ place, id, label, Icon, roomy, badge }: { place: Place; i
 
 /** the side panel each space had open (null: none), remembered on this device as the window remembers it per space */
 const panels = {
-  KEY: 'shepherdr.panels',
+  KEY: 'herdr-orchestrator.panels',
   all(): Record<string, Panel | null> {
     try { return JSON.parse(localStorage.getItem(this.KEY) ?? '{}') ?? {} } catch { return {} }
   },

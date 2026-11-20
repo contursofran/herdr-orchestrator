@@ -1,4 +1,4 @@
-// New spaces from the web, and spaces without a Herdr window. With the window (Shepherdr's layout installed), a space
+// New spaces from the web, and spaces without a Herdr window. With the window (herdr-orchestrator's layout installed), a space
 // is the window's: it makes it (herdr-app do space.new), names it as New space does, and gives it its Assistant (new
 // spaces get one). A web-only install has no window: its spaces are the service's own list (the shared document's
 // "spaces"), each with an Assistant started here from the assistant template, labelled as the window labels one.
@@ -65,7 +65,7 @@ export async function newSpaceInfo(hub: Hub, machine: string | null, at: string 
  *  one-off copy, removed by done() once it has started, whose command first clears a parent Claude Code session's
  *  markers the holder may carry (SHEP-86, core/clean-env.js), then execs it: hc runs a template's command under sh -c,
  *  and where sh is dash (Debian, Ubuntu) the shell would stay the terminal's program, so no chat would know its CLI.
- *  pick: the agent Shepherdr settings choose for it ({ agent, model, effort, fast, perm }, as the window's chat starts
+ *  pick: the agent herdr-orchestrator settings choose for it ({ agent, model, effort, fast, perm }, as the window's chat starts
  *  it): its command in place of the template's own (#1051: the web started the stock `claude`), unless that agent
  *  isn't installed there (then the template's own, as the window). Neither installed: refused in plain words, never a
  *  start that ends at once ("exec: claude: not found") and leaves the chat on Starting.

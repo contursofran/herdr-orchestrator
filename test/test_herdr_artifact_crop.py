@@ -54,7 +54,7 @@ def write_png(path, w, h, ch, pixel):
 
 class Crop(unittest.TestCase):
     def setUp(self):
-        self.dir = tempfile.mkdtemp(prefix="shepherdr-crop-")
+        self.dir = tempfile.mkdtemp(prefix="herdr-orchestrator-crop-")
         self.addCleanup(shutil.rmtree, self.dir, True)
         rnd = random.Random(7)
         self.noise = {(x, y): tuple(rnd.randrange(256) for _ in range(4)) for x in range(40) for y in range(30)}

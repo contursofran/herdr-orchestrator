@@ -73,10 +73,10 @@ export function search(all: Group[], q: string): Emoji[] {
 
 /* ---------- remembered on this device ---------- */
 
-const USES = 'shepherdr:emoji-uses'
+const USES = 'herdr-orchestrator:emoji-uses'
 /** the plain list of recents before uses were counted: read once, to start the counts */
-const RECENT = 'shepherdr:emoji-recent'
-const TONE = 'shepherdr:emoji-tone'
+const RECENT = 'herdr-orchestrator:emoji-recent'
+const TONE = 'herdr-orchestrator:emoji-tone'
 const read = (k: string) => {
   try {
     return localStorage.getItem(k)

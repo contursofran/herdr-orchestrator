@@ -133,7 +133,7 @@ class Autopilot(unittest.TestCase):
     def test_everywhere_unless_a_space_sets_its_own(self):
         e = self.cmd("set", everywhere=True, every="every 30 minutes", on="ready")
         self.assertEqual((e["everywhere"], e["every"], e["events"]), (True, "every 30 minutes", ["ready"]))
-        # kept in Shepherdr settings, with everything else there
+        # kept in herdr-orchestrator settings, with everything else there
         with open(self.settings_file) as f:
             self.assertEqual(json.load(f)["everywhere"]["autopilot"], {"every": "every 30 minutes", "events": ["ready"]})
         v = self.cmd("show", space="sp1")
@@ -4029,7 +4029,7 @@ class AutomationFromAnotherMachine(unittest.TestCase):
         self.au, self.argparse, self.io, self.redirect = au, argparse, io, contextlib.redirect_stdout
         self.tmp = tempfile.mkdtemp()
         self.a_store, self.b_store = os.path.join(self.tmp, "a-tasks"), os.path.join(self.tmp, "b-tasks")
-        self.a_folder, self.b_folder = os.path.join(self.tmp, "a-app"), os.path.join(self.tmp, "shepherdr")
+        self.a_folder, self.b_folder = os.path.join(self.tmp, "a-app"), os.path.join(self.tmp, "herdr-orchestrator")
         for f in (self.a_folder, self.b_folder):
             os.makedirs(f)
             subprocess.run(["git", "init", "-q", f], check=True)
@@ -4083,7 +4083,7 @@ class AutomationFromAnotherMachine(unittest.TestCase):
 
     def write_b(self):
         """B's task list as its own herdr-task keeps it."""
-        from_b = {"version": 1, "folder": self.b_folder, "kind": "repo", "name": "shepherdr", "prefix": "SHEP",
+        from_b = {"version": 1, "folder": self.b_folder, "kind": "repo", "name": "herdr-orchestrator", "prefix": "SHEP",
                   "next": len(self.b_tasks) + 1, "tasks": self.b_tasks}
         slug = self.b_folder.strip("/").replace("/", "-")
         with open(os.path.join(self.b_store, slug + ".json"), "w") as f:
@@ -4119,7 +4119,7 @@ class AutomationFromAnotherMachine(unittest.TestCase):
     def test_a_merge_on_b_starts_one_run_on_a(self):
         self.b_task("Fix the scheduler")
         self.b_task("Write docs")
-        a = self.auto("add", title="Update Shepherdr everywhere", prompt="Update every machine.", on="merged",
+        a = self.auto("add", title="Update herdr-orchestrator everywhere", prompt="Update every machine.", on="merged",
                       from_=f"vmb:{self.b_folder}")
         self.assertEqual(a["from"], f"vmb:{self.b_folder}")
         self.assertIn(f"When a task is merged in vmb:{self.b_folder}", a["trigger"])
@@ -4683,7 +4683,7 @@ class AssistantSettings(unittest.TestCase):
 
 
 class NoStarPrompt(unittest.TestCase):
-    """SHEP-225 (#981): the one-time "Enjoying Shepherdr?" GitHub star card (SHEP-79) is gone: no command, no module,
+    """SHEP-225 (#981): the one-time "Enjoying herdr-orchestrator?" GitHub star card (SHEP-79) is gone: no command, no module,
     no words in the Assistant's instructions; a settings file still holding its star_prompt reads as before."""
 
     def test_gone(self):
@@ -4693,7 +4693,7 @@ class NoStarPrompt(unittest.TestCase):
         self.assertIn("invalid choice", r.stderr)
         with open(os.path.join(ROOT, "templates", "assistant.md")) as f:
             words = f.read()
-        self.assertNotRegex(words, r"herdr-task star\b|Enjoying Shepherdr|GitHub star")
+        self.assertNotRegex(words, r"herdr-task star\b|Enjoying herdr-orchestrator|GitHub star")
 
     def test_an_old_settings_file_still_loads(self):
         from unittest import mock
@@ -4708,7 +4708,7 @@ class NoStarPrompt(unittest.TestCase):
 
 
 class Feedback(unittest.TestCase):
-    """SHEP-78: an agent's report of a problem in Shepherdr itself returns at once and reaches its
+    """SHEP-78: an agent's report of a problem in herdr-orchestrator itself returns at once and reaches its
     Assistant as a feedback news line; the Assistant offers once per problem, remembers the
     person's No, searches for a duplicate before filing and files a redacted issue. A throwaway
     store and settings file; hc and gh are faked, nothing is sent or filed. Made-up names only."""
@@ -4743,7 +4743,7 @@ class Feedback(unittest.TestCase):
         for target, name, value in [
             (settings, "SETTINGS", self.file), (fb, "STATE", os.path.join(self.dir, ".feedback.json")), (fb, "STORE", self.dir),
             (fb, "me", lambda: ("t9", self.caller)), (fb, "run", run), (fb, "cli_version", lambda agent: "0.9.1"),
-            (fb, "private_words", lambda: ["Jane Doe", "Jane", "janes-box"]), (fb, "shepherdr_version", lambda: "3.1.12"),
+            (fb, "private_words", lambda: ["Jane Doe", "Jane", "janes-box"]), (fb, "orchestrator_version", lambda: "3.1.12"),
             (launch, "caller_space", lambda: (self.caller.get("labels") or {}).get("herdr.task.space") or (self.caller.get("labels") or {}).get("herdr.space")),
             (launch, "coordinator_in", lambda space: "t5" if space == "sp1" else None),
             (fb, "queue_news", lambda to, text: self.held.append((to, text, "news"))),
@@ -5069,7 +5069,7 @@ class CodexAsksOnTheCard(unittest.TestCase):
         self.assertEqual(launch.ASK_TIMEOUT, 1800)
 
     def test_a_codex_workers_proof_and_commits_never_ask(self):
-        """#866: Codex's sandbox can't write Shepherdr's stores nor git's data, so a Codex worker runs its proof and
+        """#866: Codex's sandbox can't write herdr-orchestrator's stores nor git's data, so a Codex worker runs its proof and
         commits escalated: its own hook allows exactly those (not a Claude worker's, nor anything chained or riskier)."""
         sys.path.insert(0, BIN)
         from unittest import mock
@@ -5122,8 +5122,8 @@ class CodexAsksOnTheCard(unittest.TestCase):
         self.assertEqual(sum(str(a).startswith("projects") for a in launch.own_argv(mine, d)), 1)
         self.assertFalse(any(str(a).startswith("projects") for a in launch.own_argv(["codex"])))
 
-    def test_a_codex_worker_never_stops_on_shepherdrs_own_hooks(self):
-        """#977: Shepherdr's chat hooks in ~/.codex/hooks.json, new or updated, stopped a resumed Codex worker at
+    def test_a_codex_worker_never_stops_on_the_orchestrators_own_hooks(self):
+        """#977: herdr-orchestrator's chat hooks in ~/.codex/hooks.json, new or updated, stopped a resumed Codex worker at
         "Hooks need review" while the task showed Working. Its launch trusts exactly those, as Codex hashes them
         (the hash below is what real Codex 0.163 wrote to config.toml on "Trust all")."""
         sys.path.insert(0, BIN)

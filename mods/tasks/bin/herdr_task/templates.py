@@ -37,7 +37,7 @@ AFTER_READY = ("- After ready, GitHub news on your pull request may arrive (a <h
                "`--agents-md \"<one line>\"` to your ready command. The Assistant decides whether it goes in; never commit it yourself.\n")
 _REVIEW_END = "as do findings below the bar."
 WORKER_MD_BEFORE_SUMMARY = WORKER_MD_BEFORE_GATE.replace(_REVIEW_END, _REVIEW_END + REVIEW_GATE) + AFTER_READY
-# Since the ready summary is short and for the person (HERD-64, as Shepherdr's).
+# Since the ready summary is short and for the person (HERD-64, as herdr-orchestrator's).
 READY_LINE = ("- When the work is finished, run the `herdr-task ready` command given at the end of your brief, with a short summary.")
 SUMMARY_RULE = ("- When the work is finished, run the `herdr-task ready` command given at the end of your brief. Its summary is for "
                 "the person, like explaining it to a five-year-old: at most 160 characters of plain words on what they now see or "
@@ -50,7 +50,7 @@ ESTIMATE_OLD = "how far through the whole task you are and about how long is lef
 ESTIMATE_RULE = ("how far through the whole task you are (`--done`). Leave out `--left` at the start: add about how long is left "
                  "only once you know the work well enough for a real estimate, never a first guess. The person sees it in the Tasks panel.")
 WORKER_MD_BEFORE_CUT = WORKER_MD_BEFORE_ESTIMATE.replace(ESTIMATE_OLD, ESTIMATE_RULE)
-# Since a longer status line is cut at a word (HERD-84, as Shepherdr's): the agent knows before it writes one.
+# Since a longer status line is cut at a word (HERD-84, as herdr-orchestrator's): the agent knows before it writes one.
 CUT_OLD = "with what you're doing now (at most 40 characters), how far"
 CUT_RULE = "with what you're doing now (at most 40 characters; a longer one is cut at a word), how far"
 WORKER_MD_BEFORE_DETAILS = WORKER_MD_BEFORE_CUT.replace(CUT_OLD, CUT_RULE)

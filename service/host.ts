@@ -78,7 +78,7 @@ export class Host {
     try { return readdirSync(join(where().tasks, ".remote")).filter((x) => /^[\w.-]+$/.test(x) && !x.endsWith(".secret")); } catch { return []; }
   }
 
-  /** Machines with a Shepherdr service of their own, by name here: each does its own machine's work. */
+  /** Machines with a herdr-orchestrator service of their own, by name here: each does its own machine's work. */
   participants(): Set<string> {
     const out = new Set<string>();
     for (const [name, m] of this.machines) if (m.id && this.nodes.has(m.id)) out.add(name);

@@ -19,7 +19,7 @@
       "herdr": {
         "mods": [
           "spaces-chat",
-          "workspace-chrome-shepherdr"
+          "workspace-chrome-orchestrator"
         ]
       },
       "web": {
@@ -242,7 +242,7 @@
       ],
       "herdr": {
         "mods": [
-          "shepherdr-settings"
+          "orchestrator-settings"
         ]
       },
       "web": {
@@ -271,7 +271,7 @@
       "view_only": true,
       "herdr": {
         "mods": [
-          "workspace-chrome-shepherdr"
+          "workspace-chrome-orchestrator"
         ]
       },
       "web": {
@@ -865,7 +865,7 @@
       "herdr": {
         "mods": [
           "chat",
-          "shepherdr-settings"
+          "orchestrator-settings"
         ]
       },
       "web": {
@@ -1110,7 +1110,7 @@
       "herdr": {
         "mods": [
           "pane-chat",
-          "shepherdr-settings"
+          "orchestrator-settings"
         ]
       },
       "web": {
@@ -1169,7 +1169,7 @@
       ],
       "herdr": {
         "mods": [
-          "shepherdr-settings"
+          "orchestrator-settings"
         ]
       },
       "web": {
@@ -1198,7 +1198,7 @@
       ],
       "herdr": {
         "mods": [
-          "shepherdr-settings"
+          "orchestrator-settings"
         ]
       },
       "web": {
@@ -1232,7 +1232,7 @@
         "mods": [
           "tabs-tasks",
           "chat",
-          "shepherdr-settings",
+          "orchestrator-settings",
           "artifacts",
           "jump",
           "accept-card",

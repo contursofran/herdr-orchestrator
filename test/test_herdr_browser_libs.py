@@ -38,7 +38,7 @@ RESOLVED = """\tlibgbm.so.1 => /lib/x86_64-linux-gnu/libgbm.so.1 (0x00007f)
 @unittest.skipUnless(sys.platform.startswith("linux"), "the library check is Linux's (ldd); macOS has none")
 class MissingLibraries(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.mkdtemp(prefix="shepherdr-libs-")
+        self.tmp = tempfile.mkdtemp(prefix="herdr-orchestrator-libs-")
         self.home = os.path.join(self.tmp, "home")
         self.bin = os.path.join(self.tmp, "bin")
         self.fakes = os.path.join(self.tmp, "fakes")

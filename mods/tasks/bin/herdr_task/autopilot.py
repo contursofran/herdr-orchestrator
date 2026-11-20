@@ -22,7 +22,7 @@ from .automations import EVENTS, events_in, HOW, next_run, parse_every, parse_on
 
 
 # ---- autopilot ------------------------------------------------------------------------------
-# How it wakes is a setting, kept with the others in Shepherdr settings (~/.config/herdr-orchestrator/settings.json,
+# How it wakes is a setting, kept with the others in herdr-orchestrator settings (~/.config/herdr-orchestrator/settings.json,
 # which the window pushes to every machine and the web's host keeps in step): "autopilot" =
 # {"every" (an --every rule as written, "" for none), "events" ([--on events]), "heartbeat" (its
 # words)} in "everywhere", and a space's own in "spaces"[its id]: what a space sets wins, what it
@@ -173,7 +173,7 @@ def heartbeat_words(path):
 
 
 def heartbeat_of(space=None, cfg=None):
-    """(words, where) of the heartbeat a space works from (None: Everywhere's): its own in Shepherdr
+    """(words, where) of the heartbeat a space works from (None: Everywhere's): its own in herdr-orchestrator
     settings ("space"), else Everywhere's there ("everywhere"), else Everywhere's file ("file"; the
     starter while there is none)."""
     every, own = autopilot_layers(read_settings() if cfg is None else cfg, space)
@@ -185,7 +185,7 @@ def heartbeat_of(space=None, cfg=None):
 
 
 def direction_of(space=None, cfg=None):
-    """The one line a space steers toward (Shepherdr settings' "direction"): its own, else
+    """The one line a space steers toward (herdr-orchestrator settings' "direction"): its own, else
     Everywhere's; "" when none is set (it then works out what matters from the project)."""
     every, own = autopilot_layers(read_settings() if cfg is None else cfg, space)
     for layer in (own, every):
@@ -448,7 +448,7 @@ def rule_of(x):
 
 def resolve(d, a, space=None, cfg=None):
     """What applies in a space (its record `a` and id; None: Everywhere's own): {on, every, events,
-    own}: its own on/off (off until switched on); the schedule and events it sets in Shepherdr
+    own}: its own on/off (off until switched on); the schedule and events it sets in herdr-orchestrator
     settings (cfg, read when not given), else Everywhere's there, else Everywhere's from before
     (.autopilot.json), else the defaults. own: the fields the space sets itself."""
     e = {**everywhere_default(), **{k: v for k, v in (d.get("everywhere") or {}).items() if k in ("every", "events")}}

@@ -137,7 +137,7 @@ export class Model {
   /** Each other machine's Autopilot file (its ~/.local/share/herdr-orchestrator/tasks/.autopilot.json, read with its lists): its spaces' switches
    *  and wakes, kept and woken there. */
   private pilots = new Map<string, any>();
-  /** Shepherdr settings as this machine has them (each space's own Autopilot, another machine's by "vm/sp1"). */
+  /** herdr-orchestrator settings as this machine has them (each space's own Autopilot, another machine's by "vm/sp1"). */
   private settings: any = {};
   /** Autopilot as Everywhere has it on this machine (herdr-task's view: its schedule, events, heartbeat's words and
    *  what wakes it in words) */

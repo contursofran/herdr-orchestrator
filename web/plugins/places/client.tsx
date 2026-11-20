@@ -31,7 +31,7 @@ import * as SPc from '@core/spaces.js'
 
 /* ---------- folded sections (Pinned, the machines), remembered on this device ---------- */
 
-const KEY = 'shepherdr.folded'
+const KEY = 'herdr-orchestrator.folded'
 let folded: string[] = (() => {
   try {
     const v = JSON.parse(localStorage.getItem(KEY) ?? '[]') as unknown
@@ -88,7 +88,7 @@ function useOpenedOff() {
   )
 }
 
-/** a machine Shepherdr can't reach (Offline, or Connecting…): no +, no meter, folded until opened */
+/** a machine herdr-orchestrator can't reach (Offline, or Connecting…): no +, no meter, folded until opened */
 const offline = (m: Machine) => m.status === 'off' || !!m.connecting
 
 /* ---------- the order you dragged or moved, shown at once until the server's snapshot has it ---------- */
@@ -334,7 +334,7 @@ function usePlaceRow({ p, snap, where }: { p: Place; snap: Snapshot; where?: str
           className={clsx('pilot-mark grid size-3.5 shrink-0 place-items-center', !pilot && 'invisible', waking ? 'text-work' : 'text-fg3')}>
           <AutopilotIcon className="size-3" />
         </span>
-        {/* Shepherdr 3: a space's own icon (an emoji) where it has one */}
+        {/* herdr-orchestrator 3: a space's own icon (an emoji) where it has one */}
         {treeMark.get(p.id) ? <BranchIcon className={clsx(icon, 'text-fg3')} /> : p.emoji ? <span aria-hidden className={clsx(icon, 'grid place-items-center text-[0.9375rem] leading-none', quiet && 'opacity-50')}>{p.emoji}</span> : <HashIcon className={clsx(icon, fresh ? 'text-fg' : sel && !quiet ? 'text-fg2' : 'text-fg3')} />}
       </>
     ),
@@ -550,8 +550,8 @@ function Space({ p, snap, sort, at }: { p: Place; snap: Snapshot; sort: Sort; at
   // Shift+F2 (3.0's rename-space): the shown space's row takes its name box
   useEffect(() => {
     const on = (e: Event) => (e as CustomEvent<string>).detail === p.id && openRename(p.id)
-    addEventListener('shepherdr:rename', on)
-    return () => removeEventListener('shepherdr:rename', on)
+    addEventListener('herdr-orchestrator:rename', on)
+    return () => removeEventListener('herdr-orchestrator:rename', on)
   }, [p.id, rename.start])
   const top = at === 'top'
   const group = sort.under

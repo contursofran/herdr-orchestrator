@@ -8,7 +8,7 @@ export type Appearance = 'system' | 'light' | 'dark'
 export const APPEARANCES: Appearance[] = ['system', 'light', 'dark']
 
 /** where the pick is kept (index.html reads the same key) */
-const KEY = 'shepherdr.appearance'
+const KEY = 'herdr-orchestrator.appearance'
 /** the bars over the app, as the top of the screen under them (--bg) */
 const BAR = { light: '#ffffff', dark: '#0b0b0d' }
 

@@ -152,7 +152,7 @@ export class Live {
 
   /** A wake word was heard on device `from` (POST /api/voice/wake, SHEP-240): that device's page on screen, the one used
    *  last, starts a voice call (or shows the one on: never hangs up). Pages of other devices never hear it. None on
-   *  screen yet (a phone bringing Shepherdr forward or starting it): the first that shows up within 15 s does. True: a
+   *  screen yet (a phone bringing herdr-orchestrator forward or starting it): the first that shows up within 15 s does. True: a
    *  page got it now. */
   voiceWake(from: string) { return this.toDevice(from, JSON.stringify({ type: "voice" })); }
 

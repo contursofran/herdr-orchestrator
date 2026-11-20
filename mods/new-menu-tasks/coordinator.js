@@ -109,8 +109,8 @@ function folderOf(space) {
   return p?.cwd || agent?.cwd || space.folder || home();
 }
 
-// Shepherdr settings (mods/shepherdr-settings writes them; herdr-task reads them too):
-// Shepherdr's settings file (~/.config/herdr-orchestrator/settings.json) = { version, everywhere: SETTINGS, machines: { <machine>: SETTINGS },
+// herdr-orchestrator settings (mods/orchestrator-settings writes them; herdr-task reads them too):
+// herdr-orchestrator's settings file (~/.config/herdr-orchestrator/settings.json) = { version, everywhere: SETTINGS, machines: { <machine>: SETTINGS },
 //   spaces: { <space id>: { folder, name, machine, ...SETTINGS } } }
 // with SETTINGS = { coordinator, worker, reviewer: { agent, model, effort, fast, perm },
 //   tasks: { merge: "auto"|"checks"|"ask", review_rounds, must_fix: "blocker"|"major"|"minor", max_running,
@@ -121,16 +121,16 @@ function folderOf(space) {
 // spaces now; a machine's layer holds its machine-only rows (machine, home) and is still read for
 // anything it set for all its spaces before machine scope went.
 export const HERDR_ORCH_FILE = () => dirs().settings;   // ~/.config/herdr-orchestrator/settings.json (lib/dirs.js)
-export const SHEPHERDR_DEFAULTS = { tasks: { merge: "ask", review_rounds: 0, must_fix: "major", max_running: 10, archive_after: 7 }, automations: { enabled: true },
+export const ORCHESTRATOR_DEFAULTS = { tasks: { merge: "ask", review_rounds: 0, must_fix: "major", max_running: 10, archive_after: 7 }, automations: { enabled: true },
   agents: { reactions: true, suggestions: true, feedback: true, feedback_repo: "" } };
 export const LOCAL_MACHINE = "local";
-export async function readShepherdr() {
+export async function readOrchestratorSettings() {
   try { return JSON.parse((await readTextFile(HERDR_ORCH_FILE())) ?? "{}") ?? {}; } catch { return {}; }
 }
 // A scope: null (Everywhere), "m:<machine>" (a machine), or a space id.
 export const machineOfSpace = (id) => (String(id).includes("/") ? String(id).split("/")[0] : LOCAL_MACHINE);
 // The layers a scope reads, most specific first: [{ level: "space"|"machine"|"everywhere", key, obj }].
-export function shepherdrLayers(cfg, scope = null) {
+export function orchestratorSettingsLayers(cfg, scope = null) {
   const out = [];
   let machine = null;
   if (scope && scope.startsWith("m:")) machine = scope.slice(2);
@@ -141,13 +141,13 @@ export function shepherdrLayers(cfg, scope = null) {
 }
 // What applies in a scope: the most specific layer that sets it wins, else the defaults.
 // Agents are whole choices; tasks and automations merge key by key.
-export function shepherdrFor(cfg, scope = null) {
-  const layers = shepherdrLayers(cfg, scope).reverse();
+export function orchestratorSettingsFor(cfg, scope = null) {
+  const layers = orchestratorSettingsLayers(cfg, scope).reverse();
   const out = {};
   for (const role of ["coordinator", "worker", "reviewer"]) out[role] = layers.reduce((v, l) => l.obj[role] ?? v, null);
   // agents: Reactions set before they were for every agent (SHEP-42's assistant.reactions) count where a layer has no agents'
   const own = (l, k) => (k === "agents" && typeof l.obj.assistant?.reactions === "boolean" ? { reactions: l.obj.assistant.reactions, ...l.obj.agents } : l.obj[k] ?? {});
-  for (const k of ["tasks", "automations", "agents"]) out[k] = Object.assign({ ...SHEPHERDR_DEFAULTS[k] }, ...layers.map((l) => own(l, k)));
+  for (const k of ["tasks", "automations", "agents"]) out[k] = Object.assign({ ...ORCHESTRATOR_DEFAULTS[k] }, ...layers.map((l) => own(l, k)));
   return out;
 }
 
@@ -183,8 +183,8 @@ export async function openCoordinator(space, show = true, settings = null) {
     return;
   }
   const folder = folderOf(space);
-  // Unless the New space dialog chose, the coordinator runs what Shepherdr settings say for the space.
-  if (!settings) settings = shepherdrFor(await readShepherdr(), space.id).coordinator;
+  // Unless the New space dialog chose, the coordinator runs what herdr-orchestrator settings say for the space.
+  if (!settings) settings = orchestratorSettingsFor(await readOrchestratorSettings(), space.id).coordinator;
   const slot = `coord-${space.id}-${Math.random().toString(36).slice(2, 10)}`;
   const was = focused();
   const running = runningAssistant(space);
@@ -363,7 +363,7 @@ function liveSlots() {
   return Object.fromEntries(Object.entries(slots).filter(([, s]) => !s.pane || have.has(s.pane)));
 }
 
-// Whether a machine runs a Shepherdr window of its own (its herdr-app home has mods): that window
+// Whether a machine runs a herdr-orchestrator window of its own (its herdr-app home has mods): that window
 // gives its own new spaces their Assistant, so this one leaves them be. Asked once per machine.
 const ownWindow = new Map();
 function hasOwnWindow(machine) {
@@ -379,7 +379,7 @@ function hasOwnWindow(machine) {
 const wasReady = new Set();
 
 // Called from the tab bar's render: every new space gets a coordinator tab, on this computer and on
-// other machines (one with a Shepherdr window of its own sees to its own). Spaces there when this
+// other machines (one with a herdr-orchestrator window of its own sees to its own). Spaces there when this
 // first ran, made while it was off, or made on a machine while it was away, are left alone.
 export function watchNewSpaces(spaces) {
   if (machines().find((m) => m.name == null)?.layout !== "ready") return;

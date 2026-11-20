@@ -23,7 +23,7 @@ def _real_home():
 
 
 REAL = os.path.realpath(_real_home())
-# The person's Herdr and Shepherdr state: data, settings, the synced question hook, chat cards, agents' own configs.
+# The person's Herdr and herdr-orchestrator state: data, settings, the synced question hook, chat cards, agents' own configs.
 REAL_DIRS = [os.path.join(REAL, p) for p in (
     ".herdr", ".config/herdr-app", ".config/herdr-core", ".config/herdr-orchestrator", ".local/share/herdr",
     ".local/share/herdr-orchestrator", ".local/state/herdr-core", ".local/state/herdr-orchestrator", ".cache/herdr-orchestrator", ".claude", ".codex")]

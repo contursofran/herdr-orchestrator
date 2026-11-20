@@ -1,4 +1,4 @@
-// Unread, as Slack has it: a coordinator's chat with something new from it or Shepherdr that you haven't seen makes its
+// Unread, as Slack has it: a coordinator's chat with something new from it or herdr-orchestrator that you haven't seen makes its
 // space's row bold (its own chat only), and a muted space (Notify: Off) stays quiet. Headings never are: they have no
 // chat; a folded one only has a quiet dot for its spaces (plugins/places). Tasks' chats count for nothing here: a
 // task's row shows its own status.

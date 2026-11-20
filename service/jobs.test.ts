@@ -12,7 +12,7 @@ const { windowLeavesIt, agentMachines } = await import("./jobs.ts");
 test("no window installed: the service does it", () => {
   expect(windowLeavesIt()).toBe(true);
 });
-test("Herdr with its own mods only (no Shepherdr layout, as an always-on box): the service does it", () => {
+test("Herdr with its own mods only (no herdr-orchestrator layout, as an always-on box): the service does it", () => {
   mkdirSync(join(home, "mods", "changes"), { recursive: true });
   expect(windowLeavesIt()).toBe(true);
 });

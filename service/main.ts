@@ -1,4 +1,4 @@
-// The Shepherdr service: one per machine, always on (user systemd / launchd). It does Shepherdr's background work
+// The herdr-orchestrator service: one per machine, always on (user systemd / launchd). It does herdr-orchestrator's background work
 // and serves the web app with its live updates, on 127.0.0.1 only; the tailnet reaches it through
 // tailscale serve --set-path /herdr-orchestrator (never funnel).
 //
@@ -111,7 +111,7 @@ if (!release) {
 if (!existsSync(TOKEN)) writeFileSync(TOKEN, randomBytes(24).toString("hex") + "\n", { mode: 0o600 });
 const token = readFileSync(TOKEN, "utf8").trim();
 // This start's id (GitHub #635): written with the port into service.json once the port is ours, and answered by health
-// to this machine's callers only, so the window (lib/local.js), the CLI and a call know it is Shepherdr's own service
+// to this machine's callers only, so the window (lib/local.js), the CLI and a call know it is herdr-orchestrator's own service
 // on that port, never another app holding it, before they send the token or the shared state.
 const SERVICE_ID = randomBytes(16).toString("hex");
 const SERVICE_FILE = join(DATA, "service.json");
@@ -211,7 +211,7 @@ setInterval(() => void refreshSecrets(), 30_000);
 const home = new SecretsHome(hub);
 home.on(() => { void refreshSecrets(); });
 void home.start();
-// Settings › Secrets › Kept on: a move this service started (shepherdr secrets move-to), until it ends
+// Settings › Secrets › Kept on: a move this service started (herdr-orchestrator secrets move-to), until it ends
 let secretsMoving: { to: string; at: number; error?: string } | null = null;
 async function moveSecrets(machine: string | null) {
   const target = machine ?? home.me?.name ?? "here";
@@ -234,7 +234,7 @@ async function moveSecrets(machine: string | null) {
 }
 // Secrets follow Serve from unless the person picked a machine (core/secrets.js followTo): kept elsewhere (where they
 // were before, or Serve from moved), the machine serving the web app moves them to itself the same safe way as Kept on
-// (shepherdr secrets move-to: a backup, a verified copy, rollback), once the machine that keeps them is on; a failed
+// (herdr-orchestrator secrets move-to: a backup, a verified copy, rollback), once the machine that keeps them is on; a failed
 // try waits ten minutes and says why in Settings › Secrets.
 let followTried = 0;
 setInterval(() => {
@@ -356,7 +356,7 @@ model.onBuild = (b) => {
 };
 model.start();
 
-// The Web add-on (Shepherdr settings > Window > Add-ons, Everywhere's "off" in ~/.config/herdr-orchestrator/settings.json): off, the web
+// The Web add-on (herdr-orchestrator settings > Window > Add-ons, Everywhere's "off" in ~/.config/herdr-orchestrator/settings.json): off, the web
 // app stops and /herdr-orchestrator is no longer shared; the service keeps its background work.
 const APP_DATA = join(process.env.HERDR_APP_HOME || join(HOME, ".config", "herdr-app"), "data", "herdr-orchestrator");
 /** where files from a page's message box are kept (the window keeps pasted ones there too) */
@@ -367,9 +367,9 @@ function webOn() {
 }
 
 // Tailscale can come up after the service: look again now and then, and keep /herdr-orchestrator shared while web is on. What
-// the window's Shepherdr settings > Web shows goes into ~/.local/state/herdr-orchestrator/service/web.json (the link, its QR code).
+// the window's herdr-orchestrator settings > Web shows goes into ~/.local/state/herdr-orchestrator/service/web.json (the link, its QR code).
 let wasOn: boolean | null = null;
-// Serve from: a move this service started (shepherdr web serve-from), until it ends; what went wrong, for a while
+// Serve from: a move this service started (herdr-orchestrator web serve-from), until it ends; what went wrong, for a while
 let moving: { to: string; at: number; error?: string } | null = null;
 async function tailnet() {
   me = await whoami();
@@ -390,7 +390,7 @@ async function tailnet() {
     else why = shareWhy = await share(me.dns, PORT, hp);
   } else if (me && (!on || !serving) && wasOn !== false) {
     await unshare(me.dns, PORT);
-    // moved away: what the move here set aside is shared again (shepherdr web serve-from --take-link)
+    // moved away: what the move here set aside is shared again (herdr-orchestrator web serve-from --take-link)
     if (!serving) await restoreShare(join(DATA, "replaced-share.json"));
   }
   if (!serving && !link) why = host.reachable() ? "The machine serving the web app hasn't said its link yet." : "The machine serving the web app can't be reached now.";
@@ -435,7 +435,7 @@ async function serveFrom(machine: string | null) {
   await tailnet();
 }
 host.on(() => { void tailnet(); model.rebuild(); });
-// shepherdr web https-port changed the port: move the share and the links within seconds, not at the next minute
+// herdr-orchestrator web https-port changed the port: move the share and the links within seconds, not at the next minute
 watchFile(HTTPS_PORT_FILE, { interval: 2000 }, () => { if (httpsPort() !== hp) void tailnet(); });
 await tailnet();
 setInterval(tailnet, 60_000);
@@ -661,7 +661,7 @@ async function doAction(body: any): Promise<Response> {
   }
   if (body?.type === "limits-check") { await machines.checkNow(); return json({ ok: true }); }
   if (body?.type === "secrets-move") {
-    // Settings › Secrets › Kept on: the vault moves (shepherdr secrets move-to); the page sees it as it goes
+    // Settings › Secrets › Kept on: the vault moves (herdr-orchestrator secrets move-to); the page sees it as it goes
     const m = HCORE.pickedMachine(body.machine, home.me?.name);
     if (m !== null && !home.machines.has(m)) return json({ ok: false, error: "That machine isn't linked." });
     if (secretsMoving && !secretsMoving.error) return json({ ok: false, error: `Already moving them to ${secretsMoving.to}.` });
@@ -740,14 +740,14 @@ const server = Bun.serve<{ who: string }>({
       return srv.upgrade(req, { data: { who: pass.who, term } as any }) ? undefined : new Response("upgrade failed", { status: 400 });
     }
     if (path === "/api/voice") {
-      // a voice call with Shepherdr (the Voice add-on, SHEP-105): from anywhere; chat, the chat whose call button
+      // a voice call with herdr-orchestrator (the Voice add-on, SHEP-105): from anywhere; chat, the chat whose call button
       // started it (its "here" while the screen shows no chat), if it is running
       if (offList().includes("voice")) return new Response("no calls here", { status: 404 });
       const asked = (url.searchParams.get("chat") ?? "").slice(0, 300), addr = asked ? compat.addrOf(asked) : null;
       const key = addr && !addr.startsWith("log:") ? asked : null;
       // SHEP-102: a page whose socket dropped (a locked phone) comes back to its call with the call's id
       const resume = (url.searchParams.get("resume") ?? "").slice(0, 64);
-      // the device it is on: Shepherdr Wake takes a call over from its own device's page only (SHEP-251)
+      // the device it is on: the phone companion takes a call over from its own device's page only (SHEP-251)
       const from = await deviceFrom(req, pass.via);
       return srv.upgrade(req, { data: { who: pass.who, from, voice: { key, resume } } as any }) ? undefined : new Response("upgrade failed", { status: 400 });
     }
@@ -919,7 +919,7 @@ const server = Bun.serve<{ who: string }>({
       return glance.stream(native ? await deviceFrom(req, pass.via) : null, native, req.signal);
     }
     if (path === "/api/open" && req.method === "POST") {
-      // a tap on the phone app's alert (SHEP-246): the Shepherdr page already open on that device goes there in place, as
+      // a tap on the phone app's alert (SHEP-246): the herdr-orchestrator page already open on that device goes there in place, as
       // the wake does (SHEP-240), so the phone never makes Chrome build the page again. shown: false, held 15 s.
       const b = await req.json().catch(() => null);
       if (!openUrlOk(b?.url)) return json({ error: "Not a herdr-orchestrator link: ./?place=… or ./#accept=…" }, 400);
@@ -928,7 +928,7 @@ const server = Bun.serve<{ who: string }>({
       return json({ ok: true, shown: live.go(from, b.url) });
     }
     if (path === "/api/voice/wake" && req.method === "POST") {
-      // a wake word heard on a phone (Shepherdr Wake, SHEP-240): its Shepherdr page already open starts a call, as
+      // a wake word heard on a phone (the phone companion, SHEP-240): its herdr-orchestrator page already open starts a call, as
       // ?voice=1 would, without the phone opening a second page. shown: false, it waits 15 s for that page to show up.
       if (offList().includes("voice")) return json({ error: "voice is off" }, 409);
       const from = await deviceFrom(req, pass.via);
@@ -936,7 +936,7 @@ const server = Bun.serve<{ who: string }>({
       return json({ ok: true, shown: live.voiceWake(from) });
     }
     if (path === "/api/voice/handoff" && req.method === "POST") {
-      // SHEP-251: the phone locks during a call on its page (Shepherdr Wake): the page lets go, the call holds, and
+      // SHEP-251: the phone locks during a call on its page (the phone companion): the page lets go, the call holds, and
       // Wake comes back to it by its id (/api/voice?resume=<id>), as a page after a dropped socket does
       if (offList().includes("voice")) return json({ error: "voice is off" }, 409);
       const from = await deviceFrom(req, pass.via);

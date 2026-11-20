@@ -61,7 +61,7 @@ then open the tailnet link. Never on a changed `HOME` or `HERDR_APP_HOME`.
 
 GitHub runs these and more on every pull request (`.github/workflows/check.yml`). `herdr-app check <mod folder>`
 needs the window's runtime and runs a mod's `init()` for real (it can reach the live app): only on a person's
-machine, and never for `shepherdr-settings` (its init pushes settings to other machines).
+machine, and never for `orchestrator-settings` (its init pushes settings to other machines).
 
 ## Parity check (a machine that runs these mods by hand)
 

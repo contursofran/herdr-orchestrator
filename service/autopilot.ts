@@ -1,5 +1,5 @@
 // Autopilot from the web, as the window's Settings › Autopilot: Everywhere's heartbeat, schedule and events, and a
-// space's own, kept in Shepherdr settings with the rest (service/settings.ts writes them); herdr-task checks a schedule's
+// space's own, kept in herdr-orchestrator settings with the rest (service/settings.ts writes them); herdr-task checks a schedule's
 // words first, and wakes the spaces switched on in their Assistant's header (service/actions.ts mode). Its refusal is
 // said as herdr-task says it.
 import * as APc from "../core/autopilot.js";

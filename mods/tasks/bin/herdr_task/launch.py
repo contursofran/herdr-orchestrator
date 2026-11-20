@@ -24,7 +24,7 @@ from .browsers import browser_line, browser_path
 
 
 # ---- an agent's own herdr-task commands never ask -------------------------------------------
-# As Shepherdr: at each launch the agent is allowed exactly this herdr-task's path, verb by verb,
+# As herdr-orchestrator: at each launch the agent is allowed exactly this herdr-task's path, verb by verb,
 # without touching the person's CLI settings: Claude Code in the --settings it gets at launch,
 # Codex through a PermissionRequest hook given with -c (`herdr-task _allow` answers it, and hands
 # anything else to the chat's card: ask_card).
@@ -33,7 +33,7 @@ from .browsers import browser_line, browser_path
 ASK_TIMEOUT = 1800
 OWN = ["ready", "reviewed", "status", "alert", "feedback", "show", "list", "where"]
 # herdr-secret's agent commands (~/.config/herdr-app/bin/herdr-secret): asking for a secret and
-# using one by name never ask either, as Shepherdr's secret commands. Written by its full path or
+# using one by name never ask either, as herdr-orchestrator's secret commands. Written by its full path or
 # its bare name. Reviewers get none (launch() skips own_argv for them; herdr-secret refuses them).
 SECRET = ["ask", "run", "env", "list"]
 # herdr-artifact's verbs a worker uses for its proof (#866): Codex's sandbox can't write its store,
@@ -87,7 +87,7 @@ def artifact_path():
 def own_argv(argv, folder=None):
     """An agent's argv with its own herdr-task commands allowed and its asks on the chat's card
     (Claude Code and Codex). SHEP-139: a Claude worker gets the card's hook in its --settings too,
-    so a machine whose ~/.claude/settings.json lacks Shepherdr's hook (one that only runs tasks)
+    so a machine whose ~/.claude/settings.json lacks herdr-orchestrator's hook (one that only runs tasks)
     still asks on the card; ask-hook.sh's own copy steps aside for it."""
     path, out = own_path(), list(argv)
     k = agent_key(out)
@@ -134,7 +134,7 @@ def own_argv(argv, folder=None):
         # hook_hash, config fingerprint.rs version_for_toml), so no other hook is trusted by it.
         ident = {"event_name": "permission_request", "hooks": [{"async": False, "command": hook, "timeout": ASK_TIMEOUT, "type": "command"}]}
         state = {"/<session-flags>/config.toml:permission_request:0:0": codex_hook_hash(ident)}
-        # #977: Shepherdr's own hooks in ~/.codex/hooks.json (the chat's question card) trusted for
+        # #977: herdr-orchestrator's own hooks in ~/.codex/hooks.json (the chat's question card) trusted for
         # this launch too, else a new or updated one stops the worker at "Hooks need review" with
         # nobody at its keys. Only ours, exactly as written there: the person's own stay theirs.
         state.update(own_codex_hooks())
@@ -158,7 +158,7 @@ CODEX_EVENTS = {"SessionStart": "session_start", "PermissionRequest": "permissio
 
 
 def own_codex_hooks():
-    """{hooks.state key: hash} for Shepherdr's own hooks in Codex's hooks.json (the installer's
+    """{hooks.state key: hash} for herdr-orchestrator's own hooks in Codex's hooks.json (the installer's
     session-note.sh and ask-hook.sh), as Codex keys and hashes them; {} when there are none or
     one has a shape whose hash we can't be sure of (it then asks, as before)."""
     path = os.path.join(os.environ.get("CODEX_HOME") or os.path.expanduser("~/.codex"), "hooks.json")
@@ -194,7 +194,7 @@ UNQUOTE = re.compile(r"""'([^']*)'|"((?:[^"\\]|\\.)*)\"""")
 
 def own_command(path, text, sandboxed=False):
     """Whether a shell command is exactly one of this herdr-task's own verbs: one simple command,
-    nothing that expands, redirects or chains (as Shepherdr's ownCommand). sandboxed (a Codex
+    nothing that expands, redirects or chains (as herdr-orchestrator's ownCommand). sandboxed (a Codex
     worker's): herdr-artifact's proof verbs and git add/commit too."""
     if not isinstance(text, str):
         return False
@@ -716,7 +716,7 @@ def set_branch(s, t, name):
 
 
 def branch_for(s, task):
-    """A task's branch: its own (--branch), else its folder's pattern (Shepherdr settings > Tasks >
+    """A task's branch: its own (--branch), else its folder's pattern (herdr-orchestrator settings > Tasks >
     Branch names: {n} its number, {key} its id, {slug} its title's words), else task/{n}-{slug}."""
     if task.get("branch"):
         return task["branch"]
@@ -739,7 +739,7 @@ def folder_for(s, task):
         raise Fail("Worktrees need a git repo. Use --here.")
     main = s.loc["folder"]
     branch = branch_for(s, task)
-    # New worktrees under Shepherdr's data (Settings > Tasks > Worktree folder: another root, a bigger disk);
+    # New worktrees under herdr-orchestrator's data (Settings > Tasks > Worktree folder: another root, a bigger disk);
     # a task that has one keeps it wherever it is (git keeps its absolute path).
     root = os.path.expanduser(str(settings_for(s, task.get("space"))["tasks"].get("worktree_root") or "").strip()) or WORKTREES
     path = os.path.join(root, os.path.basename(main), re.sub(r"[^A-Za-z0-9._-]+", "-", branch).strip("-"))

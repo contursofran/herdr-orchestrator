@@ -1,7 +1,7 @@
 // A voice call from the web (2.1's call: the page streams its microphone here as 16 kHz PCM and plays what comes
 // back), as the window's call (mods/chat/voice.ts) with the phone's microphone and speaker: the same ElevenLabs voice
 // agent (core/voice.js), the same key and agent id (<app home>/secrets), its tools answered here (voice-tools.ts:
-// look, open, send, act, with the reach of the person's web app). SHEP-105: the call is with Shepherdr itself, not a
+// look, open, send, act, with the reach of the person's web app). SHEP-105: the call is with herdr-orchestrator itself, not a
 // chat: it hears the chats it sent to and the one on screen, and what needs the person anywhere (voice-hear.ts), as
 // [Update]s held until the person and the voice are quiet. The page tells where it is (what it shows) as it moves; an
 // open comes back to it as a nav message.
@@ -75,7 +75,7 @@ export function callToResume(id: string, who: string) {
   const c = calls.get(id);
   return c && c.who === who ? c.call : null;
 }
-/** SHEP-251: Shepherdr Wake takes the call of device `from`'s page as the phone locks (POST /api/voice/handoff): that
+/** SHEP-251: the phone companion takes the call of device `from`'s page as the phone locks (POST /api/voice/handoff): that
  *  page is told it was handed on and let go, and the call holds for Wake to come back to it by its id. Null: that
  *  device has no page on a call. */
 export function handOff(from: string, who: string) {
@@ -111,7 +111,7 @@ export type CallDeps = {
   holdMs?: number;
   /** who called (a page comes back only as them) */
   who?: string;
-  /** the tailnet device the page is on (a handoff to Shepherdr Wake finds the call by it, SHEP-251) */
+  /** the tailnet device the page is on (a handoff to the phone companion finds the call by it, SHEP-251) */
   from?: string | null;
 };
 
@@ -130,7 +130,7 @@ async function dialElevenLabs(hub: Hub) {
 export function pageWhere(m: any): Partial<Where> {
   const s = (v: unknown, n = 200) => (typeof v === "string" && v.length <= n ? v : null);
   return { device: s(m.device, 20), place: s(m.place), task: s(m.task), tab: s(m.tab, 40), artifact: s(m.artifact), settings: m.settings === true, ...(typeof m.full === "boolean" ? { full: m.full } : {}),
-    // SHEP-251: Shepherdr Wake's call says whether the phone is locked and its screen on
+    // SHEP-251: the phone companion's call says whether the phone is locked and its screen on
     ...(typeof m.locked === "boolean" ? { locked: m.locked } : {}), ...(typeof m.screen === "boolean" ? { screen: m.screen } : {}) };
 }
 
@@ -286,7 +286,7 @@ export function voiceCall(hub: Hub, deps: CallDeps, first: Page) {
       gone = Date.now();
       hold = setTimeout(() => end(), deps.holdMs ?? HOLD_MS);
     },
-    /** SHEP-251: the page on device `from` hands the call on (to Shepherdr Wake, the phone locking): it is told
+    /** SHEP-251: the page on device `from` hands the call on (to the phone companion, the phone locking): it is told
      *  { type: "handed" } (it stops without ending the call) and let go as a dropped socket is, so the call holds */
     handOff(from: string) {
       if (ended || !page || !from || device !== from) return false;
@@ -297,7 +297,7 @@ export function voiceCall(hub: Hub, deps: CallDeps, first: Page) {
       return true;
     },
     /** the page came back (its socket again, with the call's id): it gets the call where it is, the agent says so.
-     *  One still on the call (Shepherdr Wake, or the page when Wake comes back) is told it was handed on first, so the
+     *  One still on the call (the phone companion, or the page when Wake comes back) is told it was handed on first, so the
      *  two never fight over the call (SHEP-251). */
     attach(to: Page, from: string | null = null) {
       if (ended) return false;

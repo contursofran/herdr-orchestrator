@@ -1,4 +1,4 @@
-// SHEP-238: Shepherdr opened straight into a voice call. A wake word on a phone opens the app at `?voice=1`; the
+// SHEP-238: herdr-orchestrator opened straight into a voice call. A wake word on a phone opens the app at `?voice=1`; the
 // manifest's launch_handler hands a launch to the window already open (launchQueue), else the page loads with it. Either
 // way: one call starts, as the call button would; a call already on is only shown; the address loses `voice` so a
 // reload or Back starts none. Where the browser wants a tap first (no sound or microphone without one), a big Start

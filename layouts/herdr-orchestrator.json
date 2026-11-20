@@ -14,7 +14,7 @@
           "id": "brand",
           "type": "block",
           "content": {
-            "mod": "workspace-chrome-shepherdr"
+            "mod": "workspace-chrome-orchestrator"
           },
           "size": {
             "px": 46
@@ -43,7 +43,7 @@
           "id": "sidebar-footer",
           "type": "block",
           "content": {
-            "mod": "workspace-chrome-shepherdr",
+            "mod": "workspace-chrome-orchestrator",
             "props": {
               "footer": true
             }

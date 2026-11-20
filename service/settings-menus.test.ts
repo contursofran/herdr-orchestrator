@@ -8,9 +8,9 @@ import { element, fakeGpuiBase, fakeGpuiKit } from "./fake-gpui";
 
 mock.module("gpui-kit", () => fakeGpuiKit());
 mock.module("gpui-base", () => fakeGpuiBase());
-const { over } = await import("../mods/shepherdr-settings/over.js");
+const { over } = await import("../mods/orchestrator-settings/over.js");
 
-const src = (f: string) => readFileSync(new URL(`../mods/shepherdr-settings/${f}`, import.meta.url), "utf8");
+const src = (f: string) => readFileSync(new URL(`../mods/orchestrator-settings/${f}`, import.meta.url), "utf8");
 
 describe("Settings menus draw over the page (GitHub #1002)", () => {
   test("the menu is the last thing drawn, after every row under it", () => {

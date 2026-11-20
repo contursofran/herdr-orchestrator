@@ -1,4 +1,4 @@
-// SHEP-105: what a call with Shepherdr hears: the chats it sent to and the one on screen, and what needs the person
+// SHEP-105: what a call with herdr-orchestrator hears: the chats it sent to and the one on screen, and what needs the person
 // anywhere, said once and several as one.
 import { expect, test } from "bun:test";
 import { hearing, type ChatView } from "./voice-hear.ts";

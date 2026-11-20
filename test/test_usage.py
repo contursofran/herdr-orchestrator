@@ -11,7 +11,7 @@ NETWORK = [r"\bXMLHttpRequest\b", r"\bWebSocket\b", r"\bsendBeacon\b", r"\bEvent
            r"\bcurl\b", r"\bwget\b", r"\bnc\b", r"\bssh\b"]
 # what each may import: local files and node's file system only
 IMPORTS = {"herdr", "node:fs", "node:path", "./addons.js", "./core/usage.js", "./paths.ts", "../core/usage.js", "./window.ts",
-           "./paths.js", "./dirs.js", "./core/paths.js"}  # Shepherdr's folders (core/paths.js, lib/dirs.js): paths only
+           "./paths.js", "./dirs.js", "./core/paths.js"}  # herdr-orchestrator's folders (core/paths.js, lib/dirs.js): paths only
 TELEMETRY = ["posthog", "segment", "sentry", "mixpanel", "amplitude", "analytics", "telemetry", "datadog", "plausible", "heap"]
 
 

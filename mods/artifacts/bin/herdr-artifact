@@ -2,7 +2,7 @@
 """herdr-artifact: Herdr's artifacts, the one way to make and change them.
 
 An artifact is what an agent shows the person: a report, a dashboard, a form, a proof. It is a
-recipe (recipe.json and its pictures, Shepherdr 3.1), drawn natively by the window and by the web
+recipe (recipe.json and its pictures, herdr-orchestrator 3.1), drawn natively by the window and by the web
 app; only a rare custom one (a game, a live tool: --custom) is a Herdr mod the window runs
 (main.js), which the web shows as the picture the window last took of it. It belongs to one folder, like
 a task: the repo root in git (a linked worktree counts as its main repo), else the folder itself.
@@ -37,7 +37,7 @@ import zlib
 
 VERSION = "1"
 HOME = os.path.expanduser("~")
-# ---- SHEP: Shepherdr's own folders (a copy of herdr_task/layout.py's PY; test/test_layout.py checks it) ----
+# ---- SHEP: herdr-orchestrator's own folders (a copy of herdr_task/layout.py's PY; test/test_layout.py checks it) ----
 def SHEP(rel, _t={'.herdr/herdr-orchestrator.json': ('config', 'settings.json'), '.herdr/model-picks.json': ('config', 'model-picks.json'), '.herdr/tasks': ('data', 'tasks'), '.herdr/artifacts': ('data', 'artifacts'), '.herdr/vault.json': ('data', 'secrets/vault.json'), '.herdr/secret-remote': ('data', 'secrets/remote'), '.herdr/tools.json': ('data', 'tools.json'), '.herdr/herdr-orchestrator': ('state', 'service'), '.herdr/browser': ('state', 'browser'), '.herdr/secret-drop': ('state', 'secret-drop'), '.herdr/secret-served': ('state', 'secret-served'), '.herdr/cli-check.json': ('state', 'cli-check.json'), '.herdr/machine-hold.json': ('state', 'machine-hold.json')}):
     H, E = os.path.expanduser("~"), os.environ
     a = lambda v: E.get(v) if (E.get(v) or "").startswith("/") else None
@@ -58,7 +58,7 @@ def SHEP(rel, _t={'.herdr/herdr-orchestrator.json': ('config', 'settings.json'),
     return os.path.join(H, rel)
 # ---- end SHEP ----
 
-# Shepherdr's own folders (~/.local/share/herdr-orchestrator/artifacts) once this machine's data moved there,
+# herdr-orchestrator's own folders (~/.local/share/herdr-orchestrator/artifacts) once this machine's data moved there,
 # else the old ~/.herdr/artifacts (which then links to the new place).
 STORE = SHEP(".herdr/artifacts")
 FILES = os.path.join(STORE, "files")
@@ -68,7 +68,7 @@ GUIDE = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "ARTIFAC
 MARKUP = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "markup.js")
 # What Mark up imports beside it (markup.js's dirs.js, and dirs.js's core/paths.js): each copy carries them too (#870).
 MARKUP_HELPERS = ("dirs.js", os.path.join("core", "paths.js"))
-# A recipe artifact (recipe.json, Shepherdr 3.1) is drawn by the shared recipe view: copied into its installed mod.
+# A recipe artifact (recipe.json, herdr-orchestrator 3.1) is drawn by the shared recipe view: copied into its installed mod.
 RECIPE_VIEW = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "recipe-view.js")
 RECIPE_CORE = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "core", "recipe.js")
 RECIPE_TYPES = {"heading", "text", "list", "table", "chart", "stats", "image", "video", "audio", "pdf", "pair", "code", "callout",
@@ -1582,7 +1582,7 @@ def cmd_picture(o):
 
 
 # ---- convert: an older GPUI artifact into a recipe -------------------------------------------------
-# Shepherdr 3.1 draws artifacts from recipes on both sides. An artifact made before is drawn once by
+# herdr-orchestrator 3.1 draws artifacts from recipes on both sides. An artifact made before is drawn once by
 # herdr-app check (its element tree, as the window builds it), and that tree becomes recipe blocks:
 # headings, text, lists, code, pictures, and a bordered card as a callout. Interactive ones (a game)
 # keep only their words and pictures; the old version stays, viewable in the window.

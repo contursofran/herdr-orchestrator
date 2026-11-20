@@ -1,4 +1,4 @@
-// Where Shepherdr keeps its own data (SHEP-141): its own `shepherdr` folders, never under Herdr's name. The one
+// Where herdr-orchestrator keeps its own data (SHEP-141): its own `herdr-orchestrator` folders, never under Herdr's name. The one
 // source is mods/tasks/bin/herdr_task/layout.py (the move, healing, rollback); this is its table and its shell for
 // the window's mods, the service and the web app. test/test_layout.py checks both say the same.
 //   config ~/.config/herdr-orchestrator        settings.json, model-picks.json
@@ -68,7 +68,7 @@ export function pathsFrom(home, r, migrated = false) {
 /** Whether a LAYOUT file's text (and no rollback mark) means the new layout. */
 export const isMigrated = (layoutText, rolledBack = false) => !rolledBack && Number(String(layoutText ?? "").trim().split(/\s+/)[0]) >= LAYOUT;
 
-/** A task worktree's path (any machine, any root this or an older Shepherdr made them in): kept out of the lists of
+/** A task worktree's path (any machine, any root this or an older herdr-orchestrator made them in): kept out of the lists of
  *  folders people work in. */
 export const WORKTREE_RE = /\/(\.herdr|herdr-orchestrator)\/worktrees\//;
 export const isWorktreePath = (p) => !!p && WORKTREE_RE.test(`${p}/`);

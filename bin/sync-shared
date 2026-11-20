@@ -4,7 +4,7 @@
 A mod can only import files inside its own folder (Herdr refuses symlinks and ../ paths that
 resolve outside it), so a module several mods use is copied into each. lib/<file> is the source;
 lib/COPIES names the mods that carry a copy. Edit lib/<file>, never a copy, then run this.
-A name core/<file> is the shared core (Shepherdr 3.1: the logic the web app and the service use too): its
+A name core/<file> is the shared core (herdr-orchestrator 3.1: the logic the web app and the service use too): its
 source is core/<file> beside lib/, and each mod's copy is mods/<mod>/core/<file>.
 
   bin/sync-shared                 copy every lib file into its mods
@@ -17,7 +17,7 @@ the change into lib/<file>). A fresh checkout or worktree has no lib/.last: what
 committed of the source stands in for it (a copy equal to that is ours, not hand-edited).
 
 The helpers that go to other machines as one file each (herdr-secret, herdr-artifact) carry a block of
-Shepherdr's paths between "# ---- SHEP:" and "# ---- end SHEP ----": the source is
+herdr-orchestrator's paths between "# ---- SHEP:" and "# ---- end SHEP ----": the source is
 mods/tasks/bin/herdr_task/layout.py's PY, written in here too.
 """
 import hashlib, os, shutil, subprocess, sys

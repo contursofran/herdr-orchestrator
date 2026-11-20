@@ -1,4 +1,4 @@
-// The QR code of the web app's private link, for Shepherdr settings > Web in the window (scanned with a phone).
+// The QR code of the web app's private link, for herdr-orchestrator settings > Web in the window (scanned with a phone).
 // Drawn with Kazuhiko Arase's QR Code Generator (MIT, service/vendor/qrcode.cjs, its license in its header), as an SVG
 // file under the app's data/ folder: a new file name for each link (the window caches a picture by its path).
 import { createHash } from "node:crypto";

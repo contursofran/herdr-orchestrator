@@ -198,7 +198,7 @@ async function voiceOut(c: AudioContext, into: AudioNode) {
 function connect(resume: boolean) {
   const h = on
   if (!h) return
-  // SHEP-105: a call with Shepherdr; chat, the chat whose call button started it (its "here" until the screen shows one)
+  // SHEP-105: a call with herdr-orchestrator; chat, the chat whose call button started it (its "here" until the screen shows one)
   const q = new URLSearchParams()
   if (h.chatKey) q.set('chat', h.chatKey)
   if (resume && callId) q.set('resume', callId)
@@ -217,7 +217,7 @@ function connect(resume: boolean) {
     }
     const m = JSON.parse(String(e.data)) as { type: string; id?: number | string; message?: string; state?: typeof phase; doing?: string; nav?: Nav; text?: string; why?: string }
     if (m.type === 'call' && typeof m.id === 'string') callId = m.id
-    // SHEP-251: the call moved (to Shepherdr Wake as the phone locked, or to another page): this page lets go quietly,
+    // SHEP-251: the call moved (to the phone companion as the phone locked, or to another page): this page lets go quietly,
     // no end, no reconnect; the call goes on there and this page may take it back by its id
     if (m.type === 'handed') return handedOn(h)
     // back on the call: as it was, the agent says so

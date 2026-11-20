@@ -1,4 +1,4 @@
-// Add-ons (Shepherdr 3.0.0, everything is a plugin): each feature can be switched off in Shepherdr
+// Add-ons (herdr-orchestrator 3.0.0, everything is a plugin): each feature can be switched off in herdr-orchestrator
 // settings > Window. lib/addons.json names each one, what it is made of and what it needs; an
 // add-on without "switch" is always on. The off list lives in two places that say the same:
 // shared "addons.off" (what the window's mods read, so a flip shows at once) and "everywhere.off"

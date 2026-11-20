@@ -77,7 +77,7 @@ test("the spec: seven client tools (screen the fallback, call_view the call's ow
 test("SHEP-67: ends the call itself after a yes, waits quietly through silence, speaks briefly", () => {
   const c = agentSpec().conversation_config;
   // ElevenLabs' skip_turn, listed with ours (a separate built_in_tools field beside inline tools is dropped); SHEP-173:
-  // no end_call of ElevenLabs': our hang_up, which Shepherdr allows only after the person's yes
+  // no end_call of ElevenLabs': our hang_up, which herdr-orchestrator allows only after the person's yes
   expect(c.agent.prompt.tools.map((t) => t.name)).toEqual(["look", "open", "send", "screen", "act", "call_view", "hang_up", "skip_turn", "language_detection"]);
   expect(SYSTEM_TOOLS.map((t) => [t.type, t.params.system_tool_type])).toEqual([["system", "skip_turn"], ["system", "language_detection"]]);
   expect(c.agent.prompt.tools.find((t) => t.name === "hang_up").type).toBe("client");

@@ -1048,7 +1048,7 @@ const cardBox = 'relative flex max-w-full items-center gap-2 self-start rounded-
 const cardLine = 'flex min-w-0 items-baseline whitespace-nowrap'
 const cardAside = 'shrink-0 text-[0.8125rem] text-fg2'
 
-/** Shepherdr's update card about a task: one line, a dot, its id and a few words; a tap opens the task, where its
+/** herdr-orchestrator's update card about a task: one line, a dot, its id and a few words; a tap opens the task, where its
     summary is; held (or the smiley beside it) it reacts, like a message. A mode card marks when the place's
     coordinator went on a mode; a restart card what its agent started again on; a machine's health or a red main says
     what happened. Those open nothing */
@@ -1104,7 +1104,7 @@ function Card({ card: c, chat, at, press, keys, className }: { card: UpdateCard;
   const status = t?.status ?? c.status ?? 'idle'
   const needs = (c.ask?.open || status === 'need') && registry.views.needs
   const pr = c.pr ?? t?.pr
-  // Shepherdr 3: a news line says what happened at its moment and is never rewritten after; a Ready one has Review (opens the Accept card)
+  // herdr-orchestrator 3: a news line says what happened at its moment and is never rewritten after; a Ready one has Review (opens the Accept card)
   // while its task still waits for it
   const accept = c.status === 'ready' && t?.status === 'ready' && !t.archived
   const line = (
@@ -1870,7 +1870,7 @@ export function useChat(key: string) {
   return useStore((s) => s.chats[key])
 }
 
-/** Shepherdr 3's "/" list: while the message is one /command so far, its CLI's commands (and the person's own) that
+/** herdr-orchestrator 3's "/" list: while the message is one /command so far, its CLI's commands (and the person's own) that
  *  match, a tap takes one into the box. Whatever is typed goes to the agent as typed; this only suggests. */
 const slashLists = new Map<string, Promise<{ name: string; about: string }[]>>()
 function SlashList({ chatKey, text, pick }: { chatKey: string; text: string; pick: (name: string) => void }) {
@@ -2122,7 +2122,7 @@ function Composer({ chatKey, placeholder, cli, suggest = null }: { chatKey: stri
                   }
                   if (sendsNow(e, getState().ui.keyboard)) {
                     e.preventDefault()
-                    // Shepherdr 3: Ctrl+Enter holds it until the agent is free
+                    // herdr-orchestrator 3: Ctrl+Enter holds it until the agent is free
                     if (!text && ghost) accept(e.ctrlKey || e.metaKey)
                     else send(e.ctrlKey || e.metaKey)
                   }
@@ -2167,12 +2167,12 @@ function Composer({ chatKey, placeholder, cli, suggest = null }: { chatKey: stri
               <AgentLineKept chatKey={chatKey} cli={cli} />
               {Mic ? <MicKept chatKey={chatKey} /> : null}
               {/* always Send (SHEP-108): quiet while there is nothing to send, filled once there is. A call is with
-                  Shepherdr itself (the sidebar's top, a phone's bottom bar), never from a chat's box */}
+                  herdr-orchestrator itself (the sidebar's top, a phone's bottom bar), never from a chat's box */}
               <button
                   type="button"
                 aria-label="Send"
                 disabled={!sendable}
-                // Shepherdr 3 on a phone: a long press on Send holds it until the agent is free (the phone's Ctrl+Enter)
+                // herdr-orchestrator 3 on a phone: a long press on Send holds it until the agent is free (the phone's Ctrl+Enter)
                 onPointerDown={() => { held.current = false; holdTimer.current = setTimeout(() => { held.current = true; buzz(); if (ghost && !text) accept(true); else send(true) }, 500) }}
                 onPointerUp={() => clearTimeout(holdTimer.current)}
                 onPointerLeave={() => clearTimeout(holdTimer.current)}
@@ -2365,7 +2365,7 @@ function Pending({ f, chatKey, onRemove }: { f: { name: string; path?: string };
 
 /** a file picked waits in the box (and in a message on its way) by a stand-in path until it is uploaded */
 const isStandIn = (path: string) => path.startsWith('upload:')
-/** a file's upload, by its stand-in path: its path on Shepherdr's machine once up */
+/** a file's upload, by its stand-in path: its path on herdr-orchestrator's machine once up */
 const uploads = new Map<string, Promise<string>>()
 /** the files picked on this page, by stand-in path (the device keeps them too, for after a reload: keepFile) */
 const picked = new Map<string, File>()
@@ -2400,7 +2400,7 @@ function startUpload(chatKey: string, id: string, since = Date.now()): Promise<s
 }
 
 /** files from +, a paste or a drop: each shows in the message box at once (a picture as itself, from the device) while
- *  it uploads to Shepherdr, and waits there until it is sent. One whose upload fails keeps its place: Send tries again */
+ *  it uploads to herdr-orchestrator, and waits there until it is sent. One whose upload fails keeps its place: Send tries again */
 async function attach(chatKey: string, list: File[]) {
   if (!list.length) return
   const added = list.map((f) => {
@@ -2681,7 +2681,7 @@ function keepBox(e: Event) {
 /** how far up from the newest message a chat was read, kept across a reload for a new build (the tab's own storage) */
 function scrollKeep(chatKey: string, left: number) {
   try {
-    sessionStorage.setItem(`shepherdr.scroll.${chatKey}`, String(Math.round(left)))
+    sessionStorage.setItem(`herdr-orchestrator.scroll.${chatKey}`, String(Math.round(left)))
   } catch {
     /* private window: it opens at the newest message */
   }
@@ -2689,8 +2689,8 @@ function scrollKeep(chatKey: string, left: number) {
 
 function scrollKept(chatKey: string): number | null {
   try {
-    const v = sessionStorage.getItem(`shepherdr.scroll.${chatKey}`)
-    sessionStorage.removeItem(`shepherdr.scroll.${chatKey}`)
+    const v = sessionStorage.getItem(`herdr-orchestrator.scroll.${chatKey}`)
+    sessionStorage.removeItem(`herdr-orchestrator.scroll.${chatKey}`)
     return v ? Number(v) : null
   } catch {
     return null
@@ -2755,7 +2755,7 @@ function StickToBottom({ chatKey, children }: { chatKey: string; children: React
     const keepScroll = () => {
       if (!pinned.current) scrollKeep(chatKey, el.scrollHeight - el.scrollTop - el.clientHeight)
     }
-    addEventListener('shepherdr:reloading', keepScroll)
+    addEventListener('herdr-orchestrator:reloading', keepScroll)
     // read further up, the chat keeps its bottom edge where it was as the box gets shorter or taller (the message box
     // growing as you type, the keyboard): what was just above the message box stays just above it, as in iMessage
     let height = el.clientHeight
@@ -2782,7 +2782,7 @@ function StickToBottom({ chatKey, children }: { chatKey: string; children: React
     return () => {
       ro.disconnect()
       removeEventListener('app-resized', keep)
-      removeEventListener('shepherdr:reloading', keepScroll)
+      removeEventListener('herdr-orchestrator:reloading', keepScroll)
       clearTimeout(settled)
       el.removeEventListener('chat-jump', glide)
     }

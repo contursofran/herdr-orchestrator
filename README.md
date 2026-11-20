@@ -4,9 +4,9 @@ A layout and a set of tools for the [Herdr app](https://herdr.dev) that coordina
 
 herdr-orchestrator starts from [Shepherdr](https://github.com/eliasstravik/shepherdr) 3.1.44 and becomes its own tool. It does not follow Shepherdr's updates.
 
-> **Status: early work (0.1.0).** The CLI (`herdr-orchestrator`), layout (`layouts/herdr-orchestrator.json`) and visible names are now `herdr-orchestrator`; mod names still use `shepherdr` until the last rename issue is done.
+> **Status: early work (0.1.0).** The CLI (`herdr-orchestrator`), layout (`layouts/herdr-orchestrator.json`) and visible names are now `herdr-orchestrator`. The data folders, service and mods now use the new names too.
 
-## What it keeps from Shepherdr
+## What it keeps from the original
 
 - **Settings:** one settings window for tasks, merge, review, agents and machines.
 - **Task view:** a task opens beside the chat with its chat, terminal, pull request, browser and artifacts.
@@ -25,14 +25,14 @@ herdr-orchestrator starts from [Shepherdr](https://github.com/eliasstravik/sheph
 
 The work is in the epic [#11](https://github.com/contursofran/herdr-orchestrator/issues/11):
 
-1. Rename everything from Shepherdr to herdr-orchestrator (#1, #2, #3), and point updates and feedback to this repo (#4).
-2. Move from an installed Shepherdr (#5).
+1. Rename the product, service and mods to herdr-orchestrator (#1, #2, #3), and point updates and feedback to this repo (#4).
+2. Move from an installed upstream layout (#5).
 3. Port the herdr-contr sidebar (#6, #7, #8, #9).
 4. Decide and build the orchestration style (#10).
 
 ## Install (for now)
 
-Do not install it on a machine where Shepherdr is already installed: both use the same mod folders, links and hooks. Issue #5 solves this.
+Do not install it on a machine that still runs the upstream layout: both use the same mod folders, links and hooks. Issue #5 solves this.
 
 ```bash
 git clone https://github.com/contursofran/herdr-orchestrator

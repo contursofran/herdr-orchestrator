@@ -16,11 +16,15 @@ Only files herdr-orchestrator put there and you haven't changed are replaced; yo
 loading, so herdr-orchestrator's goes in and yours goes to the backup folder (the update says where). Each mod is swapped in one step, so Herdr reloads it once. Agents keep running in herdr-core. Until
 `herdr-orchestrator doctor` passes, the sync to other machines waits (`a sync hold (`sync-hold` in `~/.local/state/herdr-orchestrator`)`).
 
+The update renames the settings and sidebar chrome mods. It backs up a customized installed layout before updating its
+mod references and keeps the saved layout sizes and props. When the web app opens on the same origin, it carries over
+local preferences and pending sends to its new browser storage keys.
+
 ## Where herdr-orchestrator moves data from `~/.herdr`
 
 `herdr-orchestrator` uses its own data folders ([Install](install.md), Where your data lives). Its installer migrates
 data from the legacy paths under `~/.herdr` once per machine. Use `herdr-orchestrator doctor` or `herdr-orchestrator where`
-to see the paths in use. Moving an installed Shepherdr setup is tracked separately in [issue #5](https://github.com/contursofran/herdr-orchestrator/issues/5).
+to see the paths in use. Moving an existing upstream installation is tracked in [issue #5](https://github.com/contursofran/herdr-orchestrator/issues/5).
 
 - **What moves:** tasks, artifacts, settings, the secrets vault and its mark, task browsers (their sign-ins with them),
   the web service's files, the tools stamp, cli-check and machine-hold. On the same disk each is one rename, so nothing
@@ -45,14 +49,10 @@ to see the paths in use. Moving an installed Shepherdr setup is tracked separate
 - **When the links go:** once every machine uses the current layout (`herdr-task machines` lists them),
   `herdr-orchestrator migrate --cleanup-legacy --yes` removes the links and any `.pre-layout2` copies.
 
-## From 2.1 or 2.0
+## From the older web app or terminal plugin
 
-3.0 is a new build inside the Herdr app; 2.x was a web app (2.1) or a terminal-herdr plugin (2.0). Nothing carries
-over: 2.x's data in `~/.shepherdr` stays where it is, and 3.0 never reads or changes it. 2.1 lives on on the `v2.1`
-branch and 2.0 on `v2.0`, each with its own README; don't pull main into them or update them from main.
-
-To move to 3.0: install the Herdr app, then [Install](install.md). Stop 2.1 (`shepherdr stop` from your 2.1
-checkout) when you no longer want it; both can run side by side, but they're separate task lists.
+The upstream 2.x releases have separate task lists. Keep their original checkouts for access to that data and follow
+[Install](install.md) to set up herdr-orchestrator.
 
 ## Moving a machine that already runs these mods by hand
 

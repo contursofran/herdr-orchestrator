@@ -1,4 +1,4 @@
-// The Accept card (Shepherdr 3's mods/accept-card), in 2.1's dialog: what the person approves before a Ready task
+// The Accept card (herdr-orchestrator 3's mods/accept-card), in 2.1's dialog: what the person approves before a Ready task
 // merges. Its summary, then Changes (commits and files), Checks, Proof and folded Details, all from
 // `herdr-task show --evidence`; Accept runs `herdr-task accept`, which merges first when there is something to merge.
 // A task no longer Ready says where it is now, with only Close. On a phone it slides up as a sheet.
@@ -247,8 +247,8 @@ function fromLink(hash: string) {
 }
 if (typeof window !== 'undefined') {
   // index.html keeps the first one, before the app writes its own address
-  fromLink((window as { shepherdrLink?: string }).shepherdrLink ?? '')
+  fromLink((window as { orchLink?: string }).orchLink ?? '')
   addEventListener('hashchange', () => fromLink(location.hash))
   // an alert's Accept opened in this page (kernel openGo: the phone app's tap, or a tap with the app open)
-  addEventListener('shepherdr:accept', (e) => typeof (e as CustomEvent).detail === 'string' && openAccept((e as CustomEvent).detail))
+  addEventListener('herdr-orchestrator:accept', (e) => typeof (e as CustomEvent).detail === 'string' && openAccept((e as CustomEvent).detail))
 }

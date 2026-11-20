@@ -1,5 +1,5 @@
-// Shepherdr settings' rows as data: each row's key in ~/.config/herdr-orchestrator/settings.json, its words and its choices, and every
-// title, line and button word the window's Settings say (mods/shepherdr-settings), so the window, the service and the
+// herdr-orchestrator settings' rows as data: each row's key in ~/.config/herdr-orchestrator/settings.json, its words and its choices, and every
+// title, line and button word the window's Settings say (mods/orchestrator-settings), so the window, the service and the
 // web app's Settings say the same. herdr-task reads the file (herdr_task/settings.py: settings_for); its defaults are
 // DEFAULTS there and here.
 // Shared core: the source is core/settings.js; bin/sync-shared copies it into the mods in lib/COPIES.
@@ -248,7 +248,7 @@ export const SECRETS = {
   keptNote: (name, where) => `Kept ${name} for ${where}.`,
   removedNote: (name, where) => `Removed ${name} from ${where}.`,
   pasteNew: (name) => `Paste the new value for ${name}.`,
-  // Kept on: the machine whose vault every machine's agents and voice calls use (shepherdr secrets move-to)
+  // Kept on: the machine whose vault every machine's agents and voice calls use (herdr-orchestrator secrets move-to)
   keptOn: "Kept on", keptHere: "This computer", thisOne: "this computer",
   keptAbout: "Every machine's agents and voice calls get them from there. Pick an always-on machine.",
   // nobody picked one: they follow Serve from (core/secrets.js followTo)

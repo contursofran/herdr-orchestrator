@@ -192,7 +192,7 @@ def pr_title(s, task):
 
 def pr_body(s, task, summary=None):
     """Short: the task's ref, what ready said (summary), the details and its proof's title. Never the
-    brief: that stays with the task in Shepherdr."""
+    brief: that stays with the task in herdr-orchestrator."""
     lines = [f"Task: {s.ref(task)}"]
     if summary and summary.strip():
         lines += ["", "## Summary", "", summary.strip()]
@@ -391,7 +391,7 @@ def check_rows(repo, sha):
 
 
 def note_checks(s, task, v):
-    """Remembers on the folder's task list whether its GitHub checks could be read (`shepherdr doctor` warns while
+    """Remembers on the folder's task list whether its GitHub checks could be read (`herdr-orchestrator doctor` warns while
     they can't), and on the task's pull request (the Accept card says so)."""
     pr = task.get("pr") or {}
     if v.get("checks_unknown"):
@@ -652,7 +652,7 @@ MAIN_WATCH_MS = 3 * 3600000  # how long main is watched after a task merges thro
 
 def watch_main(s, task, sha=None):
     """A task just merged through its pull request: its base branch on GitHub is watched for a few
-    hours (ghnews.main_pass), so the Assistant hears once if it goes red (as Shepherdr)."""
+    hours (ghnews.main_pass), so the Assistant hears once if it goes red (as herdr-orchestrator)."""
     if not task.get("pr"):
         return
     base = task.get("base") or "main"

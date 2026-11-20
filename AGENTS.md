@@ -20,7 +20,7 @@ How to run, build and lay out the code: [docs/develop.md](docs/develop.md).
 - Never run herdr-app or herdr-task with a changed `HOME` or `HERDR_APP_HOME`, never start a second herdr-app window,
   and never install into the real `~/.config/herdr-app` for a try: use `./install.sh --root <scratch>`. A window or
   scheduler on another home can overwrite every machine's spaces.
-- `herdr-app check <mod folder>` runs a mod's `init()` for real: never for `shepherdr-settings` (its init pushes
+- `herdr-app check <mod folder>` runs a mod's `init()` for real: never for `orchestrator-settings` (its init pushes
   settings to other machines).
 - Window-mod methods (e.g. chat's `refocus()`) can be tested by extracting the method text from `mods/chat/main.js`
   and running it in node with stubs (see `test/test_chat_refocus.py`).
@@ -86,7 +86,7 @@ How to run, build and lay out the code: [docs/develop.md](docs/develop.md).
 - Bun.spawn ignores a PATH changed inside a test: point the service at fakes with `HERDR_ORCH_HERDR_APP` / `HERDR_ORCH_HC`.
 - `bun test` from service/ alone skips bunfig's preload (2 false failures): run `bun test service core web` from the repo root.
 - Window-mod methods that need `cx.spawn`'s result in a bun test: give the stub cx a spawn that keeps the promise (see the
-  #1010 tests in service/spaces-sidebar.test.ts). ShepherdrSettings menus go through `mods/shepherdr-settings/over.js`.
+  #1010 tests in service/spaces-sidebar.test.ts). OrchestratorSettings menus go through `mods/orchestrator-settings/over.js`.
 - Window-mod render tests: `bun test` in service/ with `mock.module` for gpui-kit/gpui-base and herdr via
   service/fake-herdr.ts (bun's mocks are per process, so every herdr stand-in needs every name); see
   service/spaces-sidebar.test.ts.
@@ -113,7 +113,7 @@ How to run, build and lay out the code: [docs/develop.md](docs/develop.md).
 - A real `herdr-task switch` test without touching people's tasks: a fake hc on PATH exporting `HC_SESSION=<name>`,
   `HERDR_TASK_STORE=<tmp>`, a scratch git repo with `add --here` and `start --space <any>`; answer the trust prompt with
   `hc keys <t> down enter`. Claude refuses a plain sleep, so give the brief a busy step.
-- Web stub: localStorage `shepherdr.lists` = `{pinned:true,chips:[],at:null}` opens `?task=<id>` in the middle column
+- Web stub: localStorage `herdr-orchestrator.lists` = `{pinned:true,chips:[],at:null}` opens `?task=<id>` in the middle column
   (same width as the Assistant's) instead of the side.
 
 ## Other machines

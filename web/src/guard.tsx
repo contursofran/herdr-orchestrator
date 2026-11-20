@@ -1,4 +1,4 @@
-// A plugin of the human's own (~/.shepherdr/plugins) can't take the screen down: its setup runs in a try, and whatever
+// A plugin of the human's own (~/.herdr-orchestrator/plugins) can't take the screen down: its setup runs in a try, and whatever
 // it adds to the slots is wrapped, so an error in it stops only that plugin's parts. Settings → Plugins says why.
 import { Component, createElement, useSyncExternalStore, type FC, type ReactNode } from 'react'
 

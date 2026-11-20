@@ -4,7 +4,11 @@ import home_guard  # noqa: F401  (first: every test on a throwaway home, never t
 import json
 import os
 import re
+import runpy
+import subprocess
+import tempfile
 import unittest
+from pathlib import Path
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 J = lambda *p: os.path.join(ROOT, *p)
@@ -17,6 +21,39 @@ def text_files():
             for f in files:
                 if not f.endswith((".svg", ".png", ".pyc")):
                     yield os.path.join(d, f)
+
+
+def repo_files(root):
+    if (root / ".git").exists():
+        paths = subprocess.check_output(["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"], cwd=root)
+        yield from (Path(os.fsdecode(p)) for p in paths.split(b"\0") if p)
+        return
+    # An exported source tree has no Git index. Skip generated and local dependencies.
+    for parent, dirs, files in os.walk(root):
+        rel = Path(parent).relative_to(root)
+        dirs[:] = [d for d in dirs if d not in {"node_modules", "__pycache__"}
+                   and rel / d not in {Path("lib/.last"), Path("web/dist"), Path("web/generated")}]
+        yield from (rel / f for f in files if not f.endswith(".pyc"))
+
+
+def old_name_hits(root, name):
+    allowed = {"LICENSE", "LICENSE-herdr", "NOTICE", "CHANGELOG.md", "bin/migrate_legacy.py", "test/test_migrate_legacy.py"}
+    word = name.lower().encode()
+    for rel in repo_files(root):
+        if word in os.fsencode(rel).lower():
+            yield str(rel)
+        file = root / rel
+        if rel.as_posix() in allowed or file.is_symlink() or not file.is_file():
+            continue
+        credits = False
+        for n, line in enumerate(file.read_bytes().splitlines(), 1):
+            if rel == Path("README.md"):
+                if line.startswith(b"## "):
+                    credits = line.rstrip() == b"## Credits and license"
+                if credits or line.startswith(b"herdr-orchestrator starts from ["):
+                    continue
+            if word in line.lower():
+                yield f"{rel}:{n}"
 
 
 class Repo(unittest.TestCase):
@@ -84,6 +121,20 @@ class Repo(unittest.TestCase):
             with open(p, encoding="utf-8", errors="replace") as f:
                 for n, line in enumerate(f, 1):
                     self.assertIsNone(bad.search(line), f"{os.path.relpath(p, ROOT)}:{n}: {line.strip()[:120]}")
+
+    def test_legacy_product_name_stays_in_credits_and_migration(self):
+        name = runpy.run_path(J("bin", "migrate_legacy.py"))["LEGACY_PRODUCT"]
+        self.assertEqual(list(old_name_hits(Path(ROOT), name)), [])
+
+    def test_legacy_name_guard_catches_a_planted_name(self):
+        name = runpy.run_path(J("bin", "migrate_legacy.py"))["LEGACY_PRODUCT"]
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            planted = root / "widget.js"
+            planted.write_text("// ready\n// " + name.upper() + "\n")
+            self.assertEqual(list(old_name_hits(root, name)), ["widget.js:2"])
+            planted.write_text("// ready\n")
+            self.assertEqual(list(old_name_hits(root, name)), [])
 
     # Elements and components whose `title` is no hover popup: a dialog's or card's heading, a row's words, an
     # iframe's name for screen readers.
@@ -166,7 +217,7 @@ class Repo(unittest.TestCase):
         """Settings › Autopilot (Everywhere's and a space's own) takes its words, picks and rule from core/autopilot.js on
         both sides: the window's section and header, and the web app's service, never their own copies."""
         uses = {
-            J("mods", "shepherdr-settings", "autopilot-section.js"): ["AP.ROWS", "AP.PRESETS", "AP.EVENTS", "AP.ABOUT", "AP.SAVED", "AP.FIELDS"],
+            J("mods", "orchestrator-settings", "autopilot-section.js"): ["AP.ROWS", "AP.PRESETS", "AP.EVENTS", "AP.ABOUT", "AP.SAVED", "AP.FIELDS"],
             J("mods", "pane-chat", "autopilot.js"): ["pilotFor", "headerDetail"],
             J("service", "settings.ts"): ["AP.ROWS", "AP.PRESETS", "AP.EVENTS", "AP.ABOUT", "AP.levelOf", "AP.FIELDS"],
             J("service", "compat.ts"): ["AP.blankBeat"],
@@ -198,12 +249,12 @@ class Repo(unittest.TestCase):
 
     def test_artifacts_open_on_all(self):
         """The Artifacts panel opens on All (every folder), like Tasks, in the window and the web; a saved web choice
-        lives under a new key, so one saved under the old default ('shepherdr.artifactsAll') starts over on All."""
+        lives under a new key, so one saved under the old default ('herdr-orchestrator.artifactsAll') starts over on All."""
         win = open(J("mods", "artifacts", "main.js"), encoding="utf-8").read()
         self.assertIn("this.all = true;", win)
         self.assertNotIn("this.all = false;", win)
         web = open(J("web", "plugins", "artifacts", "client.tsx"), encoding="utf-8").read()
-        self.assertIn("const ALL = 'shepherdr.artifactsAllFolders'", web)
+        self.assertIn("const ALL = 'herdr-orchestrator.artifactsAllFolders'", web)
         self.assertIn("localStorage.getItem(ALL) !== '0'", web)
 
     def test_parity_has_no_open_rows(self):
@@ -246,11 +297,11 @@ class Repo(unittest.TestCase):
         self.assertIn("{ order: 12, View: StatusMark }, { order: 14, View: AutopilotHeader }", text)
 
     def test_voice_call_is_a_button_beside_search(self):
-        """SHEP-135: no "Talk to Shepherdr" row at the top of the sidebar: a call starts from a voice button in the
+        """SHEP-135: no "Talk to herdr-orchestrator" row at the top of the sidebar: a call starts from a voice button in the
         brand row, before Search, in the web app and the window alike; the window's asks spaces-chat to start it."""
         for f in ("web/plugins/voice/client.tsx", "web/src/App.tsx", "mods/spaces-chat/main.js",
-                  "mods/workspace-chrome-shepherdr/main.js"):
-            self.assertNotIn("Talk to Shepherdr", open(J(f)).read(), f)
+                  "mods/workspace-chrome-orchestrator/main.js"):
+            self.assertNotIn("Talk to herdr-orchestrator", open(J(f)).read(), f)
         voice = open(J("web", "plugins", "voice", "client.tsx")).read()
         self.assertIn("reg.sideHead.push(VoiceButton)", voice)
         # on a call the button turns into Mute and End in one capsule, the call's one place: no card under it
@@ -264,15 +315,15 @@ class Repo(unittest.TestCase):
         app = open(J("web", "src", "App.tsx")).read()
         brand = app[app.index("export function Brand("):app.index("function SearchButton(")]
         self.assertLess(brand.index("registry.sideHead"), brand.index("<SearchButton />"))
-        chrome = open(J("mods", "workspace-chrome-shepherdr", "main.js")).read()
+        chrome = open(J("mods", "workspace-chrome-orchestrator", "main.js")).read()
         self.assertLess(chrome.index('this.button("voice"'), chrome.index('this.button("search"'))
         self.assertIn('setShared("voice.startreq"', chrome)
         self.assertIn('shared("voice.startreq")', open(J("mods", "spaces-chat", "main.js")).read())
         self.assertIn('callControls(t, call)', chrome)
         self.assertIn('setShared("chat.callreq"', chrome)
         for icon in ("mic.svg", "mic-off.svg", "phone-x.svg"):
-            self.assertTrue(os.path.exists(J("mods", "workspace-chrome-shepherdr", icon)), icon)
-        self.assertTrue(os.path.exists(J("mods", "workspace-chrome-shepherdr", "audio-lines.svg")))
+            self.assertTrue(os.path.exists(J("mods", "workspace-chrome-orchestrator", icon)), icon)
+        self.assertTrue(os.path.exists(J("mods", "workspace-chrome-orchestrator", "audio-lines.svg")))
 
     def test_tab_bar_from_one_list(self):
         """The tab bar's + menu, a tab's menu, Switch agent, a tab's name and the window header's End agent are

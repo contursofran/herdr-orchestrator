@@ -48,7 +48,7 @@ class Machine(unittest.TestCase):
                         mock.patch.object(secret, "REMOTE_MARK", os.path.join(self.herdr, "secret-remote")),
                         mock.patch.object(secret, "DROP", os.path.join(self.herdr, "secret-drop")),
                         mock.patch.object(machines, "HOME", os.path.join(self.dir, "home")),
-                        # its Shepherdr paths: that home's, not moved yet (the old ~/.herdr ones)
+                        # its herdr-orchestrator paths: that home's, not moved yet (the old ~/.herdr ones)
                         mock.patch.object(machines, "WHERE", machines.layout.Where(home=os.path.join(self.dir, "home"), env={})),
                         mock.patch.dict(os.environ, {"XDG_STATE_HOME": os.path.join(self.dir, "state")})]
         os.environ.pop("HC_SESSION", None)

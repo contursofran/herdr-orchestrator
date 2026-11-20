@@ -50,7 +50,7 @@ esac
 
 class Publish(unittest.TestCase):
     def setUp(self):
-        self.dir = tempfile.mkdtemp(prefix="shepherdr-artifact-")
+        self.dir = tempfile.mkdtemp(prefix="herdr-orchestrator-artifact-")
         store = os.path.join(self.dir, "store")
         self.folder = os.path.join(self.dir, "proj")
         os.makedirs(self.folder)

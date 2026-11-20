@@ -1,5 +1,5 @@
-// The web app is Shepherdr 2.1's screen (its design, phone layout and motion, kept as they were), fed with
-// Shepherdr 3's data: this turns what the service builds with the shared core (spaces, tasks, chats) into the
+// The web app is herdr-orchestrator 2.1's screen (its design, phone layout and motion, kept as they were), fed with
+// herdr-orchestrator 3's data: this turns what the service builds with the shared core (spaces, tasks, chats) into the
 // shapes 2.1's screen reads (web/shared/types.ts: Snapshot, Chat), and its chat keys back into terminals.
 //   a space's chat (its Assistant):  p:<space id, "/" as ":">     a task's chat:  <task id>/worker
 // A task id is its ref ("SHEP-7"), "<machine>:<ref>" on another machine, as 2.1 wrote them.
@@ -236,10 +236,10 @@ export class Compat {
   machineStats: ((m: string | null) => any) | null = null;
 
   /** The model menu and restarts (service/agents.ts), set by main. */
-  /** The agent Shepherdr settings choose for a space's Assistant (main.ts: Settings.role), for a start from the web. */
+  /** The agent herdr-orchestrator settings choose for a space's Assistant (main.ts: Settings.role), for a start from the web. */
   assistantPick: ((space: string) => any) | null = null;
   /** A space's Assistant chat with no Assistant yet (SHEP-263): nothing said, and what its first message starts it
-   *  on, as the window's chat says it on its model button before then (the choice kept for the space, else Shepherdr
+   *  on, as the window's chat says it on its model button before then (the choice kept for the space, else herdr-orchestrator
    *  settings' Assistant, else the CLI's own), with its CLI. null: the key is no space's, or its Assistant runs. */
   freshChat(key: string): Chat | null {
     const s = this.spaceList.find((x) => placeKey(x.id) === key);

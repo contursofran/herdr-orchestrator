@@ -1,4 +1,4 @@
-// A wake word on a phone (POST /api/voice/wake, SHEP-240): the Shepherdr page already open on that device starts a
+// A wake word on a phone (POST /api/voice/wake, SHEP-240): the herdr-orchestrator page already open on that device starts a
 // voice call; a page of another device never does; none on screen yet, the first of that device to show up within 15 s.
 import { afterEach, expect, setSystemTime, test } from "bun:test";
 import { Live, WAKE_HELD_MS } from "./live.ts";

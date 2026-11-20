@@ -1,4 +1,4 @@
-// Shepherdr settings for the web app: ~/.config/herdr-orchestrator/settings.json as the window's settings show it (core/settings.js: the
+// herdr-orchestrator settings for the web app: ~/.config/herdr-orchestrator/settings.json as the window's settings show it (core/settings.js: the
 // same words and choices), as 2.1's settings sections, and a change from the web written back to the same file,
 // keeping everything else in it. The window's settings read the file when they open; herdr-task reads it each time.
 // Levels as the window's scopes: Everywhere ("everywhere"), a space ("spaces"[its id], with its repo folder, which is
@@ -50,9 +50,9 @@ const FIELDS = ["start_memory", "start_load", "start_disk", "low_priority", "wor
 const MACHINE_DEFAULTS: Record<string, unknown> = { ...HOLD, low_priority: true, worker_memory: 0 };
 const ON = (v: unknown) => (v ? "on" : "off");
 
-// the window's push to other machines (mods/shepherdr-settings): each gets Everywhere, its machine's and its spaces'
+// the window's push to other machines (mods/orchestrator-settings): each gets Everywhere, its machine's and its spaces'
 // (by their ids there), marked so it knows which machine it is; a file there without the mark is that machine's own
-// (its settings file wherever that machine keeps it: Shepherdr's folders, or ~/.herdr on an older one: core/paths.js SH)
+// (its settings file wherever that machine keeps it: herdr-orchestrator's folders, or ~/.herdr on an older one: core/paths.js SH)
 export const PUSH = `${SH}f="$ORCH_SETTINGS"; mkdir -p "$(dirname "$f")" || exit 1
 if [ -f "$f" ] && ! grep -q '"pushed_from"' "$f"; then echo own; exit 0; fi
 if [ -f "$f" ] && [ "$(cat "$f")" = "$1" ]; then exit 0; fi
@@ -134,7 +134,7 @@ export class Settings {
   }
 
   /** The agent a role runs in a space (null: Everywhere's), as the window's chat starts it (lib/coordinator.js
-   *  shepherdrFor): { agent, model, effort, fast, perm }, or null when none is set (the template's own command). */
+   *  orchestratorSettingsFor): { agent, model, effort, fast, perm }, or null when none is set (the template's own command). */
   role(scope: string | null, role: string): any {
     this.fresh();
     const v = this.pick(scope, role, null).value;
@@ -236,7 +236,7 @@ export class Settings {
     const sg = this.pick(scope, "agents", "suggestions");
     rows.push({ label: SUGGESTIONS.title, key: "agents.suggestions", value: ON(sg.value !== false), options: ["on", "off"], hint: SUGGESTIONS.about,
       ...this.follows(s, sg, (v) => ON(v !== false), "agents", "suggestions") });
-    // Feedback offers: agents offer once to file a problem in Shepherdr itself, only on your yes (herdr-task's feedback.py);
+    // Feedback offers: agents offer once to file a problem in herdr-orchestrator itself, only on your yes (herdr-task's feedback.py);
     // the repo it files to is Everywhere's only
     const fb = this.pick(scope, "agents", "feedback");
     rows.push({ label: FEEDBACK.title, key: "agents.feedback", value: ON(fb.value !== false), options: ["on", "off"], hint: FEEDBACK.about,
@@ -288,7 +288,7 @@ export class Settings {
   }
 
   /** Autopilot, as the window's page (autopilot-section.js): the heartbeat, the schedule and the events, Everywhere's
-   *  or a space's own (Shepherdr settings' "autopilot"); what a space doesn't set is Everywhere's (e: herdr-task's view
+   *  or a space's own (herdr-orchestrator settings' "autopilot"); what a space doesn't set is Everywhere's (e: herdr-task's view
    *  of it, unless the file says newer). A space switches it on in its Assistant's header. */
   private pilot(s: Scope | null, e: PilotEverywhere, trigger?: (space: string) => string | undefined): SettingSection {
     const every = AP.levelOf(this.file), own = s ? AP.levelOf(this.file, s.id) : {};
@@ -497,7 +497,7 @@ export class Settings {
       const parent = space ? file.everywhere?.agents?.feedback ?? DEFAULTS.agents.feedback : DEFAULTS.agents.feedback;
       put("agents", "feedback", word === null || (word === "on") === parent ? null : word === "on");
     } else if (key === "agents.feedback_repo") {
-      // Everywhere's only: owner/name (a github.com link is made one); empty goes back to Shepherdr's own repo
+      // Everywhere's only: owner/name (a github.com link is made one); empty goes back to herdr-orchestrator's own repo
       if (space) throw new Error("The feedback repo is set for every space at once.");
       const repo = feedbackRepo(word ?? "");
       if (repo === null) throw new Error(FEEDBACK.bad);

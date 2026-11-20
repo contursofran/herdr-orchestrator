@@ -49,7 +49,7 @@ dark, the same as the task dots (`dot.js` uses them). `onStatus()` is text on on
 - `clickable(el, onClick, { radius })`: pointer + rounded 8 hover + click for a whole row (`el`
   needs an id).
 - `countBadge(need, ready, line)`: the red / green / split count badge (Tasks, tabs, spaces).
-- `openSettings({ space?, section? })`: herdr-orchestrator's settings window (mods/shepherdr-settings, the foot's herdr-orchestrator); with
+- `openSettings({ space?, section? })`: herdr-orchestrator's settings window (mods/orchestrator-settings, the foot's herdr-orchestrator); with
   `space`, that space's own settings. Never open it with your own size.
 
 ## Rules

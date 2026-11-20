@@ -1,4 +1,4 @@
-// Settings › Machines › Find machines (#967): Shepherdr contacts only the machines you linked. Finding others (the hosts in
+// Settings › Machines › Find machines (#967): herdr-orchestrator contacts only the machines you linked. Finding others (the hosts in
 // this computer's ssh config and its online Tailscale peers) happens only here, when you press the button: it lists what
 // it will try first, tries each once (an ssh login in batch mode, no new host keys), at most once every 10 minutes, and
 // says which have herdr-core and aren't linked yet. Nothing it finds is contacted again unless you link it.

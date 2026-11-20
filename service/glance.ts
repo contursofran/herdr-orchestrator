@@ -1,9 +1,9 @@
-// The glance feed (SHEP-246, for ELIA-54's Shepherdr Wake): what a phone's widgets, lock screen and watch show, small
+// The glance feed (SHEP-246, for the phone companion): what a phone's widgets, lock screen and watch show, small
 // enough to keep a live link to all day. The page socket sends the whole snapshot (~720 KB) on every change; this doc is
 // ~15 KB and changes only when what the person sees changes. Built from the same snapshot with the same alert words
 // (push.ts alertsOf), so a native notification says exactly what a web push says. The format: docs/glance.md.
 //
-// glanceOf started as ELIA-54's reference (glance-feed/glance.ts in shepherdr-wake), kept as it is but for a stable `at`
+// glanceOf started as ELIA-54's reference (glance-feed/glance.ts in herdr-orchestrator-wake), kept as it is but for a stable `at`
 // (an item with no time of its own never takes "now": that changed `v` on every snapshot), and to list what the app
 // lists: every need (one its space's Notify keeps quiet too, without alerting), an agent's alert only while it stands.
 import { needAlert } from "./push.ts";
@@ -39,7 +39,7 @@ export type Item = {
   at?: number;
   /** notify about it (a needs or ready item); a working/done row only shows in the list */
   alert?: boolean;
-  /** where a tap opens, relative to Shepherdr's address (./?place=…&task=…) */
+  /** where a tap opens, relative to herdr-orchestrator's address (./?place=…&task=…) */
   url: string;
   accept?: { task: string };
   /** other: the card takes free words too (Reply sends them as its "Other" answer) */
@@ -72,7 +72,7 @@ export { ALERT_FRESH_MS, MEMORY_BACK_UNDER, alertStands };
 const clip = (s: string, n: number) => { const t = String(s ?? "").replace(/\s+/g, " ").trim(); return t.length <= n ? t : t.slice(0, n - 1).trimEnd() + "…"; };
 const urlOf = (place: string, task?: string, focus?: string) => { const q = new URLSearchParams({ place }); if (task) q.set("task", task); if (focus) q.set("focus", focus); return `./?${q}`; };
 
-/** a card's choices a button may send by itself (Shepherdr's quickChoices and choiceButtons rules: never a plan, a form, a
+/** a card's choices a button may send by itself (herdr-orchestrator's quickChoices and choiceButtons rules: never a plan, a form, a
  *  merge, a pick of several, a terminal menu, a choice that needs a note or a grant for good); three at most (Android) */
 export function buttonChoices(q: any): Choice[] {
   if (!q?.choices?.length || q.kind === "Plan" || (q.parts && q.parts.length > 1) || /^merge\b/i.test(q.title ?? "") || q.evidence || q.multi || String(q.id ?? "").startsWith("menu:")) return [];
@@ -86,7 +86,7 @@ export function buttonChoices(q: any): Choice[] {
 const today = (now: number) => { const d = new Date(now); d.setHours(0, 0, 0, 0); return d.getTime(); };
 
 /**
- * snap: Shepherdr's snapshot. alerts: alertsOf(snap, …) from service/push.ts (its wording, tags, urls and reply targets).
+ * snap: herdr-orchestrator's snapshot. alerts: alertsOf(snap, …) from service/push.ts (its wording, tags, urls and reply targets).
  */
 export function glanceOf(snap: any, alerts: Map<string, any>, now = Date.now()): Glance {
   const places = new Map<string, any>((snap.places ?? []).map((p: any) => [p.id, p]));
@@ -240,7 +240,7 @@ export class GlanceFeed {
   }
 }
 
-/** POST /api/open's url: one Shepherdr link a tap on an alert opens (./?place=…&task=…&focus=… or ./#accept=<task>) */
+/** POST /api/open's url: one herdr-orchestrator link a tap on an alert opens (./?place=…&task=…&focus=… or ./#accept=<task>) */
 export function openUrlOk(url: unknown): url is string {
   if (typeof url !== "string" || url.length > 600) return false;
   if (/^\.\/#accept=[^\s#?&]+$/.test(url)) return true;

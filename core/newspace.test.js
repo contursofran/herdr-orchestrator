@@ -55,10 +55,10 @@ test("the field's list follows the typed path, as a shell completes one", () => 
   expect(N.asDir("/h/me/dev", home)).toBe("~/dev/");
   expect(N.asDir("/", home)).toBe("/");
   expect(N.asDir("/srv", home)).toBe("/srv/");
-  const kids = ["/h/me/dev/Ashes", "/h/me/dev/notes", "/h/me/dev/Shepherdr", "/h/me/dev/shell", "/h/me/dev/x"];
+  const kids = ["/h/me/dev/Ashes", "/h/me/dev/notes", "/h/me/dev/shed", "/h/me/dev/shell", "/h/me/dev/x"];
   expect(N.matching(kids, "")).toEqual(kids);
-  expect(N.matching(kids, "sh")).toEqual(["/h/me/dev/Shepherdr", "/h/me/dev/shell", "/h/me/dev/Ashes"]);
-  expect(N.matching(kids, "SHE")).toEqual(["/h/me/dev/Shepherdr", "/h/me/dev/shell", "/h/me/dev/Ashes"]);
+  expect(N.matching(kids, "sh")).toEqual(["/h/me/dev/shed", "/h/me/dev/shell", "/h/me/dev/Ashes"]);
+  expect(N.matching(kids, "SHE")).toEqual(["/h/me/dev/shed", "/h/me/dev/shell", "/h/me/dev/Ashes"]);
   expect(N.matching(kids, "zz")).toEqual([]);
 });
 

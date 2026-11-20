@@ -1,6 +1,6 @@
-// Jump (Ctrl+K, as Shepherdr's ⌘K): one box that finds a space, a task, an artifact or a machine and
+// Jump (Ctrl+K, as herdr-orchestrator's ⌘K): one box that finds a space, a task, an artifact or a machine and
 // goes there. Opened with mod.open:jump (again closes it), a popup at the top of the window.
-// Type to filter: every word typed must be in the item somewhere, any case (Shepherdr's
+// Type to filter: every word typed must be in the item somewhere, any case (herdr-orchestrator's
 // matches()). Tasks by id, title, status line, summary and where they ran, Done and archived
 // ones too (archived only once something is typed); artifacts by title, the task that made them
 // and their folder; spaces by name, folder and machine. Each group newest first, so with nothing
