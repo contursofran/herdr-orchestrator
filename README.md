@@ -11,7 +11,7 @@ herdr-orchestrator starts from [Shepherdr](https://github.com/eliasstravik/sheph
 - **Settings:** one settings window for tasks, merge, review, agents and machines.
 - **Task view:** a task opens beside the chat with its chat, terminal, pull request, browser and artifacts.
 - **Chat:** cards for questions and permissions, code with Copy, images, artifacts, dictation.
-- **Tasks:** a queue, tasks for later or after other tasks, worktrees on `work/<n>-<slug>` branches, review by a separate agent, merge pinned to the reviewed commit.
+- **Tasks:** a queue, tasks for later or after other tasks, worktrees on `work/<n>-<slug>` branches, review by a separate agent before a task is ready, merge pinned to the checked head commit.
 - **Machines:** every machine you added to herdr-core, from one window.
 
 ## What it adds
