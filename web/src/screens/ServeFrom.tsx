@@ -1,4 +1,4 @@
-// Settings › Web's Serve from, confirmed (the window's inline confirm under the row, mods/shepherdr-settings/web-section.js):
+// Settings › Web's Serve from, confirmed (the window's inline confirm under the row, mods/orchestrator-settings/web-section.js):
 // the machine picked in the row's list, what moving the web app there does, then Move it. Its words: core/host.js.
 import { useState, useSyncExternalStore } from 'react'
 import * as HCc from '@core/host.js'

@@ -52,7 +52,7 @@ export function micError(e: unknown): string {
 }
 
 /** the audio worklet that hands the page the microphone's samples (for the live words), as a module from a blob */
-const TAP = `registerProcessor('shepherdr-tap', class extends AudioWorkletProcessor {
+const TAP = `registerProcessor('herdr-orchestrator-tap', class extends AudioWorkletProcessor {
   process(inputs) { const c = inputs[0] && inputs[0][0]; if (c) this.port.postMessage(c.slice(0)); return true }
 })`
 let tapUrl: string | null = null
@@ -107,7 +107,7 @@ async function liveTokenFor(): Promise<string | null> {
   }
 }
 
-/** Starts listening. `end` gets what was heard when it finishes, or null when cancelled; `fail` why it didn't work. Shepherdr 3: the phone records,
+/** Starts listening. `end` gets what was heard when it finishes, or null when cancelled; `fail` why it didn't work. herdr-orchestrator 3: the phone records,
  *  the service has ElevenLabs write it down (the window's dictation, the same words on every phone browser).
  *  `timing` (tests, the proof) hears each step after Done: 'live' or 'upload' and how many ms Done to words took. */
 export function dictate(end: (text: string | null) => void, fail: (why: string) => void = () => undefined,
@@ -210,7 +210,7 @@ export function dictate(end: (text: string | null) => void, fail: (why: string) 
           const c = ctx
           await c.audioWorklet.addModule(tapUrl)
           if (state !== 'on' || ctx !== c) return
-          const tap = new AudioWorkletNode(c, 'shepherdr-tap')
+          const tap = new AudioWorkletNode(c, 'herdr-orchestrator-tap')
           const down = to16k(c.sampleRate)
           tap.port.onmessage = (e) => {
             if (state !== 'on') return

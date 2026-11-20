@@ -86,7 +86,7 @@ def _hold_package(archive):
 if os.path.isfile(os.path.dirname(os.path.realpath(__file__))):
     _hold_package(os.path.dirname(os.path.realpath(__file__)))
 
-# Shepherdr's data in its own folders: moved there once, before anything reads a path (herdr_task/layout.py).
+# herdr-orchestrator's data in its own folders: moved there once, before anything reads a path (herdr_task/layout.py).
 from herdr_task import layout  # noqa: E402
 
 if layout.ensure() == "newer":

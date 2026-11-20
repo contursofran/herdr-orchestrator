@@ -1,4 +1,4 @@
-// Voice (SHEP-105): a call with Shepherdr itself, not one chat. One voice takes what you say to any space's Assistant
+// Voice (SHEP-105): a call with herdr-orchestrator itself, not one chat. One voice takes what you say to any space's Assistant
 // or task's agent, tells you when they reply or need you, and opens things here (voiceNav; its screen tool reads and
 // acts on this very page, screen.ts, whichever device started the call). It starts from the voice button beside Search in
 // the sidebar's brand row, which is the call's Mute and End while it is on (SHEP-135); on a phone from the voice button
@@ -206,8 +206,8 @@ function CallWhere() {
   return null
 }
 
-/** Start a call with Shepherdr (from: the chat whose call button started it, its "here" while the screen shows no
- *  chat), or end the one on. resume: a call this page handed on to Shepherdr Wake, taken back (SHEP-251). */
+/** Start a call with herdr-orchestrator (from: the chat whose call button started it, its "here" while the screen shows no
+ *  chat), or end the one on. resume: a call this page handed on to the phone companion, taken back (SHEP-251). */
 export function toggleCall(from: string | null = null, resume: string | null = null) {
   const ui = getState().ui
   if (ui.call) return endCall()
@@ -241,7 +241,7 @@ export function toggleCall(from: string | null = null, resume: string | null = n
     mute: (on) => { if (!mine()) return; muteCall(on); setUI({ callMuted: on }) },
   }, (id) => {
     if (!mine()) return
-    // SHEP-251: the phone locked and Shepherdr Wake carries the call on: this page lets go, and can take it back
+    // SHEP-251: the phone locked and the phone companion carries the call on: this page lets go, and can take it back
     const was = getState().ui
     setUI({ call: false, callFull: false, callFrom: null, callMuted: false })
     act({ type: 'call', chat: was.callFrom ?? '', on: false })
@@ -249,7 +249,7 @@ export function toggleCall(from: string | null = null, resume: string | null = n
   }, resume).catch(() => { endCall(); setUI({ callError: 'Audio could not start on this device.' }) })
 }
 
-/** SHEP-251: the call this page handed on to Shepherdr Wake (the phone locked), until taken back or closed */
+/** SHEP-251: the call this page handed on to the phone companion (the phone locked), until taken back or closed */
 let handed: { id: string; from: string | null } | null = null
 const handedWatch = new Set<() => void>()
 function setHanded(h: typeof handed) { handed = h; handedWatch.forEach((f) => f()) }
@@ -372,7 +372,7 @@ const callTint = 'bg-[color-mix(in_srgb,var(--ready)_11%,var(--bg))] shadow-[ins
 
 /** SHEP-105, SHEP-135: the top of the spaces list: nothing, but the key's card when a call couldn't start for want of
  *  one. A call shows in the brand row (VoiceButton: Mute and End), never a card here as well */
-function ShepherdrRow() {
+function OrchestratorRow() {
   const [helped] = useHelp()
   if (!helped) return null
   return (
@@ -405,7 +405,7 @@ function PhoneCallButton() {
   )
 }
 
-/** the strip at the top where neither the sidebar's brand row nor a phone's bottom bar shows: Shepherdr, what it is doing
+/** the strip at the top where neither the sidebar's brand row nor a phone's bottom bar shows: herdr-orchestrator, what it is doing
  *  and its clock, Mute and End */
 function CallStrip() {
   const t = useElapsed(useUI((u) => u.callStarted))
@@ -458,8 +458,8 @@ const ease = (x: number) => x * x * (3 - 2 * x)
 const fract = (x: number) => x - Math.floor(x)
 const clamp = (x: number) => Math.min(1, Math.max(0, x))
 
-/** The full-screen call's mark (SHEP-137, option 1 of SHEP-134): the hooked staff from Shepherdr's logo as one white
- *  line on the call's near-black, green only for the voice. Shepherdr's voice ripples out from the hook, yours ripples
+/** The full-screen call's mark (SHEP-137, option 1 of SHEP-134): the hooked staff from herdr-orchestrator's logo as one white
+ *  line on the call's near-black, green only for the voice. herdr-orchestrator's voice ripples out from the hook, yours ripples
  *  in; it draws itself while connecting, a green glint runs along it while it thinks or works, and it goes grey and
  *  still while you are muted. Everything it draws stays inside its own box (no blur, blend or clip: SHEP-120's grey
  *  square came from those on WebKit), so the box is the room the rings need and nothing else overlaps it. Each frame
@@ -498,7 +498,7 @@ function Crook({ phase, className }: { phase: string; className?: string }) {
       glow = glide(glow, p === 'thinking' || p === 'working' ? 1 : 0, 0.1)
       glint.setAttribute('stroke-opacity', glow.toFixed(3))
       glint.setAttribute('stroke-dashoffset', still ? '-70' : (-(fract(t / (p === 'working' ? 1.1 : 1.8)) * 134 - 14)).toFixed(2))
-      // the rings: out from the hook while Shepherdr speaks, in to it while it listens, as bright as the voice
+      // the rings: out from the hook while herdr-orchestrator speaks, in to it while it listens, as bright as the voice
       const inward = p === 'listening'
       ring = glide(ring, inward || p === 'speaking' ? 1 : 0, 0.08)
       rings.forEach((r, i) => {
@@ -555,7 +555,7 @@ function BigCallButton({ label, word, onClick, pressed, className, children }: {
 
 function minimize() { setUI({ callFull: false }) }
 
-/** The call over everything, phone first (SHEP-118): calm and dark whatever the app's look, Shepherdr and the clock at
+/** The call over everything, phone first (SHEP-118): calm and dark whatever the app's look, herdr-orchestrator and the clock at
  *  the top, the Crook (SHEP-137) in the middle with what the call does under it, and only the call's own buttons: Minimize, Mute,
  *  End. Held sideways (short and wide), the Crook and its word sit left and the rest right (SHEP-126). Minimize (or Escape) puts it back in the brand row, bar or strip; the bar's and strip's Full screen button brings it back. */
 function CallScreen() {
@@ -662,7 +662,7 @@ function CallError() {
   )
 }
 
-/** SHEP-251: the call goes on in Shepherdr Wake (the phone locked): says so at the top, with Take it back */
+/** SHEP-251: the call goes on in the phone companion (the phone locked): says so at the top, with Take it back */
 function CallHanded() {
   const [, tick] = useState(0)
   useEffect(() => { const f = () => tick((x) => x + 1); handedWatch.add(f); return () => void handedWatch.delete(f) }, [])
@@ -671,7 +671,7 @@ function CallHanded() {
   const h = handed
   return (
     <div data-topbar data-call-handed role="status" className={clsx(callPill, 'text-ready-fg', callTint)}>
-      <span className="min-w-0 flex-1 text-pretty">Carrying on in your pocket (herdr-orchestrator Wake)</span>
+      <span className="min-w-0 flex-1 text-pretty">Carrying on in your pocket (the phone companion)</span>
       <button type="button" data-take-back onClick={() => toggleCall(h.from, h.id)}
         className="press-dim h-7 shrink-0 rounded-full bg-bg px-3 text-[0.78125rem] font-medium text-fg shadow-[inset_0_0_0_1px_var(--line2)] phone:h-9 phone:text-[0.875rem]">
         Take it back
@@ -747,7 +747,7 @@ function StartAsk() {
 export default definePlugin({
   name: 'voice',
   setup(reg) {
-    reg.sideTop.push(ShepherdrRow)
+    reg.sideTop.push(OrchestratorRow)
     reg.sideHead.push(VoiceButton)
     reg.phoneBar.push(PhoneCallButton)
     // SHEP-122: no Listening pill above a phone's bar: the minimized call is its bar's buttons alone

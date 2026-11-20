@@ -1,4 +1,4 @@
-// Serve from (Shepherdr settings › Web, `shepherdr web serve-from <machine>`): which machine serves the web app, and
+// Serve from (herdr-orchestrator settings › Web, `herdr-orchestrator web serve-from <machine>`): which machine serves the web app, and
 // how every machine keeps one truth with it.
 // - The host serves the web app and holds the truth: the shared document ("herdr-orchestrator": pins, the sidebar, Notify, the
 //   Window switches) and the settings file (~/.config/herdr-orchestrator/settings.json, the role instructions). Another machine's service

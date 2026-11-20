@@ -11,7 +11,7 @@ import * as U from "../core/usage.js";
 const { lines, sinceDelete, FILE, OLD, DELETED, CAP, DELETE } = U as any;
 const file = () => join(DATA, FILE);
 
-// The add-on is on (Shepherdr settings > Window > Add-ons): main.ts gives the off list's check (not imported here, so
+// The add-on is on (herdr-orchestrator settings > Window > Add-ons): main.ts gives the off list's check (not imported here, so
 // a test's settings file isn't read before it is set).
 let insightsOn = () => false;
 export function followSwitch(on: () => boolean) { insightsOn = on; }

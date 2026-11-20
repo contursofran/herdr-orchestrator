@@ -1,5 +1,5 @@
-// shepherdr secrets move-to <machine|here> [--restore] [--json]: moves the secrets (the vault: secrets/vault.json in
-// Shepherdr's data folder, or ~/.herdr/vault.json on a machine whose data hasn't moved yet: core/paths.js SH) to
+// herdr-orchestrator secrets move-to <machine|here> [--restore] [--json]: moves the secrets (the vault: secrets/vault.json in
+// herdr-orchestrator's data folder, or ~/.herdr/vault.json on a machine whose data hasn't moved yet: core/paths.js SH) to
 // another machine linked over herdr-core, which then keeps them (Settings › Secrets › Kept on runs this). Run anywhere:
 // a machine that doesn't keep them passes the move to the one that does. On the machine that keeps them, in order:
 //   1. herdr-secret there knows where secrets are kept (a release that has `herdr-secret where`), and its names for
@@ -11,11 +11,11 @@
 //      each service hands it on. From then the new machine answers every agent's request, and this one refuses;
 //   5. a few seconds later (requests under way here finish), the vault here set aside as vault.json.moved-<time>
 //      (owner-only: the backup to roll back to) and this machine marked remote.
-// Rollback: `shepherdr secrets move-to <old machine>` from anywhere moves them back with whatever was added since.
-// With the machine that keeps them gone for good: `shepherdr secrets move-to here --restore` on the old one puts its
+// Rollback: `herdr-orchestrator secrets move-to <old machine>` from anywhere moves them back with whatever was added since.
+// With the machine that keeps them gone for good: `herdr-orchestrator secrets move-to here --restore` on the old one puts its
 // backup back and names it again (what was added since then on the other one isn't in it). Once the other one is back,
-// `shepherdr secrets move-to here` there hands it the newer record (each service does that too).
-// shepherdr secrets where [--json]: which machine keeps them.
+// `herdr-orchestrator secrets move-to here` there hands it the newer record (each service does that too).
+// herdr-orchestrator secrets where [--json]: which machine keeps them.
 import { CoreClient } from "./hc/client.ts";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, renameSync, writeFileSync, copyFileSync, chmodSync, unlinkSync } from "node:fs";
@@ -35,7 +35,7 @@ const [cmd, target] = args.filter((a, i) => !a.startsWith("--") && args[i - 1] !
 const say = (s: string) => { if (!json) console.log(s); };
 function fail(s: string): never { if (json) console.log(JSON.stringify({ ok: false, error: s })); else console.error(`herdr-orchestrator: ${s}`); process.exit(1); }
 
-const HERDR = join(HOME, ".herdr");   // an older Shepherdr's backups are here
+const HERDR = join(HOME, ".herdr");   // an older herdr-orchestrator's backups are here
 const VAULT = where().vault, MARK = where()["secret-remote"], SECRETS = dirname(VAULT);
 // herdr-secret and hc there, wherever they were installed (PATH over herdr-core's exec may not have them)
 const PATHS = 'PATH="$HOME/.local/bin:$HOME/.local/share/herdr-orchestrator/bin:${HERDR_APP_HOME:-$HOME/.config/herdr-app}/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"; export PATH; ';
@@ -92,7 +92,7 @@ const to: string | null = toMaybe;
 
 // ---- rollback with the machine that keeps them gone ---------------------------------------------------------------
 function backups() {
-  // newest last, in the secrets folder or (made by an older Shepherdr) in ~/.herdr
+  // newest last, in the secrets folder or (made by an older herdr-orchestrator) in ~/.herdr
   const of = (d: string) => { try { return readdirSync(d).filter((f) => /^vault\.json\.moved-\d{8}T\d{6}$/.test(f)).map((f) => join(d, f)); } catch { return []; } };
   return [...new Set([...of(HERDR), ...of(SECRETS)])].sort((a, b) => a.slice(a.lastIndexOf("/")).localeCompare(b.slice(b.lastIndexOf("/"))));
 }
@@ -183,7 +183,7 @@ const moved = mine.secrets.map((e: any) => {
 });
 const key = (e: any) => `${e?.name}|${e?.scope}|${e?.machine ?? ""}|${e?.space ?? ""}`;
 let there: string | null = null;
-// wherever that machine keeps it (its Shepherdr folders, or ~/.herdr on an older one)
+// wherever that machine keeps it (its herdr-orchestrator folders, or ~/.herdr on an older one)
 {
   const r = await exec(["sh", "-c", SH + '[ -e "$ORCH_VAULT" ] || exit 3; cat "$ORCH_VAULT"'], to).catch((e) => fail(`couldn't read the vault on ${to}: ${(e as Error).message}`));
   if (r.code === 0) there = r.stdout;

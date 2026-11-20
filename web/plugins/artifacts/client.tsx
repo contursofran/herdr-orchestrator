@@ -1,4 +1,4 @@
-// Artifacts any agent makes (shepherdr artifact): a card in the chat where it was made, in a sealed frame; full screen
+// Artifacts any agent makes (herdr-orchestrator artifact): a card in the chat where it was made, in a sealed frame; full screen
 // on a tap, with its versions, Mark up and a box to write to its keeper, so you change it by chatting beside it; and a
 // list per place, and one per chat (its ⋯ → Artifacts). A newer version swaps in live: only its data changed, the page takes the new data without a reload.
 // Shown in the side panel, it fills a place's Artifacts list (or a task's Artifacts tab) beside the chat.
@@ -241,7 +241,7 @@ const htmlOf = (a: Artifact, n: number) => a.versions.find((x) => x.n === n)?.ht
 
 /* ---------- an artifact in the side panel ---------- */
 
-const SHOWN = 'shepherdr.panelArtifacts'
+const SHOWN = 'herdr-orchestrator.panelArtifacts'
 /** the artifact each side panel shows, by "place:<id>" (its Artifacts list) or "chat:<key>" (a task's Artifacts tab),
  *  remembered on this device */
 let shownIn: Record<string, string> = (() => {
@@ -376,7 +376,7 @@ const useWindowHeight = () =>
 /** how tall each page last said it is, so a card scrolled back into the chat doesn't jump */
 const heights = new Map<string, number>()
 
-/** Shepherdr 3.1: a recipe artifact is drawn here as the web's own HTML (Recipe.tsx); a custom panel only the Herdr
+/** herdr-orchestrator 3.1: a recipe artifact is drawn here as the web's own HTML (Recipe.tsx); a custom panel only the Herdr
  *  window runs shows the window's picture of it; a 2.1 page (none here now) still has its frame. Each version by its own
  *  kind: a converted one was a panel before it became a recipe. */
 export function ArtifactFrame(p: Parameters<typeof PageFrame>[0]) {
@@ -465,7 +465,7 @@ function PageFrame({
   const opened = useMemo(() => (isDark() ? 'dark' : 'light'), [loaded, full, device])
   const theme = dark ? 'dark' : 'light'
   useEffect(() => {
-    ref.current?.contentWindow?.postMessage({ shepherdr: 'theme', theme }, '*')
+    ref.current?.contentWindow?.postMessage({ artifactMessage: 'theme', theme }, '*')
   }, [theme])
   useEffect(() => {
     if (v === has.current) return
@@ -476,15 +476,15 @@ function PageFrame({
     has.current = v
     fetch(frameUrl(art.id, v, false, device, '/data'))
       .then((r) => r.json())
-      .then((r: { data?: unknown }) => has.current === v && ref.current?.contentWindow?.postMessage({ shepherdr: 'data', data: r.data ?? null }, '*'))
+      .then((r: { data?: unknown }) => has.current === v && ref.current?.contentWindow?.postMessage({ artifactMessage: 'data', data: r.data ?? null }, '*'))
       .catch(() => has.current === v && setLoaded(v))
   }, [art.id, v, page, pageLoaded, device])
   useEffect(() => {
     const on = (e: MessageEvent) => {
       if (e.source !== ref.current?.contentWindow || !e.data || typeof e.data !== 'object') return
-      const d = e.data as { shepherdr?: string; h?: number; stuck?: boolean; grows?: boolean; text?: string; url?: string; more?: boolean } & Pick
-      if (d.shepherdr === 'more') onMore?.(!!d.more)
-      if (d.shepherdr === 'height' && d.h) {
+      const d = e.data as { artifactMessage?: string; h?: number; stuck?: boolean; grows?: boolean; text?: string; url?: string; more?: boolean } & Pick
+      if (d.artifactMessage === 'more') onMore?.(!!d.more)
+      if (d.artifactMessage === 'height' && d.h) {
         // one that grows with its frame (100vh) starts from scratch each time, so it settles the same each time
         if (d.stuck) heights.delete(known)
         else if (!d.grows) heights.set(known, d.h)
@@ -492,26 +492,26 @@ function PageFrame({
       }
       // a page speaks for you only right after you tapped or typed in it: the browser's own mark of a person's touch,
       // which no script can make; at most once every two seconds, and on one line (it can't write a chat line of its own)
-      if (d.shepherdr === 'send' && typeof d.text === 'string' && d.text.trim() && touchedNow(ref.current) && Date.now() - last.current > 2000) {
+      if (d.artifactMessage === 'send' && typeof d.text === 'string' && d.text.trim() && touchedNow(ref.current) && Date.now() - last.current > 2000) {
         last.current = Date.now()
         const text = d.text.replace(/\s*[\r\n]+\s*/g, ' ').trim().slice(0, 2000)
         act({ type: 'artifact-send', place: art.place, artifact: art.id, v, text })
-          .then((r: { to?: string }) => ref.current?.contentWindow?.postMessage({ shepherdr: 'sent', text, to: r?.to }, '*'))
+          .then((r: { to?: string }) => ref.current?.contentWindow?.postMessage({ artifactMessage: 'sent', text, to: r?.to }, '*'))
           .catch(() => undefined)
       }
       // a web link opens in a tab of its own, from a tap in the page, never with this app as its opener
-      if (d.shepherdr === 'open' && typeof d.url === 'string' && /^https?:\/\//i.test(d.url) && touchedNow(ref.current)) window.open(d.url, '_blank', 'noopener,noreferrer')
-      if (d.shepherdr === 'pick' && markup && onPick) onPick({ text: d.text ?? '', selector: d.selector, component: d.component, x: d.x, y: d.y })
+      if (d.artifactMessage === 'open' && typeof d.url === 'string' && /^https?:\/\//i.test(d.url) && touchedNow(ref.current)) window.open(d.url, '_blank', 'noopener,noreferrer')
+      if (d.artifactMessage === 'pick' && markup && onPick) onPick({ text: d.text ?? '', selector: d.selector, component: d.component, x: d.x, y: d.y })
     }
     addEventListener('message', on)
     return () => removeEventListener('message', on)
   }, [art.id, art.place, v, known, markup, onPick, onMore])
   useEffect(() => {
-    ref.current?.contentWindow?.postMessage({ shepherdr: 'markup', on: !!markup }, '*')
+    ref.current?.contentWindow?.postMessage({ artifactMessage: 'markup', on: !!markup }, '*')
   }, [markup])
   // a fixed-size design fits whole within the cap
   useEffect(() => {
-    if (!full) ref.current?.contentWindow?.postMessage({ shepherdr: 'cap', h: cap }, '*')
+    if (!full) ref.current?.contentWindow?.postMessage({ artifactMessage: 'cap', h: cap }, '*')
   }, [cap, full])
   return (
     <iframe
@@ -523,15 +523,15 @@ function PageFrame({
       loading={full ? undefined : 'lazy'}
       src={frameUrl(art.id, loaded, !!full, device, '', opened)}
       onLoad={() => {
-        if (theme !== opened) ref.current?.contentWindow?.postMessage({ shepherdr: 'theme', theme }, '*')
-        if (markup) ref.current?.contentWindow?.postMessage({ shepherdr: 'markup', on: true }, '*')
-        if (!full) ref.current?.contentWindow?.postMessage({ shepherdr: 'cap', h: cap }, '*')
+        if (theme !== opened) ref.current?.contentWindow?.postMessage({ artifactMessage: 'theme', theme }, '*')
+        if (markup) ref.current?.contentWindow?.postMessage({ artifactMessage: 'markup', on: true }, '*')
+        if (!full) ref.current?.contentWindow?.postMessage({ artifactMessage: 'cap', h: cap }, '*')
         // newer data came while it was still loading (or loaded again): it gets that data now
         if (has.current !== loaded) {
           const want = has.current
           fetch(frameUrl(art.id, want, false, device, '/data'))
             .then((r) => r.json())
-            .then((r: { data?: unknown }) => has.current === want && ref.current?.contentWindow?.postMessage({ shepherdr: 'data', data: r.data ?? null }, '*'))
+            .then((r: { data?: unknown }) => has.current === want && ref.current?.contentWindow?.postMessage({ artifactMessage: 'data', data: r.data ?? null }, '*'))
             .catch(() => undefined)
         }
       }}
@@ -742,10 +742,10 @@ function ViewerShell({ label, phone, children }: { label: string; phone: boolean
 
 
 /** "All" in the list's bar: every folder's artifacts (the default, like Tasks), or the shown space's (the window's
- *  toggle), kept on this device. A new key: a choice saved under the old one ('shepherdr.artifactsAll', off by
+ *  toggle), kept on this device. A new key: a choice saved under the old one ('herdr-orchestrator.artifactsAll', off by
  *  default) starts over on All. */
-const ALL = 'shepherdr.artifactsAllFolders'
-let allOn = (() => { try { localStorage.removeItem('shepherdr.artifactsAll'); return localStorage.getItem(ALL) !== '0' } catch { return true } })()
+const ALL = 'herdr-orchestrator.artifactsAllFolders'
+let allOn = (() => { try { localStorage.removeItem('herdr-orchestrator.artifactsAll'); return localStorage.getItem(ALL) !== '0' } catch { return true } })()
 const allListeners = new Set<() => void>()
 function setAll(on: boolean) {
   allOn = on

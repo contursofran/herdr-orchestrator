@@ -32,7 +32,7 @@ PANEL = 'import { View, div } from "gpui-kit";\nexport default class X extends V
 
 class Artifacts(unittest.TestCase):
     def setUp(self):
-        self.dir = tempfile.mkdtemp(prefix="shepherdr-artifact-")
+        self.dir = tempfile.mkdtemp(prefix="herdr-orchestrator-artifact-")
         store = os.path.join(self.dir, "store")
         self.folder = os.path.join(self.dir, "proj")
         os.makedirs(self.folder)
@@ -184,13 +184,13 @@ class WhoPublishes(unittest.TestCase):
     label with `hc get` (`hc ls --json` lists no labels), else from HERDR_BROWSER_TASK."""
 
     def setUp(self):
-        self.home = tempfile.mkdtemp(prefix="shepherdr-artifact-home-")
+        self.home = tempfile.mkdtemp(prefix="herdr-orchestrator-artifact-home-")
         os.makedirs(os.path.join(self.home, ".herdr", "tasks"))
         with open(os.path.join(self.home, ".herdr", "tasks", "dev-shop.json"), "w") as f:
             json.dump({"prefix": "SHOP", "tasks": []}, f)
         self.p = mock.patch.object(A, "HOME", self.home)
         self.p.start()
-        # Shepherdr's paths there: that home's old ones (not moved)
+        # herdr-orchestrator's paths there: that home's old ones (not moved)
         self.q = mock.patch.object(A, "SHEP", lambda rel: os.path.join(self.home, rel))
         self.q.start()
 

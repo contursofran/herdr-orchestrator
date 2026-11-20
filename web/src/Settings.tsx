@@ -1,4 +1,4 @@
-// Settings, as the window's (mods/shepherdr-settings): its pages in its order (Agents, Tasks, Autopilot, Notify, Secrets,
+// Settings, as the window's (mods/orchestrator-settings): its pages in its order (Agents, Tasks, Autopilot, Notify, Secrets,
 // Machines, Window, Web), Everywhere's, or a space's own ("Space settings"). A page a space can set its own of starts
 // with the level switch (Applies to: Everywhere or a space, picked); the others say they are one for every space. Each
 // row says, as the window's, "Inherited from Everywhere" or "Set for this space · Reset", and on Everywhere which spaces
@@ -10,7 +10,7 @@ import clsx from 'clsx'
 import { ModelButton, openRole } from './screens/Role.tsx'
 import { MachineDetails } from './MachineDetails.tsx'
 import { askServeFrom } from './screens/ServeFrom.tsx'
-// The window's words for every page: core/settings.js (mods/shepherdr-settings reads the same)
+// The window's words for every page: core/settings.js (mods/orchestrator-settings reads the same)
 import * as STc from '@core/settings.js'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ST = STc as any
@@ -904,7 +904,7 @@ function NoteBox({ row, under, save, mono = false }: { row: SettingRow; under: R
 }
 
 /** Secrets › Kept on: the machine that keeps them, a list of the others to move them to, and a confirm before the move
- *  (shepherdr secrets move-to, run by the service; the page sees it go in the next snapshots). */
+ *  (herdr-orchestrator secrets move-to, run by the service; the page sees it go in the next snapshots). */
 function KeptOn({ kept, phone }: { kept: NonNullable<Page['kept']>; phone: boolean }) {
   const W = ST.SECRETS
   const [open, setOpen] = useState(false)

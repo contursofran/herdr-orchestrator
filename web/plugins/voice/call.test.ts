@@ -302,7 +302,7 @@ test('SHEP-173: an end by itself says why (the limit, the line); after the perso
   expect(endedWhy).toEqual(['it reached the 2-hour limit', null])
 })
 
-test('SHEP-251: handed on to Shepherdr Wake: the page lets go quietly (no end, no reconnect, no chime) and can take it back', async () => {
+test('SHEP-251: handed on to the phone companion: the page lets go quietly (no end, no reconnect, no chime) and can take it back', async () => {
   errors.length = 0
   endedWhy.length = 0
   const handed: string[] = []

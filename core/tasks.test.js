@@ -98,7 +98,7 @@ test("order, words and keys", () => {
   expect(ago(NOW - 3 * 60_000, true, NOW)).toBe("3m ago");
   expect(ago(NOW, true, NOW)).toBe("just now");
   expect(autoPrefix("/x/herdr-app-ttt")).toBe("HAT");
-  expect(autoPrefix("/x/shepherdr")).toBe("SHEP");
+  expect(autoPrefix("/x/project")).toBe("PROJ");
   expect(autoPrefix("/x/herdr-orchestrator")).toBe("HO");
   expect(refOf({ prefix: "SHEP" }, { id: 7 })).toBe("SHEP-7");
   expect(taskKey({ machine: null, folder: "/f" }, { id: 7 })).toBe(":/f#7");
@@ -179,13 +179,13 @@ test("a scheduled task says when it starts", () => {
 
 describe("an automation's row (SHEP-43)", () => {
   test("says its machine and space whatever the grouping, its machine only with more than one", () => {
-    expect(autoWhere("vm-b", "shepherdr", true)).toBe("vm-b · shepherdr");
+    expect(autoWhere("vm-b", "herdr-orchestrator", true)).toBe("vm-b · herdr-orchestrator");
     expect(autoWhere("This computer", "Home", true)).toBe("This computer · Home");
     expect(autoWhere("This computer", "Home", false)).toBe("Home");
     expect(autoWhere(null, null, true)).toBe(null);
   });
   test("one set off from another folder says by what and where", () => {
-    expect(fromLine(["merged"], "vm-b · shepherdr")).toBe("On merges in vm-b · shepherdr");
+    expect(fromLine(["merged"], "vm-b · herdr-orchestrator")).toBe("On merges in vm-b · herdr-orchestrator");
     expect(fromLine(["ready", "merged"], "x")).toBe("On ready tasks or merges in x");
     expect(fromLine(["added", "ready", "merged"], "x")).toBe("On task events in x");
     expect(fromLine([], "x")).toBe("On task events in x");

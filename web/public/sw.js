@@ -1,4 +1,4 @@
-// Shepherdr's service worker: shows push alerts, keeps the app icon's count and opens the app on the card an alert is
+// herdr-orchestrator's service worker: shows push alerts, keeps the app icon's count and opens the app on the card an alert is
 // about. With the app on screen, an alert shows nothing: the server already skips this device then, and this catches
 // the rest. One alert per task: a task's newer alert takes its old one's place (its tag), and alerts about what no
 // longer waits on you go with the next one. Where alerts have buttons (Android and so a Wear OS watch, desktop Chrome),

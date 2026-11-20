@@ -1,4 +1,4 @@
-// Tasks, as Shepherdr 3's Tasks panel (mods/tasks): every task on every machine, grouped by the toggle under the search
+// Tasks, as herdr-orchestrator 3's Tasks panel (mods/tasks): every task on every machine, grouped by the toggle under the search
 // box (kept on this device, SHEP-182). Status, the default: what needs the person first (Needs you, Ready), then Working,
 // Queued and the rest, each row saying its machine and space, Done hidden behind its count at the end. Place: each
 // machine, its spaces inside it, every status mixed (a row's icon says which). Pinned tasks first in both. Each group
@@ -319,7 +319,7 @@ function autoWhere(snap: Snapshot, a: Automation) {
   return (TK.autoWhere as (m: string, s?: string, multi?: boolean) => string | null)(machineName(snap.machines, a.machine || snap.host), a.listName, multiMachine(snap)) ?? undefined
 }
 
-/** an automation set off by another folder's task events (--from): by what and where ("On merges in vm-b · shepherdr") */
+/** an automation set off by another folder's task events (--from): by what and where ("On merges in vm-b · herdr-orchestrator") */
 function autoFrom(snap: Snapshot, a: Automation) {
   const f = a.from
   return f ? (TK.fromLine as (e: string[], w: string) => string)(f.events, `${machineName(snap.machines, f.machine || snap.host)} · ${f.place}`) : undefined

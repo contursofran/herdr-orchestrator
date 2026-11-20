@@ -1,6 +1,6 @@
 // The tailnet side: who owns this machine, its name, and sharing /herdr-orchestrator privately with tailscale serve.
 // Never funnel: serving stops when Funnel is on for the port /herdr-orchestrator is served on.
-// The HTTPS port it is shared on: 443, or the one this machine set (shepherdr web https-port, install --https-port),
+// The HTTPS port it is shared on: 443, or the one this machine set (herdr-orchestrator web https-port, install --https-port),
 // kept in the service's folder as https-port; read at each look, so a change needs no restart.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -152,7 +152,7 @@ export async function unshare(dns: string, port?: number): Promise<void> {
   if (now.proxy && (port === undefined || now.proxy === `http://127.0.0.1:${port}`)) await run(["serve", `--https=${now.port ?? 443}`, "--set-path", MOUNT, "off"]);
 }
 
-/** What a move here set aside (shepherdr web serve-from --take-link: ~/.local/state/herdr-orchestrator/service/replaced-share.json), shared
+/** What a move here set aside (herdr-orchestrator web serve-from --take-link: ~/.local/state/herdr-orchestrator/service/replaced-share.json), shared
  *  again once this machine no longer serves the web app. */
 export async function restoreShare(file: string): Promise<boolean> {
   let r: { port?: string; proxy?: string } | null = null;

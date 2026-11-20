@@ -1,4 +1,4 @@
-// The Keybinds list's words (Shepherdr 3.0's Keybinds dialog, mods/keybinds): each key as people read it, each action
+// The Keybinds list's words (herdr-orchestrator 3.0's Keybinds dialog, mods/keybinds): each key as people read it, each action
 // in plain words, grouped (Tabs, Spaces, Panes, Agents, Terminal, a mod's own, App). The window reads its keys live
 // (keys()); the web app passes the ones that work in a browser (web/plugins/keyboard). Both name them from here.
 // Shared core: the source is core/keys.js; bin/sync-shared copies it into the mods in lib/COPIES.

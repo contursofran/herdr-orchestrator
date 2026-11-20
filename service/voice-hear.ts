@@ -1,4 +1,4 @@
-// What a voice call hears (SHEP-105): a call is with Shepherdr itself, not one chat, so it follows the chats it sent to
+// What a voice call hears (SHEP-105): a call is with herdr-orchestrator itself, not one chat, so it follows the chats it sent to
 // during the call and the one on screen (their replies said briefly, their status as quiet notes), and says anything new
 // anywhere that needs the person (a question, a secret, a task Ready) in one short line. Updates wait in a queue: the
 // call takes them once the person and the voice are both quiet, several as one (core/voice.js batchLines). The web's

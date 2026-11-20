@@ -15,7 +15,7 @@ const opened = new Set<string>()
 export function unfold(id: string) {
   if (opened.has(id)) return
   opened.add(id)
-  dispatchEvent(new CustomEvent('shepherdr:unfold', { detail: id }))
+  dispatchEvent(new CustomEvent('herdr-orchestrator:unfold', { detail: id }))
 }
 
 export function Fold({ id, children }: { id: string; children: ReactNode }) {
@@ -33,8 +33,8 @@ export function Fold({ id, children }: { id: string; children: ReactNode }) {
   }, [])
   useEffect(() => {
     const on = (e: Event) => (e as CustomEvent<string>).detail === id && setOpen(true)
-    addEventListener('shepherdr:unfold', on)
-    return () => removeEventListener('shepherdr:unfold', on)
+    addEventListener('herdr-orchestrator:unfold', on)
+    return () => removeEventListener('herdr-orchestrator:unfold', on)
   }, [id])
   const folded = tall && !open
   const toggle = () => {

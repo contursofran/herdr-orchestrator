@@ -110,7 +110,7 @@ def words_of(name):
 
 def auto_prefix(name):
     """A task id prefix from a folder name: the initials of its words (herdr-app-ttt -> HAT, up
-    to 5), or a single word's first 4 letters (shepherdr -> SHEP); at least 2 letters."""
+    to 5), or a single word's first 4 letters (project -> PROJ); at least 2 letters."""
     ws = words_of(name)
     p = "".join(w[0] for w in ws)[:5] if len(ws) > 1 else (ws[0][:4] if ws else "")
     if len(p) < 2:

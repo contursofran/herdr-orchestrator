@@ -22,7 +22,7 @@ export const MAX_PANES = 3
 /** a pane keeps at least this much: a window with no room for another opens it in place of one */
 export const PANE_MIN = 300
 
-const KEY = 'shepherdr.panes'
+const KEY = 'herdr-orchestrator.panes'
 export const NO_PANES: Panes = { panes: [], pane: 0, sizes: [] }
 
 export const samePane = (a: Pane) => (b: Pane) => a.kind === b.kind && a.id === b.id

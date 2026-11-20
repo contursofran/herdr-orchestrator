@@ -51,7 +51,7 @@ const narrow = () => (find(layout(), "sidebar")?.size?.px ?? Infinity) < 160;
 
 // Checkouts made for work (~/.herdr/worktrees/<repo>/<branch>, on any machine): a coordinator's
 // task workers run in them, and a worktree space is made in one.
-const WORKTREES = WORKTREE_RE;   // ~/.herdr/worktrees (Herdr's dialog, older tasks) or Shepherdr's data/worktrees
+const WORKTREES = WORKTREE_RE;   // ~/.herdr/worktrees (Herdr's dialog, older tasks) or herdr-orchestrator's data/worktrees
 const inside = (path, folder) => path === folder || path.startsWith(`${folder.replace(/\/+$/, "")}/`);
 
 // Where a space is now: its first terminal's live folder, else where it was made. A task
@@ -147,7 +147,7 @@ export default class Spaces extends View {
     this.pilots = new Map();
     this.readPilots(cx);
     cx.timer.every(5000, (cx) => this.readPilots(cx));
-    // SHEP-135: the brand row's voice button (mods/workspace-chrome-shepherdr) asks for a call through shared
+    // SHEP-135: the brand row's voice button (mods/workspace-chrome-orchestrator) asks for a call through shared
     // "voice.startreq" = { at }: started here, where the spaces and chats are read. One from before this ran is old.
     this.voiceReqAt = shared("voice.startreq")?.at ?? null;
     cx.timer.every(250, () => {
@@ -214,8 +214,8 @@ export default class Spaces extends View {
       .child(svg("mods/spaces-chat/rocket.svg").size(12).flex_none());
   }
 
-  // SHEP-105, SHEP-135: a voice call with Shepherdr itself, not one chat, started from the voice button in the brand row
-  // beside Search (mods/workspace-chrome-shepherdr, through shared "voice.startreq"). The window runs it in the shown
+  // SHEP-105, SHEP-135: a voice call with herdr-orchestrator itself, not one chat, started from the voice button in the brand row
+  // beside Search (mods/workspace-chrome-orchestrator, through shared "voice.startreq"). The window runs it in the shown
   // space's Assistant chat (mods/chat voice.ts: shared "chat.callreq" { pane, at, action: "start" | "mute" | "end" }),
   // but the call hears and reaches every space. On a call the brand row's button is its Mute and End, nothing shows
   // here; on the narrow rail (no brand row buttons), a green wave that ends it, and off a call a quiet wave that starts one.
@@ -248,7 +248,7 @@ export default class Spaces extends View {
     if (collapsed) return h_flex().h(36).flex_none().justify_center().items_center()
       .child(call ? round("voice-end", 26, `${green()}26`, green(), "mods/chat/audio-lines.svg", () => req("end"))
         : round("voice-start", 26, "#00000000", t.muted, "mods/chat/audio-lines.svg", () => this.startCall()).hover((s) => s.bg(t.hover).text_color(t.foreground)));
-    // SHEP-135: no card on a call: the brand row's Mute and End are the call's (mods/workspace-chrome-shepherdr)
+    // SHEP-135: no card on a call: the brand row's Mute and End are the call's (mods/workspace-chrome-orchestrator)
     return null;
   }
 
@@ -404,7 +404,7 @@ export default class Spaces extends View {
   }
 
   // `list` in order, each worktree space moved under its main checkout's when both are in it.
-  // Shepherdr settings' "Worktrees in the sidebar" off (shared "sidebar.worktrees" false): those
+  // herdr-orchestrator settings' "Worktrees in the sidebar" off (shared "sidebar.worktrees" false): those
   // nested worktree spaces aren't listed, except the one being looked at.
   ordered(list = this.visible()) {
     const mains = new Set(list.filter((r) => r.g && !r.g.linked).map((r) => r.g.repo));
@@ -521,7 +521,7 @@ export default class Spaces extends View {
       .child(bars(t, meters, 11, `${id}-health`));
   }
 
-  // Pinned, as Shepherdr's: a heading like a section's (its pin, no menu), shown while it holds
+  // Pinned, as herdr-orchestrator's: a heading like a section's (its pin, no menu), shown while it holds
   // any, then its spaces in their own order, each with its machine after its name once there
   // are several. Folded, it still shows the space you're in and its unread ones.
   pinned(list, pins, many, t) {
@@ -709,7 +709,7 @@ export default class Spaces extends View {
   }
 
   // What needs the person in a space, for its red count, and its tasks in Ready, for its green
-  // count (none while Shepherdr settings' "Red counts" / "Green counts" is off: shared
+  // count (none while herdr-orchestrator settings' "Red counts" / "Green counts" is off: shared
   // "counts.red" / "counts.green" false).
   needs(w) {
     if (shared("counts.red") === false) return 0;
@@ -828,7 +828,7 @@ export default class Spaces extends View {
     const sp = spaces();
     // Assistants with something new; any on screen is read now.
     readShown();
-    // Shepherdr settings' "Bold unread spaces" off (shared "sidebar.unread" false): none.
+    // herdr-orchestrator settings' "Bold unread spaces" off (shared "sidebar.unread" false): none.
     this.unread = shared("sidebar.unread") === false ? new Set() : unreadSpaces(sp);
     const ids = new Set(sp.map(p => p.id));
     const kept = Object.fromEntries(Object.entries(shared("space.colors") ?? {}).filter(([id]) => ids.has(id)));

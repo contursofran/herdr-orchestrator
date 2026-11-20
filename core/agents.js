@@ -158,7 +158,7 @@ export const speedFor = (m, fast) => (fast === "ultrafast" ? (m?.ultrafast ? "ul
 // { [space id]: { agent, model, effort, fast, perm, at } }. The window's chat keeps it there when its model button's
 // pick changes (mods/chat freshPick), the web's model menu too (service/actions.ts), and each follows the other.
 // Whoever starts the Assistant (the window's chat, or the service for a first message from the web) starts it on
-// that and forgets it. None kept: what Shepherdr settings say for the space's Assistant.
+// that and forgets it. None kept: what herdr-orchestrator settings say for the space's Assistant.
 export const CHOICE_KEY = "coordinator.choice";
 // A space's choice as { agent, model, effort, fast, perm }, or null when none (or none that names an agent) is kept.
 export function choiceOf(all, space) {

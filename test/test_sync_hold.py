@@ -49,7 +49,7 @@ class Calls:
 
 class Hold(unittest.TestCase):
     def setUp(self):
-        self.dir = tempfile.mkdtemp(prefix="shepherdr-hold-")
+        self.dir = tempfile.mkdtemp(prefix="herdr-orchestrator-hold-")
         self.hold = os.path.join(self.dir, "sync-hold")
         self.store = os.path.join(self.dir, "tasks")
         self.patches = [mock.patch.object(base, "SYNC_HOLDS", (self.hold,)), mock.patch.object(artifact, "SYNC_HOLDS", (self.hold,)),
@@ -66,7 +66,7 @@ class Hold(unittest.TestCase):
     def held(self, on=True):
         if on:
             with open(self.hold, "w") as f:
-                f.write("held by shepherdr 3.0.0 install at now: run `shepherdr doctor`\n")
+                f.write("held by herdr-orchestrator 3.0.0 install at now: run `herdr-orchestrator doctor`\n")
         elif os.path.exists(self.hold):
             os.remove(self.hold)
 

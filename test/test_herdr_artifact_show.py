@@ -42,7 +42,7 @@ else:
 
 class Show(unittest.TestCase):
     def setUp(self):
-        self.dir = tempfile.mkdtemp(prefix="shepherdr-show-")
+        self.dir = tempfile.mkdtemp(prefix="herdr-orchestrator-show-")
         self.home = os.path.join(self.dir, "home")
         self.bin = os.path.join(self.dir, "bin")
         self.log = os.path.join(self.dir, "labels.log")

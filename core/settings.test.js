@@ -7,7 +7,7 @@ const ROOT = join(import.meta.dir, "..");
 const read = (f) => readFileSync(join(ROOT, f), "utf8");
 // Every file that shows Settings: the window's mod, the service that builds the web's rows, and the web's pages
 // (Autopilot's page has its own words, core/autopilot.js).
-const MOD = readdirSync(join(ROOT, "mods/shepherdr-settings")).filter((f) => f.endsWith(".js") && f !== "autopilot-section.js").map((f) => `mods/shepherdr-settings/${f}`);
+const MOD = readdirSync(join(ROOT, "mods/orchestrator-settings")).filter((f) => f.endsWith(".js") && f !== "autopilot-section.js").map((f) => `mods/orchestrator-settings/${f}`);
 const SHOWN = [...MOD, "service/settings.ts", "service/window.ts", "service/compat.ts", "web/src/Settings.tsx", "web/src/screens/Role.tsx"];
 
 // The words each side used to write out for itself: now only core/settings.js has them.
@@ -25,8 +25,8 @@ test("the window's mod, the service and the web read Settings' words from core/s
     for (const w of WORDS) expect({ file: f, has: src.includes(w) ? w : null }).toEqual({ file: f, has: null });
   }
   // and each of them reads core/settings.js
-  for (const f of ["mods/shepherdr-settings/main.js", "mods/shepherdr-settings/layout.js", "mods/shepherdr-settings/machines-section.js",
-    "mods/shepherdr-settings/secrets-section.js", "mods/shepherdr-settings/web-section.js", "mods/shepherdr-settings/base-branch.js", "lib/settings.js"])
+  for (const f of ["mods/orchestrator-settings/main.js", "mods/orchestrator-settings/layout.js", "mods/orchestrator-settings/machines-section.js",
+    "mods/orchestrator-settings/secrets-section.js", "mods/orchestrator-settings/web-section.js", "mods/orchestrator-settings/base-branch.js", "lib/settings.js"])
     expect(read(f)).toContain('from "./core/settings.js"');
   for (const f of ["service/settings.ts", "service/window.ts", "service/compat.ts"]) expect(read(f)).toContain('from "../core/settings.js"');
   for (const f of ["web/src/Settings.tsx", "web/src/screens/Role.tsx"]) expect(read(f)).toContain("from '@core/settings.js'");
@@ -82,7 +82,7 @@ test("Reactions are on by default, in the core, the window's chain and herdr-tas
   expect(S.DEFAULTS.assistant).toBeUndefined();
   // lib/coordinator.js needs the window's runtime: its defaults and its chain, as written
   const lib = read("lib/coordinator.js");
-  expect(lib).toMatch(/SHEPHERDR_DEFAULTS = \{[^;]*agents: \{ reactions: true, suggestions: true, feedback: true, feedback_repo: "" \}/);
+  expect(lib).toMatch(/ORCHESTRATOR_DEFAULTS = \{[^;]*agents: \{ reactions: true, suggestions: true, feedback: true, feedback_repo: "" \}/);
   expect(lib).toContain('for (const k of ["tasks", "automations", "agents"])');
   // SHEP-42's key still counts in the window's chain where a layer has no agents'
   expect(lib).toContain('typeof l.obj.assistant?.reactions === "boolean" ? { reactions: l.obj.assistant.reactions, ...l.obj.agents }');
@@ -118,7 +118,7 @@ test("Feedback offers and the repo they file to", () => {
   expect(S.feedbackRepo("https://github.com/acme/shep.git")).toBe("acme/shep");
   expect(S.feedbackRepo("")).toBe("");
   expect(S.feedbackRepo("not a repo")).toBeNull();
-  expect(read("mods/shepherdr-settings/main.js")).toContain("feedbackRow(this, t)");
+  expect(read("mods/orchestrator-settings/main.js")).toContain("feedbackRow(this, t)");
 });
 
 // SHEP-263: what an Assistant's chat starts on before its first message, the window's and the web's alike

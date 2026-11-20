@@ -1,6 +1,6 @@
 # Settings (Agents, Tasks, Notify, Secrets, Machines, Window, Web, and the frame)
 
-Made from the window's mod (`mods/shepherdr-settings`, with `lib/settings.js`, `mods/chat-models` and
+Made from the window's mod (`mods/orchestrator-settings`, with `lib/settings.js`, `mods/chat-models` and
 `mods/coordinator`'s instructions view). Autopilot has its own page: [autopilot](autopilot.md).
 ✓ matches, ◇ a web-only form on purpose (why), ✗ still differs.
 

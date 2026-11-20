@@ -1,6 +1,6 @@
 // Notify in the window: the rules are core/notify.js (shared with the service and the web app); the setting
-// is shared "notify" here. A space row's menu sets the space's (mods/spaces-chat), Shepherdr settings' Notify
-// any of them (mods/shepherdr-settings). Picking what it would get anyway goes back to following.
+// is shared "notify" here. A space row's menu sets the space's (mods/spaces-chat), herdr-orchestrator settings' Notify
+// any of them (mods/orchestrator-settings). Picking what it would get anyway goes back to following.
 // Shared: the source is lib/notify.js; bin/sync-shared copies it into each mod in lib/COPIES.
 // Edit lib/notify.js, never a mod's copy, then run bin/sync-shared.
 

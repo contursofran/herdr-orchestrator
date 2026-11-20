@@ -115,7 +115,7 @@ function Screen({ screen, stream, className, ...p }: { screen: TermScreen | unde
       })
       made.loadAddon(new Unicode11Addon())
       made.unicode.activeVersion = '11'
-      // keys go to herdr by Shepherdr's own handler; the terminal only draws
+      // keys go to herdr by herdr-orchestrator's own handler; the terminal only draws
       made.attachCustomKeyEventHandler(() => false)
       // and the wheel scrolls (or, with Ctrl, zooms) the box around it: left to xterm, it would turn into arrow keys
       made.attachCustomWheelEventHandler(() => false)
@@ -382,7 +382,7 @@ export default definePlugin({
     reg.placeHeader.push({ order: 15, View: ChatOrTerminal })
     reg.taskPanel.push({ id: 'terminal', order: 10, label: 'Terminal', Icon: TermIcon, View: ({ chatKey }) => <TerminalView chatKey={chatKey} panel /> })
     reg.chatBody.push({ when: termInPlace, View: TerminalView })
-    // Shepherdr 3: one of the space's other tabs, in place of its chat (t:<terminal>)
+    // herdr-orchestrator 3: one of the space's other tabs, in place of its chat (t:<terminal>)
     reg.chatBody.push({ when: (ui) => !!ui.term?.startsWith('t:') && ui.tabView?.[ui.term] !== 'chat', View: ({ chatKey: _ }: { chatKey: string }) => <TerminalView chatKey={useUI((u) => u.term!)} /> })
     reg.keys.push({
       order: 0,

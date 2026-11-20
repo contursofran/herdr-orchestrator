@@ -32,7 +32,7 @@ from .news import news_send, send_or_hold, typing
 # What a machine needs to run tasks: herdr-task (one zipapp), herdr-artifact (with its guide and
 # markup), herdr-secret (a remote copy: it asks the main machine), herdr-browser once it exists,
 # and the role templates. Each goes to the same place under that machine's home as here
-# (~/.local/bin/..., ~/.config/herdr-core/templates/...). A stamp there (tools.json in Shepherdr's data;
+# (~/.local/bin/..., ~/.config/herdr-core/templates/...). A stamp there (tools.json in herdr-orchestrator's data;
 # STAMP names its old place, which SHEP turns into wherever it is on that machine)
 # records what was installed (each file's sha256 and its source's time), so a machine that is
 # current is skipped, an older copy never replaces a newer one, and a template someone changed
@@ -166,7 +166,7 @@ x = json.loads(sys.stdin.read())
 H = os.path.expanduser("~")
 P = lambda r: os.path.join(H, r)
 ''' + layout.PY + r'''
-# Shepherdr's own files (the stamp, the secrets' marks) where they are on that machine: its own
+# herdr-orchestrator's own files (the stamp, the secrets' marks) where they are on that machine: its own
 # folders once its data moved there, else ~/.herdr (SHEP: herdr_task/layout.py).
 def sha(p):
     try:

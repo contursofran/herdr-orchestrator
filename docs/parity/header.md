@@ -56,7 +56,7 @@ State: ✓ matches, ◇ web-only form (why), ✗ still differs (why).
 | Artifacts button (add-on on) | TB:202 | C:348, when the artifacts plugin is on | ✓ |
 | Words only where roomy (≥ 1100 px), the open one keeps its word | TB:177-188 | C:388 roomy = bar to window edge ≥ 1100; C:348 | ✓ |
 | Open one pressed again hides the panel | TB:183 layout.hide | C:348 `sideShut`; A:720 the right column goes (Frame without it) | ✓ |
-| Panel remembered per space | TB:92 syncPanel | C:388 `shepherdr.panels` per space, this device | ✓ |
+| Panel remembered per space | TB:92 syncPanel | C:388 `herdr-orchestrator.panels` per space, this device | ✓ |
 | Opening a task shows the panel | inbox.js showInbox | A:720 a task opened while shut opens Tasks | ✓ |
 | Minimize, maximize, close | TB:203 | none | ◇ no window chrome on the web |
 

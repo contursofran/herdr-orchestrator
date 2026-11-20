@@ -135,7 +135,7 @@ test("SHEP-67, SHEP-173: a call the voice service ends by itself says why in pla
 });
 
 // SHEP-173: ElevenLabs' records showed the model ending calls on its own right after "Passed it to ...". hang_up is
-// Shepherdr's: it ends the call only right after the person's yes to a question, else it's refused and the call goes on.
+// herdr-orchestrator's: it ends the call only right after the person's yes to a question, else it's refused and the call goes on.
 test("SHEP-173: hang_up after a send is refused and the call goes on; after the person's yes it ends with no note", async () => {
   agent = null;
   const phone = page(null);
@@ -333,7 +333,7 @@ test("SHEP-251: pageWhere keeps Wake's locked and screen; a where without them a
   expect("locked" in pageWhere({ locked: "yes" })).toBe(false);
 });
 
-test("SHEP-251: the phone locks: its page hands the call to Shepherdr Wake, which comes back to it; Take it back hands it again", async () => {
+test("SHEP-251: the phone locks: its page hands the call to the phone companion, which comes back to it; Take it back hands it again", async () => {
   agent = null;
   const who = "person@example.com";
   const tab = bare();

@@ -1,6 +1,6 @@
 # The glance feed (phone and watch app)
 
-A small live feed for a phone app that keeps a link to herdr-orchestrator all day (herdr-orchestrator Wake on a Pixel and its watch:
+A small live feed for a phone app that keeps a link to herdr-orchestrator all day (the phone companion on a Pixel and its watch:
 widgets, the lock screen card, the watch tile, notifications with buttons). The page socket (`/api/ws`) sends the whole
 snapshot (~720 KB) on every change, about 12.7 MB a minute: far too much for a phone. The glance doc is ~15 KB and goes
 out only when what the person sees changes, and calmly. Added in SHEP-246; the code is `service/glance.ts`.

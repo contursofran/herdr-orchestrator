@@ -9,7 +9,7 @@ import { registerWorker } from './worker.ts'
 const TITLE = 'herdr-orchestrator'
 
 /** the app icon's count (Badging API: iPhone, Mac, Windows, ChromeOS) and, where there is no icon to mark (Linux), the
- *  window's title: "(3) Shepherdr" */
+ *  window's title: "(3) herdr-orchestrator" */
 export function showCount(n: number) {
   document.title = n > 0 ? `(${n}) ${TITLE}` : TITLE
   const nav = navigator as Navigator & { setAppBadge?: (n: number) => Promise<void>; clearAppBadge?: () => Promise<void> }

@@ -7,16 +7,37 @@
     <meta name="description" content="Your agents, tasks and chats from a phone, tablet or desktop." />
     <meta name="theme-color" content="#ffffff" />
     <script>
+      /* Keep this origin's preferences and queued messages through the rename. */
+      (function () {
+        var oldPrefix = __ORCH_LEGACY_STORAGE_PREFIX__
+        var prefix = 'herdr-orchestrator.'
+        function migrate(store) {
+          var marker = prefix + 'storage-migrated'
+          if (store.getItem(marker)) return
+          var keys = Object.keys(store)
+          keys.forEach(function (key) {
+            if (!key.startsWith(oldPrefix)) return
+            var next = prefix + key.slice(oldPrefix.length)
+            var value = store.getItem(key)
+            if (value === null) return
+            if (store.getItem(next) === null) store.setItem(next, value)
+            if (store.getItem(next) === value) store.removeItem(key)
+          })
+          store.setItem(marker, '1')
+        }
+        try { migrate(localStorage) } catch (e) {}
+        try { migrate(sessionStorage) } catch (e) {}
+      })();
       /* the appearance picked on this device (src/theme.ts), on the page before the first paint: no flash of the other */
       (function () {
         var a = null
-        try { a = localStorage.getItem('shepherdr.appearance') } catch (e) {}
+        try { a = localStorage.getItem('herdr-orchestrator.appearance') } catch (e) {}
         var dark = a === 'dark' || (a !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
         document.documentElement.dataset.theme = dark ? 'dark' : 'light'
         document.querySelector('meta[name=theme-color]').content = dark ? '#0b0b0d' : '#ffffff'
       })()
       /* a link's #part (#accept=SHEP-7), kept before the app's own address takes the bar */
-      window.shepherdrLink = location.hash
+      window.orchLink = location.hash
     </script>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />

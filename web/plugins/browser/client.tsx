@@ -42,7 +42,7 @@ const WORDS = {
   keys: 'Alt+← back · Ctrl+R reload',
 }
 
-/** Frames and controls use Shepherdr's WebSocket; when it stops, it comes back by itself (at most every 10 s) */
+/** Frames and controls use herdr-orchestrator's WebSocket; when it stops, it comes back by itself (at most every 10 s) */
 function useLink(task: string, onFrame: (data: string, meta: FrameMeta) => void) {
   const [state, setState] = useState<State | null>(null)
   const [stopped, setStopped] = useState(false)

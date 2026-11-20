@@ -1,4 +1,4 @@
-// Shepherdr's background work that doesn't hang on what a window shows, run here once for every client:
+// herdr-orchestrator's background work that doesn't hang on what a window shows, run here once for every client:
 // - the task tick (herdr-task tick: queued tasks start, merged ones are done) every 15 s and 2 s after a task's agent
 //   changes, and about once a minute the automations scheduler's check, here and on other machines with tasks: every
 //   service ticks its own machine; the machine that serves the web app (Serve from, service/host.ts tickOn) ticks the
@@ -33,12 +33,12 @@ async function run(cmd: string[]) {
   }
 }
 
-/** Whether the window installed here leaves this work to the service: no Shepherdr window at all, or one whose tab bar
+/** Whether the window installed here leaves this work to the service: no herdr-orchestrator window at all, or one whose tab bar
  *  asks first. */
 export function windowLeavesIt() {
   if (process.env.HERDR_ORCH_JOBS === "off") return false;
   if (process.env.HERDR_ORCH_JOBS === "on") return true;
-  // no Shepherdr layout installed here (no Herdr at all, or Herdr's own mods only): no window here does it
+  // no herdr-orchestrator layout installed here (no Herdr at all, or Herdr's own mods only): no window here does it
   if (!existsSync(join(appHome(), "data", "herdr-orchestrator", "installed.json"))) return true;
   return existsSync(join(appHome(), "mods", "tabs-tasks", "service.js"));
 }

@@ -6,12 +6,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fakeHerdr } from "./fake-herdr";
 
-const HOME = mkdtempSync(join(tmpdir(), "shepherdr-local-"));
+const HOME = mkdtempSync(join(tmpdir(), "herdr-orchestrator-local-"));
 const DATA = join(HOME, ".herdr", "herdr-orchestrator");
 const shared = new Map<string, unknown>([["notify", { on: true }]]);
 mock.module("herdr", () => fakeHerdr({
   home: () => HOME,
-  // the shell lib/dirs.js asks for Shepherdr's folders: no answer, so the old ~/.herdr paths (as before a move)
+  // the shell lib/dirs.js asks for herdr-orchestrator's folders: no answer, so the old ~/.herdr paths (as before a move)
   exec: async () => ({ code: 1, stdout: "", stderr: "" }),
   readTextFile: async (p: string) => Bun.file(p).text(),
   shared: (k: string) => shared.get(k),
@@ -21,7 +21,7 @@ const { localService, serviceFile } = await import("../mods/tabs-tasks/local.js"
 const { startBridge } = await import("../mods/tabs-tasks/bridge.js");
 
 const seen: { app: string; path: string; auth: string | null }[] = [];
-// Shepherdr's service on a port of its own choosing, and another app that answers health too
+// herdr-orchestrator's service on a port of its own choosing, and another app that answers health too
 const ours = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch(req) {
   const u = new URL(req.url);
   seen.push({ app: "ours", path: u.pathname, auth: req.headers.get("authorization") });

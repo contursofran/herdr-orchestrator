@@ -1,8 +1,8 @@
 // A voice call with an agent's chat: an ElevenLabs voice agent talks with the person and reads,
-// opens and changes Shepherdr for them through its tools (core/voice.js: look, open, send, act),
-// which this machine's Shepherdr service answers (POST /api/voice/tool, service/voice-tools.ts:
+// opens and changes herdr-orchestrator for them through its tools (core/voice.js: look, open, send, act),
+// which this machine's herdr-orchestrator service answers (POST /api/voice/tool, service/voice-tools.ts:
 // the reach of the person's web app); without the service, only this chat (send, look at it).
-// SHEP-105: the call is with Shepherdr itself, not this chat: the service says what it hears (POST
+// SHEP-105: the call is with herdr-orchestrator itself, not this chat: the service says what it hears (POST
 // /api/voice/hear: the chats it sent to, the one on screen, needs anywhere), once the person and the
 // voice are quiet. Without the service, the chat feeds it its own agent's replies and status. Started by
 // the chat mod (a mod has no audio or sockets); one process per call, nothing recorded or kept.
@@ -125,13 +125,13 @@ async function agentId(key: string, made = "") {
 }
 
 // ---- the service: the tools ---------------------------------------------------------------
-// This machine's Shepherdr service answers the tools as for the web app, told this call's agent and what the window
+// This machine's herdr-orchestrator service answers the tools as for the web app, told this call's agent and what the window
 // shows; what it asks to show goes to the chat (nav/). Its token is the local callers' (token in the service's folder).
 
 const DATA = process.env.HERDR_ORCH_DATA || shepPaths().service;
 const TOKEN = join(DATA, "token");
 
-/** The service's address, only when Shepherdr's own service answers there (service.json's port and id, as the window's
+/** The service's address, only when herdr-orchestrator's own service answers there (service.json's port and id, as the window's
  *  lib/local.js): never the token to another app on its port. */
 async function service(): Promise<string | null> {
   try {

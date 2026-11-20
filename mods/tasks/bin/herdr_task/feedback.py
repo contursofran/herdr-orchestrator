@@ -201,7 +201,7 @@ def trim(text):
 
 # ---- the issue ------------------------------------------------------------------------------
 
-def shepherdr_version():
+def orchestrator_version():
     try:
         with open(os.path.join(APP_HOME, "data", "herdr-orchestrator", "installed.json")) as f:
             return str(json.load(f).get("version") or "unknown")
@@ -235,7 +235,7 @@ def environment(agent=None, surface=None):
     agent = agent if agent in ("claude", "codex") else None
     names = {"claude": "Claude Code", "codex": "Codex"}
     v = cli_version(agent) if agent else ""
-    return {"shepherdr": shepherdr_version(), "os": os_words(),
+    return {"herdr-orchestrator": orchestrator_version(), "os": os_words(),
             "agent": (f"{names[agent]} {v}".strip() if agent else "not known"),
             "surface": {"web": "the web app", "window": "the Herdr window", "both": "the web app and the Herdr window"}.get(surface or "", "not stated")}
 
@@ -247,7 +247,7 @@ def issue_body(line, fields, env, private=None):
         words = trim(fields.get(key))
         parts.append(f"## {head}\n\n{words or '_Not known._'}")
     parts.append("## Environment\n\n" + "\n".join([
-        f"- herdr-orchestrator: {env.get('shepherdr') or 'unknown'}",
+        f"- herdr-orchestrator: {env.get('herdr-orchestrator') or 'unknown'}",
         f"- Machine: {env.get('os') or 'unknown'}",
         f"- Agent CLI: {env.get('agent') or 'not known'}",
         f"- Used from: {env.get('surface') or 'not stated'}",

@@ -52,7 +52,7 @@ class Kinds(unittest.TestCase):
 
 class Limits(unittest.TestCase):
     def setUp(self):
-        self.dir = tempfile.mkdtemp(prefix="shepherdr-media-limits-")
+        self.dir = tempfile.mkdtemp(prefix="herdr-orchestrator-media-limits-")
         self.recipe = {"recipe": 1, "blocks": [{"type": "text", "md": "x"}]}
         with open(os.path.join(self.dir, "recipe.json"), "w") as f:
             json.dump(self.recipe, f)
@@ -94,7 +94,7 @@ class Limits(unittest.TestCase):
 
 class RecipeChecks(unittest.TestCase):
     def setUp(self):
-        self.dir = tempfile.mkdtemp(prefix="shepherdr-media-recipe-")
+        self.dir = tempfile.mkdtemp(prefix="herdr-orchestrator-media-recipe-")
         for name in ("clip.mp4", "poster.jpg", "song.mp3", "doc.pdf", "shot.png"):
             open(os.path.join(self.dir, name), "wb").close()
         self.files = sorted(os.listdir(self.dir))
@@ -131,7 +131,7 @@ class MakingReady(unittest.TestCase):
     """the stored copy: a poster for a clip with none, an mp4 for one no browser plays (ffmpeg, when it's here)"""
 
     def setUp(self):
-        self.dir = tempfile.mkdtemp(prefix="shepherdr-media-ready-")
+        self.dir = tempfile.mkdtemp(prefix="herdr-orchestrator-media-ready-")
 
     def tearDown(self):
         shutil.rmtree(self.dir, ignore_errors=True)

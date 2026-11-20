@@ -254,7 +254,7 @@ export interface UI {
   taskMenu: boolean
   /** what each side panel item has picked, by "task|item" (the file shown) */
   picked: Record<string, string>
-  /** a voice call with Shepherdr is on (SHEP-105: with all of it, not one chat) */
+  /** a voice call with herdr-orchestrator is on (SHEP-105: with all of it, not one chat) */
   call: boolean
   /** the chat whose call button started it, if any: the call's "here" while the screen shows no chat */
   callFrom: string | null
@@ -323,17 +323,17 @@ interface State {
   terms: Record<string, TermScreen>
   /** what you sent that the chats don't show yet: it shows at once, and survives a reload */
   outbox: Outgoing[]
-  /** how Shepherdr's last update of itself went */
+  /** how herdr-orchestrator's last update of itself went */
   update: UpdateStatus | null
   ui: UI
 }
 
-// Shepherdr 3 has no Needs you view: what needs you is the Tasks panel's first section (an old link's tab goes there)
+// herdr-orchestrator 3 has no Needs you view: what needs you is the Tasks panel's first section (an old link's tab goes there)
 function tabOf(t: string | null): UI['tab'] {
   return t === 'needs' ? 'tasks' : t === 'tasks' || t === 'artifacts' ? t : 'chat'
 }
 
-const THIS_SPACE = 'shepherdr.thisSpace'
+const THIS_SPACE = 'herdr-orchestrator.thisSpace'
 function loadThisSpace(): boolean {
   try { return localStorage.getItem(THIS_SPACE) === '1' } catch { return false }
 }
@@ -347,9 +347,9 @@ export function deviceFor(w: number): Device {
   return w < CHAT_READ + RIGHT.min ? 'phone' : w < 1024 ? 'tablet' : 'desktop'
 }
 
-const LISTS = 'shepherdr.lists'
+const LISTS = 'herdr-orchestrator.lists'
 // before: the lists pinned to one place, its id; a home space's meant its machine's, the main machine's everything
-const PIN = 'shepherdr.pin'
+const PIN = 'herdr-orchestrator.pin'
 /** a place the lists were pinned to before chips, until the first snapshot says what it showed */
 let oldPin: string | null = null
 
@@ -385,7 +385,7 @@ function fromOldPin(snap: Snapshot) {
   if (p) setUI({ lists: { pinned: true, chips: p.level === 0 ? [] : p.level === 1 ? [`m:${p.machine}`] : [p.id], at: null } })
 }
 
-const SIDE = 'shepherdr.side'
+const SIDE = 'herdr-orchestrator.side'
 
 function loadSide(): UI['side'] {
   try {
@@ -495,7 +495,7 @@ function linkToPane() {
 
 function lastPlace(): string | null {
   try {
-    return localStorage.getItem('shepherdr.place')
+    return localStorage.getItem('herdr-orchestrator.place')
   } catch {
     return null
   }
@@ -630,7 +630,7 @@ function write(how: 'push' | 'replace') {
   else history.replaceState(next, '', url)
   entry = next
   try {
-    localStorage.setItem('shepherdr.place', state.ui.place)
+    localStorage.setItem('herdr-orchestrator.place', state.ui.place)
   } catch {
     /* private window */
   }
@@ -685,7 +685,7 @@ export function openLink(href: string) {
 export function openGo(url: string) {
   const u = new URL(url, location.href)
   const m = /^#accept=(.+)$/.exec(u.hash)
-  if (m) return void dispatchEvent(new CustomEvent('shepherdr:accept', { detail: decodeURIComponent(m[1]) }))
+  if (m) return void dispatchEvent(new CustomEvent('herdr-orchestrator:accept', { detail: decodeURIComponent(m[1]) }))
   openLink(u.href)
 }
 
@@ -807,7 +807,7 @@ export function connect() {
     if (msg.type === 'go') return openGo(msg.url)
     if (msg.type === 'snapshot') {
       // an add-on switched on or off in Settings › Window: the page starts again with its plugins in or out (main.tsx)
-      const booted = (window as { shepherdrOff?: string[] }).shepherdrOff
+      const booted = (window as { orchOff?: string[] }).orchOff
       if (booted && msg.snapshot.off && [...msg.snapshot.off].sort().join() !== [...booted].sort().join()) return location.reload()
       state = { ...state, snap: msg.snapshot }
       followOff(msg.snapshot.off)
@@ -944,7 +944,7 @@ function reloadSoon() {
     if (!mayReload(state.ui, { holds, sinceTyped: Date.now() - typed, focused: document.activeElement })) return
     keep(state, drafts)
     // what of itself each part keeps (a chat, how far up it was read)
-    dispatchEvent(new Event('shepherdr:reloading'))
+    dispatchEvent(new Event('herdr-orchestrator:reloading'))
     location.reload()
   }
   reloading = setInterval(tryNow, 1000)
@@ -955,11 +955,11 @@ function keep(st: State, text: Record<string, string>) {
   const shown = st.snap ? visibleChats(st.ui, st.snap) : []
   const k = keptOf(st.ui, text)
   try {
-    sessionStorage.setItem('shepherdr.kept', JSON.stringify({ ...k, snap: st.snap ?? undefined, chats: Object.fromEntries(shown.filter((c) => st.chats[c]).map((c) => [c, st.chats[c]])) }))
+    sessionStorage.setItem('herdr-orchestrator.kept', JSON.stringify({ ...k, snap: st.snap ?? undefined, chats: Object.fromEntries(shown.filter((c) => st.chats[c]).map((c) => [c, st.chats[c]])) }))
   } catch {
     // too much to keep (a long chat): what was open and typed still comes back
     try {
-      sessionStorage.setItem('shepherdr.kept', JSON.stringify(k))
+      sessionStorage.setItem('herdr-orchestrator.kept', JSON.stringify(k))
     } catch {
       /* private window: the reload still brings the newest screen */
     }
@@ -968,8 +968,8 @@ function keep(st: State, text: Record<string, string>) {
 
 function kept(): Kept {
   try {
-    const k = sessionStorage.getItem('shepherdr.kept')
-    sessionStorage.removeItem('shepherdr.kept')
+    const k = sessionStorage.getItem('herdr-orchestrator.kept')
+    sessionStorage.removeItem('herdr-orchestrator.kept')
     return k ? (JSON.parse(k) as Kept) : {}
   } catch {
     return {}
@@ -1012,7 +1012,7 @@ export function placeIdOf(snap: Snapshot, s: string) {
 }
 
 /** The screen stays on a space it lists, else goes to the main home space: a space gone. A space on a machine still
- * connecting (just after Shepherdr restarted for an update) isn't gone: the screen stays on it. */
+ * connecting (just after herdr-orchestrator restarted for an update) isn't gone: the screen stays on it. */
 function stayOnShown() {
   stayOnPlace()
   linkToPane()
@@ -1137,7 +1137,7 @@ export function deleteTask(t: Task, force = false): Promise<{ ok?: boolean; erro
   return act({ type: 'delete', chat: t.agent?.chat ?? `${t.id}/Agent`, force })
 }
 
-/** Shepherdr forgets a space (its folder stays on disk): refused (error) while one of its tasks is working, and for a
+/** herdr-orchestrator forgets a space (its folder stays on disk): refused (error) while one of its tasks is working, and for a
  *  home space */
 export function removeSpace(placeId: string): Promise<{ ok?: boolean; error?: string; waiting?: boolean }> {
   return act({ type: 'space-remove', place: placeId })
@@ -1338,7 +1338,7 @@ function ownChips(ui: UI, snap: Snapshot): string[] {
     const chips = l.chips.filter((c) => known(snap, c))
     if (chips.length || !l.chips.length) return chips
   }
-  // As Shepherdr 3's Tasks panel: every task of every space and machine until a filter narrows it
+  // As herdr-orchestrator 3's Tasks panel: every task of every space and machine until a filter narrows it
   return []
 }
 

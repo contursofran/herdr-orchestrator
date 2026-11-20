@@ -1,9 +1,9 @@
 // A voice call, as the same on both sides: the window's call (mods/chat/voice.ts, the machine's microphone and
 // speaker) and the web app's (service/voice.ts, the phone's). An ElevenLabs voice agent talks with the person and
-// reads, opens and changes Shepherdr for them through four client tools (look, open, send, act) and call_view (the web call's full screen or minimized), which the service
+// reads, opens and changes herdr-orchestrator for them through four client tools (look, open, send, act) and call_view (the web call's full screen or minimized), which the service
 // answers, and, for whatever those can't do, a fifth: screen, which reads and acts on the very screen the call runs on
 // (core/screen.js; the page or the window does it) (service/voice-tools.ts; the window's call asks its machine's service).
-// SHEP-105: a call is with Shepherdr itself, not one chat: it is told, as [Update] lines, the replies and status of the
+// SHEP-105: a call is with herdr-orchestrator itself, not one chat: it is told, as [Update] lines, the replies and status of the
 // chats it sent to and the one on screen, and anything anywhere that needs the person (service/voice-hear.ts).
 // Plain data and words: each side does its own audio, files and sockets.
 // Shared core: the source is core/voice.js.
@@ -124,7 +124,7 @@ export const TOOLS = [
   tool("call_view", "Show the call full screen (full: the call fills the person's screen) or minimize it (minimized: the app shows, the call in its bar). The web app's call only. Opening things minimizes it by itself.", {
     view: { type: "string", enum: VIEWS, description: "full: the full-screen call. minimized: the app, with the call in its bar." },
   }, ["view"], "auto"),
-  // SHEP-173: Shepherdr ends the call (hangUpGuard), only right after the person said yes to ending it
+  // SHEP-173: herdr-orchestrator ends the call (hangUpGuard), only right after the person said yes to ending it
   tool("hang_up", "End the call. Only right after the person said yes to \"Are you sure you want to end the call?\" on this call: never after a send, a task or a quiet moment.", {}, [], "auto"),
 ];
 
@@ -135,7 +135,7 @@ export const FIRST = "Hi, go ahead.";
 // up (only after the person's yes, the prompt says), skip_turn stays quiet.
 const system = (name, description, params = {}) => ({ type: "system", name, description, params: { system_tool_type: name, ...params } });
 // SHEP-173: no end_call system tool. The model used it on its own, right after "Passed it to <name>." (ElevenLabs'
-// records: four of the person's calls ended so, with no yes asked); hang_up is ours, and Shepherdr ends the call only
+// records: four of the person's calls ended so, with no yes asked); hang_up is ours, and herdr-orchestrator ends the call only
 // when the person just said yes (hangUpGuard).
 export const SYSTEM_TOOLS = [
   system("skip_turn", "Say nothing this turn: when the person says to wait or hold on, or is clearly talking to someone else.", { wait_timeout_secs: -1 }),

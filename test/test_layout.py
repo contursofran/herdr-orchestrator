@@ -1,4 +1,4 @@
-"""SHEP-141: Shepherdr's data in its own folders, and the one-time move there from ~/.herdr (herdr_task/layout.py).
+"""SHEP-141: herdr-orchestrator's data in its own folders, and the one-time move there from ~/.herdr (herdr_task/layout.py).
 
 Every test works in a throwaway home (tempfile): never the person's ~/.herdr, never a live task. The "machines" in
 the mixed-version tests are two throwaway homes, one moved and one not, with the shell and Python each version
@@ -16,17 +16,16 @@ import sys
 import tempfile
 import unittest
 from unittest import mock
+from test_migrate_legacy import OLD_INSTALL
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "mods", "tasks", "bin"))
 from herdr_task import layout as L  # noqa: E402
 
-SHEPHERDR = os.path.join(ROOT, "bin", "herdr-orchestrator")
+INSTALLER = os.path.join(ROOT, "bin", "herdr-orchestrator")
 BUN = shutil.which("bun")
 
-# What Shepherdr 3.1.26 (before the move) runs on a machine, word for word: the Tasks panel's read of a machine's
-# lists (core/tasklists.js), the settings window's push to another machine (mods/shepherdr-settings), the Jump
-# panel's and the web's read of artifacts. Its sync script is test/fixtures/install-3.1.26.py.
+# Scripts that read and write the legacy layout on another machine.
 OLD_READ_LISTS = ('cd "$HOME/.herdr/tasks" 2>/dev/null || exit 0; for f in *.json .*.json; do [ -f "$f" ] && printf "%s\\n" "$f" '
                   '&& cat "$f" && printf "\\n@@herdr-task-list@@\\n"; done; true')
 OLD_PUSH = '''f="$HOME/.herdr/herdr-orchestrator.json"; mkdir -p "$HOME/.herdr" || exit 1
@@ -34,7 +33,6 @@ if [ -f "$f" ] && ! grep -q '"pushed_from"' "$f"; then echo own; exit 0; fi
 if [ -f "$f" ] && [ "$(cat "$f")" = "$1" ]; then exit 0; fi
 umask 077; printf '%s\\n' "$1" > "$f.tmp" && mv "$f.tmp" "$f"'''
 OLD_READ_ARTS = 'cd "$HOME/.herdr/artifacts" 2>/dev/null || exit 0; for f in *.json .*.json; do [ -f "$f" ] && cat "$f" && printf "\\n\\036\\n"; done; true'
-OLD_INSTALL = open(os.path.join(ROOT, "test", "fixtures", "install-3.1.26.py")).read()
 
 
 def git(cwd, *args):
@@ -71,7 +69,7 @@ def snapshot(top):
 
 
 def realistic(home):
-    """A Shepherdr 3.1.26 home: task lists (one with a live worktree task, one finished), artifacts with files, a
+    """A home on the legacy layout: task lists (one with a live worktree task, one finished), artifacts with files, a
     vault and its remote mark, settings (global and per space), a task browser's profile, the service's files with
     its socket, the tools stamp, cli-check and machine-hold, plus a real repo with a live and a finished worktree in
     ~/.herdr/worktrees. Returns {name: path} of what tests look at."""
@@ -118,7 +116,7 @@ def realistic(home):
     write(os.path.join(h, "cli-check.json"), json.dumps({"machines": {"": {"claude": True}}}))
     write(os.path.join(h, "machine-hold.json"), json.dumps({"machine": None}))
     os.makedirs(os.path.join(h, "secret-drop"), mode=0o700)
-    os.makedirs(os.path.join(h, "instructions"))   # an older Shepherdr's: not Shepherdr 3's data, never touched
+    os.makedirs(os.path.join(h, "instructions"))   # an older herdr-orchestrator's: not herdr-orchestrator 3's data, never touched
     write(os.path.join(h, "instructions", "worker.md"), "old\n")
     return {"repo": repo, "live": live, "done": done, "herdr": h}
 
@@ -147,7 +145,7 @@ class Fresh(Home):
         self.assertEqual(w.path("settings"), os.path.join(self.home, ".config/herdr-orchestrator/settings.json"))
         self.assertTrue(os.path.isdir(w.path("tasks")))
         self.assertTrue(os.path.isfile(os.path.join(self.home, ".cache/herdr-orchestrator/CACHEDIR.TAG")))
-        # the old paths lead to the new ones (an older Shepherdr on another machine reads them over herdr-core)
+        # the old paths lead to the new ones (an older herdr-orchestrator on another machine reads them over herdr-core)
         for k in L.KINDS:
             self.assertEqual(os.path.realpath(w.old(k)), os.path.realpath(w.new(k)), k)
         self.assertEqual(stat.S_IMODE(os.stat(os.path.dirname(w.path("vault"))).st_mode), 0o700)
@@ -197,7 +195,7 @@ class Upgrade(Home):
         self.assertEqual(lst["tasks"][1]["worktree"], self.x["live"])
         self.assertEqual(w.worktrees(), os.path.join(self.home, ".local/share/herdr-orchestrator/worktrees"))
         self.assertEqual(w.worktrees("~/big/wt"), os.path.expanduser("~/big/wt"))
-        # what isn't Shepherdr 3's data stays where it was
+        # what isn't herdr-orchestrator 3's data stays where it was
         self.assertTrue(os.path.isfile(os.path.join(self.x["herdr"], "instructions", "worker.md")))
         st = L.status(home=self.home, env=self.env, mac=False)
         self.assertEqual(st["worktrees"]["old_left"], 2)
@@ -379,7 +377,7 @@ class Upgrade(Home):
         self.assertFalse(os.path.lexists(w.new("settings")))
 
     def test_another_disk(self):
-        # Shepherdr's folders on another disk than ~/.herdr: files (settings, the vault) are copied, checked, swapped
+        # herdr-orchestrator's folders on another disk than ~/.herdr: files (settings, the vault) are copied, checked, swapped
         # (the old copy kept); folders stay where they are and the new path links to them: no gigabytes copied, and a
         # task list's lock stays the one file every writer takes
         real = os.rename
@@ -413,14 +411,14 @@ class Upgrade(Home):
         res = L.rollback(home=self.home, env=self.env, mac=False)
         self.assertEqual(res["state"], "rolled-back")
         self.assertFalse(self.w().migrated)
-        # an older Shepherdr finds everything as it left it, plus what was added since
+        # an older herdr-orchestrator finds everything as it left it, plus what was added since
         after = snapshot(self.x["herdr"])
         for rel, v in self.before.items():
             if v[0] == "file":
                 self.assertEqual(after.get(rel), v, rel)
         self.assertIn("tasks/dev-new.json", after)
         self.assertFalse(any(os.path.islink(os.path.join(self.x["herdr"], k)) for k in os.listdir(self.x["herdr"])))
-        # this version stays on the old paths: no move by itself until `shepherdr migrate`
+        # this version stays on the old paths: no move by itself until `herdr-orchestrator migrate`
         self.assertEqual(self.migrate()["state"], "rolled-back")
         self.assertEqual(self.migrate(again=True)["state"], "migrated")
         self.assertTrue(self.w().migrated)
@@ -465,7 +463,7 @@ class Upgrade(Home):
 
 
 class CustomRoots(Home):
-    def test_shepherdr_home(self):
+    def test_orchestrator_home(self):
         one = os.path.join(self.home, "one")
         self.env = {"HERDR_ORCH_HOME": one}
         realistic(self.home)
@@ -494,8 +492,8 @@ class CustomRoots(Home):
         sys.path.insert(0, os.path.join(ROOT, "bin"))
         import importlib.machinery
         import importlib.util
-        loader = importlib.machinery.SourceFileLoader("shepherdr_installer", SHEPHERDR)
-        spec = importlib.util.spec_from_loader("shepherdr_installer", loader)
+        loader = importlib.machinery.SourceFileLoader("orchestrator_installer", INSTALLER)
+        spec = importlib.util.spec_from_loader("orchestrator_installer", loader)
         inst = importlib.util.module_from_spec(spec)
         loader.exec_module(inst)
         with mock.patch.dict(os.environ, {"HERDR_ORCH_HOME": "/nonexistent/real", "XDG_DATA_HOME": "/nonexistent/xdg"}):
@@ -734,7 +732,7 @@ class BrowserSessionNames(unittest.TestCase):
         self.assertEqual(a.rsplit("-", 1)[0], b.rsplit("-", 1)[0])
 
     def test_short_names_stay_as_they_were(self):
-        self.assertEqual(self.session("dev-shepherdr#168"), "herdr-dev-shepherdr-168")
+        self.assertEqual(self.session("dev-herdr-orchestrator#168"), "herdr-dev-herdr-orchestrator-168")
         self.assertEqual(self.session(".config-herdr-app#57"), "herdr-config-herdr-app-57")
         from herdr_task.browsers import session_of
         self.assertEqual(session_of("dev-shop#2", "dev-shop-2"), "herdr-dev-shop-2")

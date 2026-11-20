@@ -1,4 +1,4 @@
-// Mark up's words and its spot in words (Shepherdr 3.0's mods/artifacts/markup.js): click a spot or drag over an area
+// Mark up's words and its spot in words (herdr-orchestrator 3.0's mods/artifacts/markup.js): click a spot or drag over an area
 // of an artifact, write what should change, and Send gives it to the agent that keeps it, with the spot described.
 // The window's markup.js is copied into every artifact on its own (herdr-artifact), so it can't import this file: it
 // keeps the same words and the same describe(), and core/markup.test.js checks the two stay one.

@@ -2,7 +2,7 @@
 
 Window: `mods/spaces-chat` (main.js the rows and headers, popups.js the menus, machine-popup.js, machines.js (from
 `lib/machines.js`), sections.js, unread.js, notify.js; rename.js and icon.js are on the [dialogs](dialogs.md) page) and
-`mods/workspace-chrome-shepherdr/main.js` (the brand row and the foot). Web: `web/plugins/places/client.tsx` (P),
+`mods/workspace-chrome-orchestrator/main.js` (the brand row and the foot). Web: `web/plugins/places/client.tsx` (P),
 `web/plugins/health/client.tsx` (H), `web/src/App.tsx` (A), `web/src/screens/AddMachine.tsx` (AM), and the data in
 `service/compat.ts`, `service/machines.ts`, `service/model.ts`, `service/actions.ts`.
 
@@ -17,7 +17,7 @@ State: ✓ matches, ◇ web-only form (why), ✗ still differs (why).
 
 | Element | Window (file:line, exact words/control) | Web (file:line) | State |
 |---|---|---|---|
-| Mark and name | workspace-chrome-shepherdr main.js:51 Herdr's logo, "Herdr" | A:163 the crook, "herdr-orchestrator" (`snap.name`) | ◇ the window's brand row is the Herdr app's own chrome; the web app is herdr-orchestrator's own page, so it names itself |
+| Mark and name | workspace-chrome-orchestrator main.js:51 Herdr's logo, "Herdr" | A:163 the crook, "herdr-orchestrator" (`snap.name`) | ◇ the window's brand row is the Herdr app's own chrome; the web app is herdr-orchestrator's own page, so it names itself |
 | Voice call (SHEP-135) | main.js:76-77 wave icon button before Search (Voice add-on), asks spaces-chat for a call (shared "voice.startreq"); on a call Mute and End in an outlined capsule, asked of the call's chat (shared "chat.callreq") | A `registry.sideHead`: voice `VoiceButton`, wave icon button before Search, "Voice call"; on a call `CallControls`: Mute and End in an outlined capsule | ✓ |
 | Search | main.js:78 magnifier icon button, opens Jump (Ctrl+K) | A:174 `SearchButton`: magnifier icon button, opens Jump (Search); title "Search · Ctrl+K" | ✓ (2.1's "Search" box under the brand row removed) |
 | Sidebar toggle | main.js:80 sidebar icon: to the rail and back | A:168 `PlacesToggle` (Frame.tsx): hides or shows the sidebar | ◇ the web hides the column (no rail); on a phone or tablet the sidebar is a drawer |

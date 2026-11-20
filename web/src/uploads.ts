@@ -7,14 +7,14 @@
 /** how long a message keeps trying by itself before it says it didn't go (Retry starts it over) */
 export const GIVE_UP = 10 * 60_000
 
-/** an answer from Shepherdr that said no, with its status: 5xx from a proxy in front is the network, not a no */
+/** an answer from herdr-orchestrator that said no, with its status: 5xx from a proxy in front is the network, not a no */
 export class HttpError extends Error {
   constructor(public status: number, message: string) {
     super(message)
   }
 }
 
-/** worth trying again by itself: no network, cut off, timed out, or a proxy in front that couldn't reach Shepherdr */
+/** worth trying again by itself: no network, cut off, timed out, or a proxy in front that couldn't reach herdr-orchestrator */
 export function transient(e: unknown): boolean {
   const err = e as Error
   if (err instanceof HttpError) return err.status === 0 || err.status === 408 || err.status === 429 || err.status >= 502
@@ -27,7 +27,7 @@ export const backoff = (n: number) => [1000, 2000, 4000, 8000, 15000][n] ?? 3000
 /** how long one upload may take: a phone on a weak link moves maybe 25 KB a second, and never less than a minute */
 export const uploadTimeout = (size: number) => Math.max(60_000, Math.ceil(size / 25_000) * 1000)
 
-/** one try at a file's upload -> its path on Shepherdr's machine */
+/** one try at a file's upload -> its path on herdr-orchestrator's machine */
 export async function postFile(chat: string, file: Blob & { name?: string }, f: typeof fetch = fetch): Promise<string> {
   const body = new FormData()
   body.append('chat', chat)
@@ -92,7 +92,7 @@ export async function retrying<T>(fn: () => Promise<T>, since: number, opts: { o
 
 /* ---------- kept on the device: the files picked, until their message went in ---------- */
 
-const DB = 'shepherdr-uploads'
+const DB = 'herdr-orchestrator-uploads'
 const STORE = 'files'
 /** a day, like the outbox */
 const KEEP = 24 * 60 * 60_000

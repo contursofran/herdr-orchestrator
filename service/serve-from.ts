@@ -1,6 +1,6 @@
-// shepherdr web serve-from <machine|here> [--take-link] [--json]: moves the web app to a machine (bin/herdr-orchestrator runs
+// herdr-orchestrator web serve-from <machine|here> [--take-link] [--json]: moves the web app to a machine (bin/herdr-orchestrator runs
 // this with Bun; Settings › Web's Serve from runs that). In order:
-//   1. Shepherdr's web service there, installed or brought up to date (shepherdr web install-on, over herdr-core's link),
+//   1. herdr-orchestrator's web service there, installed or brought up to date (herdr-orchestrator web install-on, over herdr-core's link),
 //      and running (its node record says so);
 //   2. with --take-link, /herdr-orchestrator on that machine's tailnet name shared to something else is set aside (kept in
 //      replaced-share.json in the service's folder there; moving away again puts it back);
@@ -9,7 +9,7 @@
 //   4. the host record, newer, written here and on every machine linked from here; each service follows it: the new
 //      host shares /herdr-orchestrator, the old one stops, the others read and write their shared data there;
 //   5. the new link, once the new host says it.
-// shepherdr web status [--json]: which machine serves it now and its link.
+// herdr-orchestrator web status [--json]: which machine serves it now and its link.
 import { CoreClient } from "./hc/client.ts";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -48,7 +48,7 @@ async function readFile(rel: string, on: string | null): Promise<string | null> 
   try { return (await call<{ text: string }>("file.read", { path: rel, ...at(on) })).text; }
   catch (e) { if ((e as any).kind === "not_found") return null; throw e; }
 }
-// The settings file on a machine, wherever it keeps it (its Shepherdr folders, or ~/.herdr on an older one: core/paths.js SH).
+// The settings file on a machine, wherever it keeps it (its herdr-orchestrator folders, or ~/.herdr on an older one: core/paths.js SH).
 async function readSettingsOn(on: string | null): Promise<string | null> {
   const r = await exec(["sh", "-c", SH + '[ -e "$ORCH_SETTINGS" ] || exit 3; cat "$ORCH_SETTINGS"'], on);
   if (r.code === 3) return null;

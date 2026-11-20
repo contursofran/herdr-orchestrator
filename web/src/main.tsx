@@ -20,7 +20,7 @@ import { ServeFromDialog } from './screens/ServeFrom.tsx'
 const topBar = 'shrink-0 bg-bubble px-4 py-1.5 text-center text-[0.8125rem] text-fg2 phone:text-[0.9375rem] [[data-device=phone]>&:first-child]:pt-[calc(env(safe-area-inset-top)+6px)]'
 const barButton = 'relative font-medium text-fg underline after:absolute after:-inset-x-1.5 after:-inset-y-2.5'
 
-/** Lost the link to Shepherdr (no tailnet): say so at the top; the screen keeps what it last showed. */
+/** Lost the link to herdr-orchestrator (no tailnet): say so at the top; the screen keeps what it last showed. */
 function Offline() {
   const offline = useUI((u) => u.offline)
   const restarting = useStore((s) => s.update?.state === 'restarting')
@@ -39,7 +39,7 @@ function Offline() {
   )
 }
 
-/** Shepherdr couldn't update itself to a new commit: it keeps running the last version and says why. */
+/** herdr-orchestrator couldn't update itself to a new commit: it keeps running the last version and says why. */
 function UpdateFailed() {
   const update = useStore((s) => s.update)
   const [open, setOpen] = useState(false)
@@ -87,7 +87,7 @@ function PluginTrouble() {
 
 registry.views.settings = Settings
 registry.topBars.push(Offline, UpdateFailed, PluginTrouble)
-// Shepherdr 3's Accept card, over everything
+// herdr-orchestrator 3's Accept card, over everything
 registry.overlays.push(AcceptCard, WorktreeDialog, AddMachineDialog, RoleSheet, ServeFromDialog)
 // the sidebar foot's Add machine, as 3.0's
 registry.sideFoot.push({ order: 90, View: AddMachineButton })
@@ -105,7 +105,7 @@ const loaded = await Promise.all(
 )
 // the add-ons switched off in Settings › Window: their plugins are left out (a change later reloads the page)
 const off: string[] = await fetch('api/me').then((r) => r.json()).then((m) => m.off ?? [], () => []).catch(() => [])
-Object.assign(window, { shepherdrOff: off })
+Object.assign(window, { orchOff: off })
 installPlugins(loaded.filter((p: ClientPlugin | null): p is ClientPlugin => p !== null && !off.includes(p.name)), enabled.filter((n: string) => !off.includes(n)), user)
 connect()
 watchViewport((keyboard) => setUI({ keyboard }))

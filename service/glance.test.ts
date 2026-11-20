@@ -1,5 +1,5 @@
 // @ts-nocheck: fake snapshots, subscriptions and a fake push service
-// SHEP-246: the glance feed for the phone's and watch's own app (Shepherdr Wake): the doc, its calm stream, quiet web push
+// SHEP-246: the glance feed for the phone's and watch's own app (the phone companion): the doc, its calm stream, quiet web push
 // on a device whose app shows its own alerts, and POST /api/open's go to that device's page.
 import { afterAll, afterEach, beforeAll, beforeEach, expect, setSystemTime, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -305,7 +305,7 @@ test("open: only the asking device's page on screen gets go; none yet, its first
   expect(later.sent).toEqual([{ type: "go", url: "./?place=sp1&task=HERD-5&focus=q1" }]);
 });
 
-test("open: only a Shepherdr alert link", () => {
+test("open: only a herdr-orchestrator alert link", () => {
   for (const ok of ["./?place=sp1", "./?place=sp1&task=HERD-5&focus=q1", "./#accept=HERD-4", "./#accept=m3%3AHERD-4"]) expect(openUrlOk(ok)).toBe(true);
   for (const bad of ["https://evil.test/", "/?place=sp1", "./?task=HERD-5", "./?place=sp1&next=https://x", "javascript:alert(1)", "./#accept=", "./#settings", 5, null])
     expect(openUrlOk(bad)).toBe(false);

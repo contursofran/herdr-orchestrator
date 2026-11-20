@@ -113,7 +113,7 @@ export default function App() {
   )
 }
 
-/** before the first snapshot: the mark and a quiet word, in the app's own type; one that can't reach Shepherdr says so
+/** before the first snapshot: the mark and a quiet word, in the app's own type; one that can't reach herdr-orchestrator says so
  *  and keeps trying */
 function Loading() {
   const device = useUI((u) => u.device)
@@ -151,7 +151,7 @@ function useKeyboard() {
 
 /* ---------- pieces of the frame ---------- */
 
-/** the sidebar's top row, as the window's (workspace-chrome-shepherdr): the mark and name, plugins' buttons (the voice
+/** the sidebar's top row, as the window's (workspace-chrome-orchestrator): the mark and name, plugins' buttons (the voice
  *  call, SHEP-135), a search button (Jump, Ctrl+K) and the sidebar toggle */
 export function Brand() {
   const snap = useSnap()!
@@ -193,7 +193,7 @@ function SideFoot({ drawer }: { drawer?: boolean }) {
         drawer ? 'pb-2 phone:pb-[max(env(safe-area-inset-bottom),--spacing(2))]' : 'pb-1.5',
       )}
     >
-      {/* the foot: Settings (this device's look is a page in them) and Add machine; the window's first says Shepherdr
+      {/* the foot: Settings (this device's look is a page in them) and Add machine; the window's first says herdr-orchestrator
           with the crook, but here it only opens settings */}
       <FootButton onClick={settings} className="flex-1">
         <CogIcon className="size-4 shrink-0 text-fg3 coarse:text-fg2 phone:size-5 phone:text-fg2" />
@@ -375,7 +375,7 @@ function PaneWhere({ where }: { where: string }) {
 
 function unreachable(p: Place, snap: Snapshot) {
   const m = machineName(snap.machines, p.machine)
-  // just after Shepherdr started (an update): what it showed last, calmly
+  // just after herdr-orchestrator started (an update): what it showed last, calmly
   if (p.connecting) return `Connecting to ${m}… Showing what it said last; messages wait until it is back.`
   if (p.herdrDown) return `herdr isn't answering on ${m} since ${p.herdrDown}, so its agents can't hear anything. Messages wait until it is back.`
   return p.status === 'off' && p.unreachableSince ? `Can't reach ${m} since ${p.unreachableSince}. Showing what it said last; messages wait until it is back.` : undefined

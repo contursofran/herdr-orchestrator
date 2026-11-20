@@ -17,7 +17,7 @@ function clock() {
   return { now: () => t, nap: async (ms: number) => void (t += ms), naps: () => t }
 }
 
-/** Shepherdr's upload as a fake fetch: drops = how many tries the network cuts off first */
+/** herdr-orchestrator's upload as a fake fetch: drops = how many tries the network cuts off first */
 function server(drops: number, status = 200) {
   let tries = 0
   const got: number[] = []

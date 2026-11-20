@@ -1,6 +1,6 @@
-"""Where Shepherdr keeps its own data, and the one-time move there from ~/.herdr (SHEP-141).
+"""Where herdr-orchestrator keeps its own data, and the one-time move there from ~/.herdr (SHEP-141).
 
-Shepherdr's data lives in its own `shepherdr` folders (XDG, on macOS too; caches in ~/Library/Caches
+herdr-orchestrator's data lives in its own `herdr-orchestrator` folders (XDG, on macOS too; caches in ~/Library/Caches
 there), never under Herdr's name:
 
   config  ~/.config/herdr-orchestrator/          settings.json, model-picks.json
@@ -19,7 +19,7 @@ The move (migrate()) runs once per machine, by itself: the installer runs it on 
 and herdr-task runs it on its first start after a sync brought a new copy to another machine. Each
 kind moves in one rename (same disk), with a link left at its old place (~/.herdr/tasks ->
 ~/.local/share/herdr-orchestrator/tasks), so an older herdr-task, a Herdr window not yet reloaded, another
-machine on an older Shepherdr (which reads $HOME/.herdr/... over herdr-core) and absolute paths in
+machine on an older herdr-orchestrator (which reads $HOME/.herdr/... over herdr-core) and absolute paths in
 old briefs all keep working. On another disk, a file (settings, the vault) is copied, checked,
 then swapped (the old copy kept beside as <old>.pre-layout2); a folder (tasks, artifacts, browsers) stays
 where it is and the new path links to it instead. LAYOUT (in data) is written last: until it says 2, every
@@ -35,8 +35,8 @@ helper replacing its file atomically) replaces the link with a plain file: heal(
 round.
 
 rollback() moves everything back to ~/.herdr and leaves ~/.herdr/.layout-rollback, which keeps this
-version on the old paths (no move by itself) until `shepherdr migrate` is run again. The links stay
-until `shepherdr migrate --cleanup-legacy`, which refuses while a linked machine might still read them.
+version on the old paths (no move by itself) until `herdr-orchestrator migrate` is run again. The links stay
+until `herdr-orchestrator migrate --cleanup-legacy`, which refuses while a linked machine might still read them.
 
 Standalone on purpose (no other herdr_task module): the herdr-task entry runs it before anything
 reads a path, and bin/herdr-orchestrator imports it from the source it installs.
@@ -52,9 +52,9 @@ import stat
 import sys
 import time
 
-LAYOUT = 2                      # the layout this code knows; a higher one stops it ("update Shepherdr")
-LEGACY = ".herdr"               # under home: the old place, Shepherdr's data under Herdr's name
-ROLLBACK = ".layout-rollback"   # in LEGACY: rolled back; stay on the old paths until `shepherdr migrate`
+LAYOUT = 2                      # the layout this code knows; a higher one stops it ("update herdr-orchestrator")
+LEGACY = ".herdr"               # under home: the old place, herdr-orchestrator's data under Herdr's name
+ROLLBACK = ".layout-rollback"   # in LEGACY: rolled back; stay on the old paths until `herdr-orchestrator migrate`
 BACKUP = ".pre-layout2"         # a copied kind's old copy, kept beside it until cleanup
 FS_SHARED = {"nfs", "nfs4", "cifs", "smbfs", "smb3", "afpfs", "fuse.sshfs", "9p", "davfs", "fuse.rclone"}
 
@@ -766,7 +766,7 @@ def _replace_across(a, b):
 # ---- rollback and cleanup ---------------------------------------------------------------------
 
 def rollback(home=None, env=None, mac=None, wait=30):
-    """Everything back to ~/.herdr (an older Shepherdr then finds it as it left it). Marks the old
+    """Everything back to ~/.herdr (an older herdr-orchestrator then finds it as it left it). Marks the old
     layout first, so readers switch to the old paths (still links) before anything moves."""
     w = Where(home, env, mac)
     out = {"state": "rolled-back", "moved": {}, "notes": []}
@@ -837,7 +837,7 @@ def cleanup_legacy(home=None, env=None, mac=None):
     return gone
 
 
-# ---- state, for `shepherdr where` and `shepherdr doctor` ------------------------------------------
+# ---- state, for `herdr-orchestrator where` and `herdr-orchestrator doctor` ------------------------------------------
 
 def status(home=None, env=None, mac=None):
     """{layout, migrated, rolled_back, roots, kinds: {kind: {path, old, state}}, worktrees, journal}."""
@@ -872,7 +872,7 @@ def status(home=None, env=None, mac=None):
 def ensure(quiet=True):
     """herdr-task's start: moves the data once (the first run after an update brought this code), and
     heals old-path writes. Never in a test's world (HERDR_TASK_STORE / HERDR_ORCH_NO_MIGRATE) and never
-    fails the command: on any problem it stays on the old paths and `shepherdr doctor` says why."""
+    fails the command: on any problem it stays on the old paths and `herdr-orchestrator doctor` says why."""
     if os.environ.get("HERDR_TASK_STORE") or os.environ.get("HERDR_ORCH_NO_MIGRATE") or os.environ.get("HERDR_TASK_SETTINGS"):
         return None
     try:

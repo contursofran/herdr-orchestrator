@@ -31,7 +31,7 @@ def get(url, host=None):
 
 class Preview(unittest.TestCase):
     def setUp(self):
-        self.dir = tempfile.mkdtemp(prefix="shepherdr-preview-")
+        self.dir = tempfile.mkdtemp(prefix="herdr-orchestrator-preview-")
         self.home = os.path.join(self.dir, "home")
         self.folder = os.path.join(self.dir, "proj")
         # the tool as a sync leaves it on another machine: bin/herdr-artifact, the viewer beside its folder
@@ -131,7 +131,7 @@ class Sync(unittest.TestCase):
         sys.path.insert(0, os.path.join(ROOT, "mods", "tasks", "bin"))
         from herdr_task import machines
         from unittest import mock
-        root = tempfile.mkdtemp(prefix="shepherdr-viewer-sync-")
+        root = tempfile.mkdtemp(prefix="herdr-orchestrator-viewer-sync-")
         try:
             tool = os.path.join(root, "artifacts", "bin", "herdr-artifact")
             os.makedirs(os.path.dirname(tool))

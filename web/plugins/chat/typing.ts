@@ -5,7 +5,7 @@ import type { Chat } from '@shared/types.ts'
 
 export function typing(chat: Chat) {
   if (!chat.working || chat.background || chat.finished) return false
-  // a question card it posted last (its own, or the CLI's menu) waits on the human, whatever the terminal says; Shepherdr's
+  // a question card it posted last (its own, or the CLI's menu) waits on the human, whatever the terminal says; herdr-orchestrator's
   // update cards don't count
   const last = chat.messages.findLast((m) => !m.waiting && !m.card)
   return !(last?.question && last.question.sent === undefined)

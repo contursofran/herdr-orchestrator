@@ -3,7 +3,7 @@ import { groupTasks, loadGroups, saveGroups, shownGroup } from './groups.ts'
 import type { Machine, Place, Task } from '@shared/types.ts'
 
 const place = (id: string, name: string, machine: string, emoji?: string) => ({ id, name, machine, level: 2, emoji }) as unknown as Place
-const places = [place('a:shep', 'shepherdr', 'a', '🐑'), place('a:tor', 'tor-gameboy', 'a', '🎮'), place('b:gtm', 'gtm', 'b')]
+const places = [place('a:shep', 'herdr-orchestrator', 'a', '🐑'), place('a:tor', 'tor-gameboy', 'a', '🎮'), place('b:gtm', 'gtm', 'b')]
 const machines = [{ id: 'm:a', machine: 'a', name: 'vm-a' }, { id: 'm:b', machine: 'b', name: 'mac' }] as Machine[]
 let n = 0
 const task = (p: string, status: Task['status'], more: Partial<Task> = {}) => {

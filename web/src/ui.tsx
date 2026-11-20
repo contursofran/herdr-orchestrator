@@ -188,7 +188,7 @@ export function DiffIcon({ className }: { className?: string }) {
   )
 }
 
-/** Shepherdr's mark: a shepherd's crook at a slight lean, its staff running off the bottom (public/icon.svg too) */
+/** herdr-orchestrator's mark: a shepherd's crook at a slight lean, its staff running off the bottom (public/icon.svg too) */
 export function CrookIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 32 32" aria-hidden="true" className={clsx('shrink-0 fill-none stroke-current', className)} strokeWidth={4.5} strokeLinecap="round">
