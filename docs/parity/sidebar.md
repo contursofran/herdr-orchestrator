@@ -105,7 +105,8 @@ State: ✓ matches, ◇ web-only form (why), ✗ still differs (why).
 | After the name | main.js:598-616 `gitTail`: machine in Pinned, repo/branch (no ↑ahead ↓behind since SHEP-32) | P:322 core/spaces.js `gitTail` | ✓ |
 | Two spaces with one name | main.js:619 its folder, from ~ | P:302 `sharedNames`, `tilde` (core/spaces.js) | ✓ (was missing) |
 | Counts | main.js:662 red (needs you), green (Ready), 9+; Red counts / Green counts switches | P:352 `AttentionBadge` | ✓ (were hidden on unreachable spaces) |
-| Worktree nesting | main.js:305-325 under its repo's space, branch icon; Worktrees in the sidebar off hides them but the open one | P:209 `nest`, `look.worktrees` | ✓ |
+| Worktree nesting | Under its repo's space, branch icon. Worktrees in the sidebar off keeps only the open one | P:209 `nest`, `look.worktrees` | ✓ |
+| Projects and agents | Assistants and workers under their project, with task titles and state dots. Inactive, unpinned projects fold per machine and expand into their original sections | Space rows | ◇ native Projects tree |
 | Click | main.js:529 selects | P:538 goes there | ✓ (2.1's ⌘-click split view removed) |
 | Right-click menu | main.js:649 at the pointer, core/menus.js `spaceMenu`; worktree rows too | P:585 at the pointer, a held finger; P:417 the same items; worktree rows too | ✓ (also on spaces of an unreachable machine now) |
 | ⋯ button | none | none: the count stays put on hover | ✓ (the web's hover ⋯ removed) |
