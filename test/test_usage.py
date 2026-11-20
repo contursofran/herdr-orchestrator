@@ -48,7 +48,7 @@ class UsageIsLocal(unittest.TestCase):
     def test_the_addon_says_its_promise(self):
         a = next(x for x in json.load(open(J("lib", "addons.json")))["addons"] if x["id"] == "insights")
         self.assertTrue(a["switch"])
-        self.assertIn("never sent to Shepherdr's makers", a["about"])
+        self.assertIn("never sent to herdr-orchestrator's makers", a["about"])
         self.assertIn("never your words", a["about"])
         self.assertIn("Usage insights", open(J("templates", "assistant.md")).read())
 

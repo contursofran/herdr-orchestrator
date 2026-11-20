@@ -13,9 +13,9 @@ import { PY } from "./paths.js";
 
 export const API = "https://api.elevenlabs.io/v1";
 
-export const prompt = (where = "") => `You are Shepherdr's voice: the person's hands-free assistant for Shepherdr, an app where AI coding agents work on tasks across their machines. The person called Shepherdr itself, not one agent: you are the one voice for all of it. You take their requests to any space's Assistant or any task's agent, tell them when those reply or need them, and open things on their screen. You never hand the call over to another voice, and you never speak as an Assistant or agent: you pass things on and report back.
+export const prompt = (where = "") => `You are herdr-orchestrator's voice: the person's hands-free assistant for herdr-orchestrator, an app where AI coding agents work on tasks across their machines. The person called herdr-orchestrator itself, not one agent: you are the one voice for all of it. You take their requests to any space's Assistant or any task's agent, tell them when those reply or need them, and open things on their screen. You never hand the call over to another voice, and you never speak as an Assistant or agent: you pass things on and report back.
 
-How Shepherdr works:
+How herdr-orchestrator works:
 - A machine (this computer, a Mac mini, a VM) has spaces. A space is a project folder with its own Assistant: an AI agent the person talks to in the space's chat, which plans, writes task briefs, starts and checks tasks.
 - A task (an id like SHEP-45) is one piece of work done by its own coding agent, usually in its own branch. Its states: To do, Queued (waits for others), Scheduled (starts later), Working (with a status line and time left), Needs you (waits on the person's answer), Ready (finished, waits for the person to Review and Accept, which merges it), Done.
 - Review opens a Ready task's Accept card: its summary, changes, checks and proof. Accept merges it.
@@ -63,7 +63,7 @@ Rules:
 - Never wait on an agent: they take minutes. After a send, say only "Passed it to <name>." (the space's or task's name) and stop. Their reply comes later as an [Update].
 - Send without asking only when the person clearly asked you to. Never send greetings, chit-chat or talk about the call. Unsure if it's meant for an agent? Ask.
 - The person's ask comes first: when they just asked or told you something, answer that first. [Update]s that came in meanwhile wait until it is dealt with, then come briefly after. Never start a reply with an [Update].
-- Lines starting [Update] come from Shepherdr, not the person: never send them on. They are replies and status from the chats you sent to or the one on screen, and anything anywhere that needs the person. Say what matters in one short sentence, naming who ("The shop Assistant says the build is fixed."). Always say when someone needs the person. Several at once: one or two short sentences for all ("Two things: ..."). Where the app is now is for you only: say nothing about it.
+- Lines starting [Update] come from herdr-orchestrator, not the person: never send them on. They are replies and status from the chats you sent to or the one on screen, and anything anywhere that needs the person. Say what matters in one short sentence, naming who ("The shop Assistant says the build is fixed."). Always say when someone needs the person. Several at once: one or two short sentences for all ("Two things: ..."). Where the app is now is for you only: say nothing about it.
 - open and screen act on the screen the call runs on. Say something is on screen only when the tool's answer says so; else say it didn't open and why. If several spaces or machines fit, ask which.${where ? `\n\nWhere the call is now: ${where}` : ""}`;
 
 const PLACE = { type: "string", description: "Which one: a space's name, a task's id (SHEP-45), a machine's or artifact's name, or \"here\" (what is on screen). Leave out for all." };
@@ -87,7 +87,7 @@ export const ACTS = ["accept", "start", "schedule", "unschedule", "stop", "resum
   "autopilot_on", "autopilot_off", "autopilot_run", "rename_space", "remove_space", "setting", "forget_secret", "delete_artifact"];
 
 export const TOOLS = [
-  tool("look", "Read Shepherdr: where the call is, a chat, spaces, machines (health, plan limits), tasks, a task's details, what needs the person, news, Autopilot, automations, settings, secret names, artifacts, and data: everything else the app shows anywhere. Answers in short sentences.", {
+  tool("look", "Read herdr-orchestrator: where the call is, a chat, spaces, machines (health, plan limits), tasks, a task's details, what needs the person, news, Autopilot, automations, settings, secret names, artifacts, and data: everything else the app shows anywhere. Answers in short sentences.", {
     what: { type: "string", enum: LOOKS, description: "What to read. here: the call's context and what is on screen. chat: a chat's latest messages (or a search with query). tasks: a list (filter with id and query). task: one task's details, summary, proof and pull request. data: everything the app shows: no path lists every part; path drills in; query searches values." },
     id: PLACE,
     path: { type: "string", description: "data: where to read, a part then keys, ids or names, like \"machines/mini/stats/limits/codex\", \"insights\", \"changes\" (id: the task), \"file/README.md\" (id: the task or space)." },
@@ -245,7 +245,7 @@ export async function ensureAgent(io) {
 
 /** The kept file's words: only the id, a tag of the key and the spec it was brought up to, never the key. */
 export const agentFile = (id, tag, spec) =>
-  `# The "Herdr chat" voice agent, made by Shepherdr with ELEVENLABS_API_KEY.\nELEVENLABS_AGENT_ID=${id}\nELEVENLABS_KEY_TAG=${tag}\nELEVENLABS_SPEC=${spec}\n`;
+  `# The "Herdr chat" voice agent, made by herdr-orchestrator with ELEVENLABS_API_KEY.\nELEVENLABS_AGENT_ID=${id}\nELEVENLABS_KEY_TAG=${tag}\nELEVENLABS_SPEC=${spec}\n`;
 
 // What starts the conversation, once its socket is open: the prompt with where the call is.
 export const opening = (where = "") => ({ type: "conversation_initiation_client_data",

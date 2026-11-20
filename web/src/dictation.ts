@@ -40,7 +40,7 @@ export function heard(status: number, body: string): { text: string } | { error:
   }
   if (r && typeof r.error === 'string' && r.error) return { error: r.error }
   if (status >= 200 && status < 300 && r && typeof r.text === 'string') return { text: r.text }
-  return { error: status ? `Shepherdr couldn't write it down (error ${status}).` : "Shepherdr couldn't be reached." }
+  return { error: status ? `herdr-orchestrator couldn't write it down (error ${status}).` : "herdr-orchestrator couldn't be reached." }
 }
 
 /** why the microphone didn't start, in plain words */

@@ -1,6 +1,6 @@
 # The glance feed (phone and watch app)
 
-A small live feed for a phone app that keeps a link to Shepherdr all day (Shepherdr Wake on a Pixel and its watch:
+A small live feed for a phone app that keeps a link to herdr-orchestrator all day (herdr-orchestrator Wake on a Pixel and its watch:
 widgets, the lock screen card, the watch tile, notifications with buttons). The page socket (`/api/ws`) sends the whole
 snapshot (~720 KB) on every change, about 12.7 MB a minute: far too much for a phone. The glance doc is ~15 KB and goes
 out only when what the person sees changes, and calmly. Added in SHEP-246; the code is `service/glance.ts`.
@@ -30,14 +30,14 @@ and again each time it changes, calmly:
 
 A comment line `: ping` comes every 240 s. The stream has no idle cut on the service's side.
 
-`native=1`: this device shows Shepherdr's alerts itself. While such a stream from a device is open, and for 2 minutes
-after it closes (a reconnect), Shepherdr sends no web push to that device's browser subscriptions, so one alert never
+`native=1`: this device shows herdr-orchestrator's alerts itself. While such a stream from a device is open, and for 2 minutes
+after it closes (a reconnect), herdr-orchestrator sends no web push to that device's browser subscriptions, so one alert never
 buzzes twice. If the native link stays down longer, web push takes over again. The device is the tailnet node the
 request comes from (the same id the wake word uses).
 
 ## `POST /api/open {"url": "…"}`
 
-Opens an item in the Shepherdr page already open on the asking device, in place, as a tap on that alert would, without
+Opens an item in the herdr-orchestrator page already open on the asking device, in place, as a tap on that alert would, without
 the browser rebuilding the page. `url` is an item's `url`: `./?place=…[&task=…][&focus=…]` or `./#accept=<task>`;
 anything else is 400. The device's page on screen used last goes there; with none on screen yet, the first page of that
 device that shows up within 15 s does. Answer: `{"ok": true, "shown": true|false}` (false: held for that page). The
@@ -96,7 +96,7 @@ Unchanged from the web push buttons (SHEP-243): `POST /api/action` with
 
 ## What it lists: what the app shows
 
-The feed never says more than Shepherdr's own screens, so phone, watch and app agree. Needs you is one rule for every
+The feed never says more than herdr-orchestrator's own screens, so phone, watch and app agree. Needs you is one rule for every
 view (SHEP-250, `web/shared/needs-you.ts` `needsYou`): the web app's Tasks panel lists the same things under Needs you,
 in the same order, and its counts and badges count them.
 
@@ -123,5 +123,5 @@ in the same order, and its counts and badges count them.
   count 0.
 
 Titles and bodies are the web push's own words (`service/push.ts` `alertsOf`), so a native notification says exactly
-what a web push would. `answer.choices` follows Shepherdr's button rules: never on a plan, a form, a merge, a pick of
+what a web push would. `answer.choices` follows herdr-orchestrator's button rules: never on a plan, a form, a merge, a pick of
 several or a terminal menu, never a choice that needs a note or grants for good; three at most (labels <= 24).

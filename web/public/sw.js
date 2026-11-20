@@ -43,7 +43,7 @@ self.addEventListener('install', () => self.skipWaiting())
 self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()))
 
 self.addEventListener('push', (e) => {
-  const a = e.data ? e.data.json() : { title: 'Shepherdr', body: '' }
+  const a = e.data ? e.data.json() : { title: 'herdr-orchestrator', body: '' }
   e.waitUntil(
     Promise.all([badge(a.badge), tidy(a.open)])
       .catch(() => undefined)
@@ -82,7 +82,7 @@ const act = (body) =>
       const out = await r.json().catch(() => ({}))
       return out && out.ok === false ? { error: out.error || "It didn't go through." } : { ok: true }
     })
-    .catch(() => ({ error: "Shepherdr couldn't be reached." }))
+    .catch(() => ({ error: "herdr-orchestrator couldn't be reached." }))
 
 /** a refusal that only means it was done already: accepted, answered or gone (web/shared/alerts.ts alreadyHandled) */
 const handled = (error) => /isn't ready|answered already|isn't here any more|no longer waiting|only a ready task/i.test(error || '')

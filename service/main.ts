@@ -104,7 +104,7 @@ export const VERSION = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8
 ensureData();
 const release = await holdLock(SOCK);
 if (!release) {
-  console.log("Shepherdr's service is already running.");
+  console.log("herdr-orchestrator's service is already running.");
   process.exit(0);
 }
 
@@ -217,13 +217,13 @@ async function moveSecrets(machine: string | null) {
   const target = machine ?? home.me?.name ?? "here";
   secretsMoving = { to: target, at: Date.now() };
   model.rebuild();
-  const cli = [join(HOME, ".local", "bin", "shepherdr"), join(ROOT, "bin", "shepherdr")].find(existsSync) ?? "shepherdr";
+  const cli = [join(HOME, ".local", "bin", "herdr-orchestrator"), join(ROOT, "bin", "herdr-orchestrator")].find(existsSync) ?? "herdr-orchestrator";
   try {
     const p = Bun.spawn([cli, "secrets", "move-to", machine ?? "here", "--json"], { stdout: "pipe", stderr: "pipe", stdin: "ignore" });
     const [out, err] = await Promise.all([new Response(p.stdout).text(), new Response(p.stderr).text()]);
     let r: any = null;
     try { r = JSON.parse(out.trim().split("\n").pop() ?? ""); } catch {}
-    if ((await p.exited) !== 0 || r?.ok === false) throw new Error(r?.error || err.trim().split("\n").pop()?.replace(/^shepherdr: /, "") || "The move didn't finish.");
+    if ((await p.exited) !== 0 || r?.ok === false) throw new Error(r?.error || err.trim().split("\n").pop()?.replace(/^herdr-orchestrator: /, "") || "The move didn't finish.");
     secretsMoving = null;
   } catch (err) {
     secretsMoving = { to: target, at: Date.now(), error: (err as Error).message };
@@ -420,11 +420,11 @@ async function serveFrom(machine: string | null) {
   const target = machine ?? host.me?.name ?? "here";
   moving = { to: target, at: Date.now() };
   void tailnet();
-  const cli = [join(HOME, ".local", "bin", "shepherdr"), join(ROOT, "bin", "shepherdr")].find(existsSync) ?? "shepherdr";
+  const cli = [join(HOME, ".local", "bin", "herdr-orchestrator"), join(ROOT, "bin", "herdr-orchestrator")].find(existsSync) ?? "herdr-orchestrator";
   try {
     const p = Bun.spawn([cli, "web", "serve-from", machine ?? "here", "--json"], { stdout: "pipe", stderr: "pipe", stdin: "ignore" });
     const [out, err] = await Promise.all([new Response(p.stdout).text(), new Response(p.stderr).text()]);
-    if ((await p.exited) !== 0) throw new Error(err.trim().split("\n").pop()?.replace(/^shepherdr: /, "") || "The move didn't finish.");
+    if ((await p.exited) !== 0) throw new Error(err.trim().split("\n").pop()?.replace(/^herdr-orchestrator: /, "") || "The move didn't finish.");
     moving = null;
     void out;
   } catch (err) {
@@ -711,11 +711,11 @@ const server = Bun.serve<{ who: string }>({
       // the other machines this service ticks (Serve from: the host the ones with no service of their own)
       ticks: jobs.on ? host.tickOn() : [] });
     // the Web add-on switched off: nothing for the tailnet (this machine's own callers still get the API)
-    if (req.headers.has("tailscale-user-login") && !webOn()) return new Response("Shepherdr's web app is off (Shepherdr settings › Window › Add-ons).", { status: 404 });
+    if (req.headers.has("tailscale-user-login") && !webOn()) return new Response("herdr-orchestrator's web app is off (herdr-orchestrator settings › Window › Add-ons).", { status: 404 });
     // another machine serves it now (Serve from): a page that still comes here goes there
     if (req.headers.has("tailscale-user-login") && !host.serving()) {
       const there = host.hostLink();
-      return there ? Response.redirect(there, 302) : new Response("Shepherdr's web app is served from another machine now.", { status: 404 });
+      return there ? Response.redirect(there, 302) : new Response("herdr-orchestrator's web app is served from another machine now.", { status: 404 });
     }
     const socket = path === "/api/ws" || path === "/api/terminal" || path === "/api/browser" || path === "/api/voice";
     const viaTailnet = req.headers.has("tailscale-user-login");
@@ -922,7 +922,7 @@ const server = Bun.serve<{ who: string }>({
       // a tap on the phone app's alert (SHEP-246): the Shepherdr page already open on that device goes there in place, as
       // the wake does (SHEP-240), so the phone never makes Chrome build the page again. shown: false, held 15 s.
       const b = await req.json().catch(() => null);
-      if (!openUrlOk(b?.url)) return json({ error: "Not a Shepherdr link: ./?place=… or ./#accept=…" }, 400);
+      if (!openUrlOk(b?.url)) return json({ error: "Not a herdr-orchestrator link: ./?place=… or ./#accept=…" }, 400);
       const from = await deviceFrom(req, pass.via);
       if (!from) return json({ error: "only from a device on the tailnet" }, 400);
       return json({ ok: true, shown: live.go(from, b.url) });
@@ -1005,7 +1005,7 @@ const server = Bun.serve<{ who: string }>({
   },
 });
 
-console.log(`Shepherdr ${VERSION} on http://127.0.0.1:${server.port} (data ${DATA})${me && webOn() ? `, ${ownLink()}` : ""}`);
+console.log(`herdr-orchestrator ${VERSION} on http://127.0.0.1:${server.port} (data ${DATA})${me && webOn() ? `, ${ownLink()}` : ""}`);
 
 // the port is ours now: say where and this start's id (only this user can read it)
 writeFileSync(SERVICE_FILE, JSON.stringify({ port: server.port, id: SERVICE_ID, pid: process.pid, version: VERSION }) + "\n", { mode: 0o600 });

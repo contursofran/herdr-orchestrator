@@ -12,8 +12,8 @@ test("keys as people read them, as the window's Keybinds shows them", () => {
   expect(keyText("ctrl-shift-k", true)).toBe("⌃⇧K");
 });
 
-test("Shepherdr's keys.json grouped: the layout's own key replaces the global one, Alt+1–9 folds, Chat is its own group", () => {
-  const g = grouped(flatKeys(repoKeys), { layout: "shepherdr" });
+test("herdr-orchestrator's keys.json grouped: the layout's own key replaces the global one, Alt+1–9 folds, Chat is its own group", () => {
+  const g = grouped(flatKeys(repoKeys), { layout: "herdr-orchestrator" });
   expect(g.map((x) => x.group)).toEqual(["Tabs", "Spaces", "Panes", "Terminal", "Chat", "App"]);
   const row = (group, name) => g.find((x) => x.group === group)?.rows.find((r) => r.name === name);
   expect(row("Tabs", "Show tab 1–9").keys).toEqual(["Alt+1–9"]);
@@ -23,14 +23,14 @@ test("Shepherdr's keys.json grouped: the layout's own key replaces the global on
   expect(row("Chat", "Find in the chat").keys).toEqual(["Ctrl+F"]);
 });
 
-test("the web's keys are the window's: each one bound the same in Shepherdr's keys.json or Herdr's defaults, every one named", () => {
+test("the web's keys are the window's: each one bound the same in herdr-orchestrator's keys.json or Herdr's defaults, every one named", () => {
   const herdr = { "alt-]": "tab.next", "alt-[": "tab.prev", "ctrl-shift-b": "layout.toggle:sidebar", "ctrl-,": "app.settings" };
   for (const [section, map] of Object.entries(WEB_KEYS))
     for (const [k, action] of Object.entries(map)) {
       expect(repoKeys[section]?.[k] ?? (section === "global" ? herdr[k] : undefined)).toBe(action);
       if (!action.startsWith("tab.select:")) expect(NAMES[action.split(":")[0]]).toBeDefined();
     }
-  const g = grouped(flatKeys(WEB_KEYS), { layout: "shepherdr" });
+  const g = grouped(flatKeys(WEB_KEYS), { layout: "herdr-orchestrator" });
   expect(g.map((x) => x.group)).toEqual(["Tabs", "Spaces", "Chat", "App"]);
   expect(g[0].rows.map((r) => r.name)).toEqual(["Show tab 1–9", "Previous tab", "Next tab"]);
   expect(g[0].rows[1].keys).toEqual(["Alt+Left", "Alt+["]);

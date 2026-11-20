@@ -1,10 +1,10 @@
 {
-  "name": "shepherdr",
-  "version": "3.1.44",
+  "name": "herdr-orchestrator",
+  "version": "0.1.0",
   "private": true,
   "license": "MIT",
   "type": "module",
-  "description": "Shepherdr's always-on service and its web app (phone, tablet, desktop), beside the Herdr layout.",
+  "description": "herdr-orchestrator's always-on service and its web app (phone, tablet, desktop), beside the Herdr layout.",
   "scripts": {
     "service": "bun service/main.ts",
     "dev": "vite --config web/vite.config.ts",

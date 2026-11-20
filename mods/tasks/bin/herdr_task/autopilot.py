@@ -602,8 +602,8 @@ def message(space, a, reasons):
     beat, where = heartbeat_of(space)
     beat = "" if blank(beat) else beat.strip()
     path = heartbeat_path()
-    src = {"space": "this space's own, Shepherdr settings > Autopilot",
-           "everywhere": "Everywhere's, Shepherdr settings > Autopilot"}.get(where, path.replace(HOME, "~", 1))
+    src = {"space": "this space's own, herdr-orchestrator settings > Autopilot",
+           "everywhere": "Everywhere's, herdr-orchestrator settings > Autopilot"}.get(where, path.replace(HOME, "~", 1))
     if len(beat) > HEARTBEAT_MAX:
         beat = beat[:HEARTBEAT_MAX] + (f"\n… (cut here: read the rest in {path})" if where == "file" else "\n… (cut here)")
     p = a.get("progress")
@@ -611,7 +611,7 @@ def message(space, a, reasons):
     why = reasons[0] + (f" (also: {', '.join(reasons[1:])})" if len(reasons) > 1 else "")
     waits = "\n".join(f"- {x}" for x in waiting(space, a))
     aim = direction_of(space)
-    aim = (f"Direction (set by the person, Shepherdr settings > Autopilot): {aim}" if aim else
+    aim = (f"Direction (set by the person, herdr-orchestrator settings > Autopilot): {aim}" if aim else
            "Direction: none set. Work out what matters most from the project itself: its README, docs and goals, "
            "recent commits and merged tasks, open issues and PRs, and what the person asked for lately.")
     body = (f"Autopilot wake: {why}, {when(now())}.\n"
@@ -621,7 +621,7 @@ def message(space, a, reasons):
             "yourself and unblock them. The one exception is a take-over: something irreversible or outside this "
             "space that can't wait (spending money, deploying or publishing, deleting data, credentials, a security "
             "problem) or being stuck after retrying twice: don't do it, send one herdr-task alert \"<what>\" "
-            "--body \"<why>\", say it in one line and carry on with other work. A problem in Shepherdr itself is no question either: note it with herdr-task feedback \"<one line>\" --details \"…\" --later "
+            "--body \"<why>\", say it in one line and carry on with other work. A problem in herdr-orchestrator itself is no question either: note it with herdr-task feedback \"<one line>\" --details \"…\" --later "
             "and offer it once the person is back. Read the heartbeat, the "
             "direction and your saved progress below, look at the tasks (herdr-task list --json), and do the most "
             "useful work the heartbeat permits: unblock and check what's open, start what's ready to start, and, "

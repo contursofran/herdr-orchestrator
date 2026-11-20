@@ -5,7 +5,7 @@ import { voiceTool, findTask, findSpace, findArtifact, spacesSaid, shown, eviden
 
 const now = Date.now();
 const snap: any = {
-  host: "vm", name: "Shepherdr", user: "You",
+  host: "vm", name: "herdr-orchestrator", user: "You",
   machines: [{ id: "m:vm", machine: "vm", name: "This computer", status: "idle", here: true }, { id: "m:mini", machine: "mini", name: "Mac mini", status: "off", unreachableSince: "14:02" }],
   places: [
     { id: "sp1", name: "shepherdr", machine: "vm", chat: "p:sp1", mode: "autopilot", level: 2, status: "idle", pilot: { on: true, next_run: Math.round((now + 3600_000) / 1000), pending: false, inflight: false, events: ["Started SHEP-45"], blank: false } },
@@ -53,10 +53,10 @@ function io(over: Partial<VoiceIO> = {}) {
 }
 const web: Where = { client: "web", device: "phone", call: "SHEP-45/worker", place: "sp1", task: "SHEP-45", tab: "chat" };
 
-test("look here: the app, a call with Shepherdr, and what is on screen", async () => {
+test("look here: the app, a call with herdr-orchestrator, and what is on screen", async () => {
   const a = await voiceTool("look", { what: "here" }, web, io());
   expect(a.result).toContain("web app on a phone");
-  expect(a.result).toContain("It is with Shepherdr, not one agent");
+  expect(a.result).toContain("It is with herdr-orchestrator, not one agent");
   expect(a.result).toContain("SHEP 45");
   expect(a.result).toContain("the shepherdr space");
   expect(a.result).toContain("1 waiting on the person, 1 ready for review, 1 working");

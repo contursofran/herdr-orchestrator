@@ -143,7 +143,7 @@ ensure() {
   pick
   _ok=0
   if ! usable; then
-    echo "herdr-browser: installing agent-browser $PIN for Shepherdr into $abdir (once)…" >&2
+    echo "herdr-browser: installing agent-browser $PIN for herdr-orchestrator into $abdir (once)…" >&2
     install_mine || _ok=1
     [ "$_ok" = 0 ] && pick
   fi
@@ -156,10 +156,10 @@ ensure() {
 # What's wrong, and the one command that fixes it.
 problem() {
   if [ -z "$bin" ]; then _what="agent-browser isn't installed here"
-  else _what="Shepherdr runs agent-browser $PIN (or a newer ${PIN%.*}.x); this machine has ${ver:-an unknown version} ($bin)"; fi
+  else _what="herdr-orchestrator runs agent-browser $PIN (or a newer ${PIN%.*}.x); this machine has ${ver:-an unknown version} ($bin)"; fi
   # The apostrophe sits outside ${...}: bash (3.2 on macOS too) reads one inside a double-quoted ${...} as a quote
   _why=
-  if [ -n "$why" ]; then _why=", and Shepherdr couldn't install it: $why"; fi
+  if [ -n "$why" ]; then _why=", and herdr-orchestrator couldn't install it: $why"; fi
   echo "herdr-browser: $_what$_why. Fix it: $fix"
 }
 

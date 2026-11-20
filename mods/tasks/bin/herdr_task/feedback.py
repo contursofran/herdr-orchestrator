@@ -48,9 +48,9 @@ STOP = set("a an and are as at be but by can could did do does doesnt dont for f
 
 
 # What every agent that isn't an Assistant is told at its session's start (reactions.agent_note), with offers on.
-AGENT_NOTE = ("Feedback for Shepherdr (on in Settings): when Shepherdr itself misbehaves, not the project's own code (a Shepherdr, "
+AGENT_NOTE = ("Feedback for herdr-orchestrator (on in Settings): when herdr-orchestrator itself misbehaves, not the project's own code (a herdr-orchestrator, "
               "herdr-task, web app or window feature that doesn't work as meant, a Herdr command failing like a bug, the person "
-              "frustrated with Shepherdr), run herdr-task feedback \"<one line>\" --details \"<goal, what was tried, what went wrong, "
+              "frustrated with herdr-orchestrator), run herdr-task feedback \"<one line>\" --details \"<goal, what was tried, what went wrong, "
               "expected, suggested fix>\" once per problem and carry on: it returns at once and the space's Assistant asks the "
               "person whether to file it. Never file an issue yourself; no secrets, private paths or whole logs.")
 
@@ -247,12 +247,12 @@ def issue_body(line, fields, env, private=None):
         words = trim(fields.get(key))
         parts.append(f"## {head}\n\n{words or '_Not known._'}")
     parts.append("## Environment\n\n" + "\n".join([
-        f"- Shepherdr: {env.get('shepherdr') or 'unknown'}",
+        f"- herdr-orchestrator: {env.get('shepherdr') or 'unknown'}",
         f"- Machine: {env.get('os') or 'unknown'}",
         f"- Agent CLI: {env.get('agent') or 'not known'}",
         f"- Used from: {env.get('surface') or 'not stated'}",
     ]))
-    parts.append("_Filed by a Shepherdr agent with the person's yes (Settings › Agents › Feedback offers)._")
+    parts.append("_Filed by a herdr-orchestrator agent with the person's yes (Settings › Agents › Feedback offers)._")
     return redact("\n\n".join(parts), private)
 
 
@@ -339,13 +339,13 @@ def queue_news(to, text):
 def news_line(ref, title, line, details, key):
     attr = lambda x: str(x).replace("&", "&amp;").replace('"', "&quot;").replace("<", "&lt;").replace(">", "&gt;")
     more = one_line(details, 900)
-    text = f"{ref} feedback: {line}" + (f" · {more}" if more else "") + f" ({one_line(title or 'Shepherdr', 80)})"
+    text = f"{ref} feedback: {line}" + (f" · {more}" if more else "") + f" ({one_line(title or 'herdr-orchestrator', 80)})"
     return f'<herdr-news task="{attr(ref)}" event="feedback" key="{key}">{text.replace("<", "‹").replace(">", "›")}</herdr-news>'
 
 
 def offer_words(line, key):
     return (f"Offer it once, when you're between things (never mid-work, never while the person is in the middle of "
-            f"something urgent): ask with your question tool \"Leave feedback for Shepherdr about {line}?\" with Yes, No and "
+            f"something urgent): ask with your question tool \"Leave feedback for herdr-orchestrator about {line}?\" with Yes, No and "
             f"Edit first. Yes: herdr-task feedback --key {key} \"{line}\" --file --goal … --happened … --tried … "
             f"--expected … --fix … --repro … --surface web|window. Edit first: show the draft (add --dry-run), take their "
             f"changes, then file. No: herdr-task feedback --key {key} \"{line}\" --no.")

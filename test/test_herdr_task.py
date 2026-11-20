@@ -18,7 +18,7 @@ class HerdrTask(unittest.TestCase):
     def test_compiles(self):
         files = [os.path.join(BIN, "herdr-task")] + [os.path.join(BIN, "herdr_task", f) for f in sorted(os.listdir(os.path.join(BIN, "herdr_task"))) if f.endswith(".py")]
         files += [os.path.join(ROOT, "mods", "artifacts", "bin", "herdr-artifact"), os.path.join(ROOT, "bin", "herdr-secret"),
-                  os.path.join(ROOT, "bin", "sync-shared"), os.path.join(ROOT, "bin", "shepherdr")]
+                  os.path.join(ROOT, "bin", "sync-shared"), os.path.join(ROOT, "bin", "herdr-orchestrator")]
         for f in files:
             with open(f, "rb") as fh:
                 compile(fh.read(), f, "exec")
@@ -297,7 +297,7 @@ class Autopilot(unittest.TestCase):
         self.cmd("set", space="sp1", direction="  Launch the\n shop  ")
         v = self.cmd("show", space="sp1")
         self.assertEqual((v["direction"], v["own"]), ("Launch the shop", ["direction"]))
-        self.assertIn("Direction (set by the person, Shepherdr settings > Autopilot): Launch the shop", self.ap.message("sp1", {}, ["schedule"]))
+        self.assertIn("Direction (set by the person, herdr-orchestrator settings > Autopilot): Launch the shop", self.ap.message("sp1", {}, ["schedule"]))
         self.assertIn("Direction: none set", self.ap.message("sp2", {}, ["schedule"]))
         self.cmd("set", space="sp1", direction="")
         self.assertEqual(self.cmd("show", space="sp1")["direction"], "")
@@ -4540,7 +4540,7 @@ class AssistantSettings(unittest.TestCase):
         for label, words in [("Review", "off"), ("Merge", "ask the person first"), ("Proof", "on"), ("Task agent", "claude"),
                              ("Base branch", "the folder's checked-out branch"), ("Worktrees", "on"), ("Tasks at once", "10 per folder"),
                              ("Task notes", "none"), ("Autopilot", "off"), ("Reactions", "on"),
-                             ("Feedback offers", "on (offer once to file a Shepherdr problem as an issue on eliasstravik/shepherdr")]:
+                             ("Feedback offers", "on (offer once to file a herdr-orchestrator problem as an issue on eliasstravik/shepherdr")]:
             self.assertTrue(self.line(note, label).startswith(f"- {label}: {words}"), self.line(note, label))
         # nothing differs from Herdr's default: no line says who set it
         self.assertNotIn("; set for", note)
@@ -4814,7 +4814,7 @@ class Feedback(unittest.TestCase):
     def test_offered_once_and_no_is_remembered(self):
         self.assistant()
         code, out = self.say("Ready refuses a reviewed commit")
-        self.assertIn('"Leave feedback for Shepherdr about Ready refuses a reviewed commit?"', out)
+        self.assertIn('"Leave feedback for herdr-orchestrator about Ready refuses a reviewed commit?"', out)
         self.assertIn("Already offered", self.say("ready refuses the reviewed commit")[1])
         self.assertIn("Remembered", self.say("Ready refuses a reviewed commit", "--no")[1])
         self.assertIn("said no", self.say("Ready refuses a reviewed commit")[1])
@@ -4860,7 +4860,7 @@ class Feedback(unittest.TestCase):
         b = self.body
         for head in ("## Goal", "## What happened", "## What was tried", "## Expected", "## Suggested fix", "## Steps to reproduce", "## Environment"):
             self.assertIn(head, b)
-        for words in ("- Shepherdr: 3.1.12", "- Agent CLI: Claude Code 0.9.1", "- Used from: the web app", "1. Start a task", "… (cut)"):
+        for words in ("- herdr-orchestrator: 3.1.12", "- Agent CLI: Claude Code 0.9.1", "- Used from: the web app", "1. Start a task", "… (cut)"):
             self.assertIn(words, b)
         for secret in ("Jane", "janes-box", "100.101.1.2", "/home/jane", "ghp_", "s3cr3t", "jane@example.com", "log line 40"):
             self.assertNotIn(secret, b)
@@ -4948,7 +4948,7 @@ class Feedback(unittest.TestCase):
         from herdr_task import templates, reactions, autopilot
         with open(os.path.join(ROOT, "templates", "assistant.md")) as f:
             a = f.read()
-        for words in ("## Feedback for Shepherdr", "Leave feedback for Shepherdr about", "--no", "--later", "duplicate", "--comment", "in the middle of something urgent"):
+        for words in ("## Feedback for herdr-orchestrator", "Leave feedback for herdr-orchestrator about", "--no", "--later", "duplicate", "--comment", "in the middle of something urgent"):
             self.assertIn(words, a)
         with open(os.path.join(ROOT, "templates", "worker.md")) as f:
             self.assertIn(templates.FEEDBACK_RULE.strip(), f.read())

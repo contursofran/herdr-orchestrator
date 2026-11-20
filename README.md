@@ -4,7 +4,7 @@ A layout and a set of tools for the [Herdr app](https://herdr.dev) that coordina
 
 herdr-orchestrator starts from [Shepherdr](https://github.com/eliasstravik/shepherdr) 3.1.44 and becomes its own tool. It does not follow Shepherdr's updates.
 
-> **Status: early work.** The code is still Shepherdr 3.1.44 with no changes. Commands, folders and the layout keep the name `shepherdr` until the rename issues are done.
+> **Status: early work (0.1.0).** The CLI (`herdr-orchestrator`), layout (`layouts/herdr-orchestrator.json`) and visible names are now `herdr-orchestrator`; data folders, env vars and mod names keep `shepherdr` until the remaining rename issues are done.
 
 ## What it keeps from Shepherdr
 
@@ -32,14 +32,14 @@ The work is in the epic [#11](https://github.com/contursofran/herdr-orchestrator
 
 ## Install (for now)
 
-The installer is still Shepherdr's. Do not install it on a machine where Shepherdr is already installed: both use the same mod folders, links and hooks. Issue #5 solves this.
+Data folders, mod folders and service units still use `shepherdr` for now. Do not install it on a machine where Shepherdr is already installed: both use the same mod folders, links and hooks. Issue #5 solves this.
 
 ```bash
 git clone https://github.com/contursofran/herdr-orchestrator
 cd herdr-orchestrator
 ./install.sh --dry-run   # see what it does
 ./install.sh
-shepherdr doctor
+herdr-orchestrator doctor
 ```
 
 In Herdr, `Ctrl+Shift+L` picks the layout. You need macOS or Linux, the Herdr app 0.1.12 or newer with herdr-core 0.1.17 or newer, Python 3.8+, Git, and Claude Code or Codex. [docs/install.md](docs/install.md) has the details.

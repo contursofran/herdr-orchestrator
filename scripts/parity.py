@@ -1,4 +1,4 @@
-"""Diffs a scratch Shepherdr install (./install.sh --root DIR) against this machine's live Herdr home, file by
+"""Diffs a scratch herdr-orchestrator install (./install.sh --root DIR) against this machine's live Herdr home, file by
 file: python3 scripts/parity.py DIR. Read only. Leaves out art-* artifact mods (state)."""
 import hashlib, json, os, sys
 R, LIVE_HOME = sys.argv[1], os.path.expanduser("~")
@@ -25,7 +25,7 @@ for area in ["mods", "lib", "bin", "layouts"]:
 for t in ["assistant.md", "worker.md", "reviewer.md"]:
     k = f".config/herdr-core/templates/{t}"
     rows["same" if sha(os.path.join(R, k)) == sha(os.path.join(LIVE_HOME, k)) else "differs"].append(k)
-for n in ["herdr-task", "herdr-artifact", "herdr-secret", "herdr-browser", "shepherdr", "herdr-app"]:
+for n in ["herdr-task", "herdr-artifact", "herdr-secret", "herdr-browser", "herdr-orchestrator", "herdr-app"]:
     a, b = os.path.join(R, ".local/bin", n), os.path.join(LIVE_HOME, ".local/bin", n)
     ra = os.path.relpath(os.path.realpath(a), R) if os.path.lexists(a) else None
     rb = os.path.relpath(os.path.realpath(b), LIVE_HOME) if os.path.lexists(b) else None

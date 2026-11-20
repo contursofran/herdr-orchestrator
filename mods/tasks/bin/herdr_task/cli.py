@@ -71,7 +71,7 @@ def remote_run(machine, argv, timeout=None):
         held = sync_held()
         if held:
             raise Fail(f"herdr-task isn't current on {machine}, and copies to other machines wait: {held}. "
-                       "Run `shepherdr doctor` once the install is whole.")
+                       "Run `herdr-orchestrator doctor` once the install is whole.")
         guard(["hc"])
         # A machine with Herdr's own install (its window's) holds herdr-task's source: copies come from there, it's
         # never written to (machines.py, the same rule). Its link ~/.local/bin/herdr-task leads into that install.
@@ -259,7 +259,7 @@ def main():
     c.add_argument("title", help="what can't wait, a few words")
     c.add_argument("--body", help="why, a line or two")
     c.add_argument("--task", help="the task it's about (an Assistant's alert about one of its tasks always reaches the person)")
-    c = cmd("feedback", cmd_feedback, "a problem in Shepherdr itself (not the project's): feedback \"<one line>\" --details \"goal, what "
+    c = cmd("feedback", cmd_feedback, "a problem in herdr-orchestrator itself (not the project's): feedback \"<one line>\" --details \"goal, what "
             "was tried, what went wrong, expected, suggested fix\" returns at once and your Assistant offers the person to file it "
             "on GitHub; an Assistant gets whether to offer, and files it only on the person's yes (--file)", id=False)
     c.add_argument("line", nargs="?", default="", help="the problem in one line")
@@ -274,7 +274,7 @@ def main():
                      ("expected", "what should have happened"), ("fix", "a suggested fix"), ("repro", "minimal steps to reproduce")):
         c.add_argument(f"--{f}", help=f"--file: {words}")
     c.add_argument("--title", help="--file: the issue's title (default: the one line)")
-    c.add_argument("--surface", choices=["web", "window", "both"], help="--file: where the person used Shepherdr")
+    c.add_argument("--surface", choices=["web", "window", "both"], help="--file: where the person used herdr-orchestrator")
     c.add_argument("--repo", help=argparse.SUPPRESS)  # a test's throwaway repo; Settings' otherwise
     h = c.add_mutually_exclusive_group()
     h.add_argument("--new", action="store_true", help="--file: file it even though duplicates are open")
@@ -379,7 +379,7 @@ def main():
     ap_cmd("on", "turn it on in this space (makes the heartbeat file)")
     ap_cmd("off", "turn it off in this space")
     c = ap_cmd("set", "when this space's Autopilot wakes and from what (--everywhere: every space that doesn't set its own); "
-               "kept in Shepherdr settings", everywhere=True)
+               "kept in herdr-orchestrator settings", everywhere=True)
     c.add_argument("--every", help=HOW + ' "" or off: no schedule; default: follow Everywhere\'s.')
     c.add_argument("--on", help="task events that wake it, comma-separated (\"\": none; default: Everywhere's): " + ", ".join(EVENTS))
     c.add_argument("--heartbeat", help="its heartbeat's words (default: Everywhere's)")

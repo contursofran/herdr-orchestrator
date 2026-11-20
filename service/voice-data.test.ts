@@ -39,7 +39,7 @@ test("every action the web app sends is a voice data source (a read) or a change
 
 const now = Date.now();
 const snap: any = {
-  host: "vm", name: "Shepherdr", user: "You",
+  host: "vm", name: "herdr-orchestrator", user: "You",
   machines: [
     { id: "m:vm", machine: "vm", name: "This computer", status: "idle", here: true, stats: { at: now, health: { cpu: 12, memory: 40, disk: 50 }, limits: {
       codex: { state: "ok", at: now - 60_000, plan: "pro", windows: [{ name: "5-hour", used: 37, resets_at: now + 2 * 3600_000 }, { name: "Weekly", used: 81, resets_at: now + 3 * 86400_000 }] },

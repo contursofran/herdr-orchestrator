@@ -176,7 +176,7 @@ test("Agents and Tasks say the window's words: the model button, Other CLI, Must
   expect(tasks.rows.some((r) => r.key === "tasks.must_fix")).toBe(false);
   expect(tasks.rows.find((r) => r.key === "tasks.max_running")).toMatchObject({ hint: C.ABOUT["tasks.max_running"], steps: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"] });
   const web = s.sections({ on: true, link: "https://box/shepherdr/", why: null }).find((x) => x.name === "Web")!;
-  expect(web.rows.map((r) => r.label)).toEqual(["Shepherdr on the web", "Link"]);
+  expect(web.rows.map((r) => r.label)).toEqual(["herdr-orchestrator on the web", "Link"]);
   expect(web.rows[0].hint).toBe("On, private to your tailnet.");
 });
 

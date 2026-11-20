@@ -299,7 +299,7 @@ function taskLine(snap: Snapshot, t: Task, withPlace = true) {
 /** Where the call is and what the app shows, in words (look here, and the call's opening). */
 export function lookHere(snap: Snapshot, where: Where) {
   const from = where.client === "web" ? `the web app${where.device ? ` on a ${where.device}` : ""}` : `the Herdr window${where.machine ? ` on ${where.machine}` : ""}`;
-  const out = [`The call runs in ${from}. It is with Shepherdr, not one agent.`];
+  const out = [`The call runs in ${from}. It is with herdr-orchestrator, not one agent.`];
   const shows: string[] = [];
   if (where.settings) shows.push("Settings");
   const t = where.task ? snap.tasks.find((x) => x.id === where.task) : null;
@@ -362,7 +362,7 @@ function lookMachines(snap: Snapshot) {
     const sp = snap.places.filter((p) => p.machine === m.machine).length;
     const work = snap.tasks.filter((t) => !t.archived && t.status === "work" && snap.places.find((p) => p.id === t.place)?.machine === m.machine).length;
     const plans = planWords((m as any).stats);
-    return `${machineSaid(snap, m.machine)}${m.here ? " (where Shepherdr serves from)" : ""}: ${m.status === "off" ? `offline${m.unreachableSince ? ` since ${m.unreachableSince}` : ""}` : m.connecting ? "connecting" : "online"}, ${sp} space${sp === 1 ? "" : "s"}, ${work} task${work === 1 ? "" : "s"} working.${plans ? ` ${plans}` : ""}`;
+    return `${machineSaid(snap, m.machine)}${m.here ? " (where herdr-orchestrator serves from)" : ""}: ${m.status === "off" ? `offline${m.unreachableSince ? ` since ${m.unreachableSince}` : ""}` : m.connecting ? "connecting" : "online"}, ${sp} space${sp === 1 ? "" : "s"}, ${work} task${work === 1 ? "" : "s"} working.${plans ? ` ${plans}` : ""}`;
   }).join("\n") || "No machines.");
 }
 
@@ -606,7 +606,7 @@ export async function voiceTool(name: string, params: any, where: Where, io: Voi
   // the oldest calls' tools, from an agent made before (send_to_agent, read_chat): as send and look at the chat
   if (name === "send_to_agent") return voiceTool("send", { text: p.text }, where, io);
   if (name === "read_chat") return voiceTool("look", { what: "chat" }, where, io);
-  if (!snap) return fail("Shepherdr is still starting: try again in a moment.");
+  if (!snap) return fail("herdr-orchestrator is still starting: try again in a moment.");
   try {
     if (name === "look") {
       switch (String(p.what ?? "")) {
@@ -772,7 +772,7 @@ async function act(snap: Snapshot, where: Where, io: VoiceIO, p: any, id: string
       case "rename_space":
         if (!value) return fail("What should it be called?");
         ask = `Rename ${sp.name} to ${value}?`; body = { type: "rename", id: sp.id, name: value }; said = `Renamed it ${value}.`; break;
-      case "remove_space": ask = `Remove ${sp.name} from Shepherdr? Its folder and code stay on disk.`; body = { type: "space-remove", place: sp.id }; said = `Removed ${sp.name}.`; break;
+      case "remove_space": ask = `Remove ${sp.name} from herdr-orchestrator? Its folder and code stay on disk.`; body = { type: "space-remove", place: sp.id }; said = `Removed ${sp.name}.`; break;
     }
   } else if (action === "setting") {
     const sp = id ? findSpace(snap, id, where) : null;

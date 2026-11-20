@@ -46,7 +46,7 @@ async function ask(task: string, a: Ask) {
     // the server says why it has nothing as { error } too: the view says those words, as the window's does
     got.set(k, r.ok && !b.error ? { data: b, loading: false } : { error: b.error ?? `It said ${r.status}.`, loading: false })
   } catch {
-    got.set(k, { ...(got.get(k) ?? {}), error: "Can't reach Shepherdr right now.", loading: false })
+    got.set(k, { ...(got.get(k) ?? {}), error: "Can't reach herdr-orchestrator right now.", loading: false })
   }
   changed()
 }

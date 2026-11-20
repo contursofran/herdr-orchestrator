@@ -1,7 +1,7 @@
 # Develop
 
 ```text
-layouts/shepherdr.json   the layout (two live blocks shipped blank: tasks-thread-term, artifacts-view-body)
+layouts/herdr-orchestrator.json   the layout (two live blocks shipped blank: tasks-thread-term, artifacts-view-body)
 mods/<name>/             the 28 mods, installed as they are (names fixed: data/<mod> state follows them)
 lib/                     shared modules, one source each; bin/sync-shared copies them into the mods in lib/COPIES
 lib/addons.json          the add-ons: mods, blocks, keys, helpers, needs, web plugins (docs/addons.md)
@@ -9,18 +9,18 @@ lib/features.json        every feature: its Herdr side, its web side and its sha
 core/                    the logic the mods and the service share (plain JS; copied into mods by bin/sync-shared)
 service/                 the always-on service (Bun): the web app's API, background work, tailnet sharing (docs/web.md)
 web/                     the web app (React, Vite, Tailwind; 2.1's design): src/, plugins/, shared/
-bin/shepherdr            the installer (install, update, uninstall, doctor); ./install.sh runs it
+bin/herdr-orchestrator   the installer (install, update, uninstall, doctor); ./install.sh runs it
 bin/                     herdr-secret, herdr-browser, herdr-browser-view, sync-shared (installed to the app's bin/)
 mods/tasks/bin/          herdr-task (entry) and its herdr_task package
-mods/tasks/bin/herdr_task/layout.py   where Shepherdr's data lives, and the move there from ~/.herdr (the one source)
+mods/tasks/bin/herdr_task/layout.py   where herdr-orchestrator's data lives, and the move there from ~/.herdr (the one source)
 core/paths.js, lib/dirs.js            the same paths for the service, the web app and the window's mods
 mods/artifacts/bin/      herdr-artifact
 templates/               assistant.md, worker.md, reviewer.md (herdr-core templates)
 guard/herdr-app          the window guard (--guard)
-keys.json                Shepherdr's keys, merged into the person's
+keys.json                herdr-orchestrator's keys, merged into the person's
 test/                    python tests: repo rules, the installer in throwaway roots, herdr-task
 scripts/parity.py        a scratch install against this machine's live Herdr home, file by file
-RECIPE.md, preview.png   the herdr.dev listing (repo topic herdr-layout)
+RECIPE.md, preview.png   the herdr.dev listing
 ```
 
 ## Rules
@@ -30,11 +30,11 @@ RECIPE.md, preview.png   the herdr.dev listing (repo topic herdr-layout)
   with `main.js`, and list it in `lib/COPIES` for each shared module it imports.
 - Nothing personal: no absolute home paths (use `home()`, `appHome()`, `$HOME`), no machine or account names, no
   live terminal or artifact ids in the layout. `test/test_repo.py` checks.
-- Version: `VERSION` in `bin/shepherdr`, the top of `CHANGELOG.md`, `RECIPE.md` and the README say the same.
+- Version: `VERSION` in `bin/herdr-orchestrator`, the top of `CHANGELOG.md`, `RECIPE.md` and the README say the same.
 
 ## Where data lives (SHEP-141)
 
-- Shepherdr's data is in its own folders ([Install](install.md), Where your data lives). Never write a `~/.herdr/...`
+- herdr-orchestrator's data is in its own folders ([Install](install.md), Where your data lives). Never write a `~/.herdr/...`
   path in new code: Python reads `layout.Where().path(kind)` (herdr-task: `base.WHERE`), the service `where()` from
   `service/paths.ts`, a mod `dirs()` from `lib/dirs.js`, a one-file helper (herdr-secret, herdr-artifact) its SHEP
   block (`bin/sync-shared` writes it from `layout.py`). A script run on another machine starts with `SH` (core/paths.js
@@ -43,7 +43,7 @@ RECIPE.md, preview.png   the herdr.dev listing (repo topic herdr-layout)
   then `bin/sync-shared`.
 - Tests never touch the real folders: herdr-task moves nothing when `HERDR_TASK_STORE`, `HERDR_TASK_SETTINGS` or
   `SHEPHERDR_NO_MIGRATE` is set; `test/test_layout.py` builds throwaway homes (`layout.migrate(home=..., env={})`).
-  `shepherdr --root <scratch>` ignores `SHEPHERDR_HOME` and `XDG_*`.
+  `herdr-orchestrator --root <scratch>` ignores `SHEPHERDR_HOME` and `XDG_*`.
 
 ## Checks
 
@@ -75,8 +75,6 @@ Never point `--root` at the real home for a try, and never start Herdr or herdr-
 
 ## The herdr.dev listing (at release, with the person's yes)
 
-- The repo root is the listed layout folder: `layouts/shepherdr.json`, `mods/`, `RECIPE.md`, `preview.png`,
+- The repo root is the listed layout folder: `layouts/herdr-orchestrator.json`, `mods/`, `RECIPE.md`, `preview.png`,
   `keys.json`. herdr.dev reads the recipe's title and first paragraph.
-- Repo topics: add `herdr-layout` (the listing), keep `herdr` and `shepherdr`, and drop `herdr-plugin` (the
-  terminal-plugin card; `herdr-plugin.toml` is gone from main, 2.1 stays installable from `v2.1`).
-- Tag `v3.0.0` and the GitHub release only after the person says yes; patch bumps after that.
+- Cut releases and tags only after the person says yes; patch bumps by default.

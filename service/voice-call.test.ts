@@ -8,7 +8,7 @@ import type { HearIO } from "./voice-hear.ts";
 
 const now = Date.now();
 const snap: any = {
-  host: "eliass-mac-mini", name: "Shepherdr", user: "You",
+  host: "eliass-mac-mini", name: "herdr-orchestrator", user: "You",
   machines: [{ id: "m:eliass-mac-mini", machine: "eliass-mac-mini", name: "This computer", status: "idle", here: true },
     { id: "m:mbp", machine: "eliass-macbook-pro", name: "MacBook Pro", status: "idle" }],
   places: [{ id: "h1", name: "Home", home: true, machine: "eliass-mac-mini", chat: "p:h1" },
@@ -248,9 +248,9 @@ test("SHEP-105: updates wait while the person talks, then come together; a send 
   const c = voiceCall({} as any, { io: { ...io, send: async (k) => { sent.push(k); } }, hear: hearIO, where: { client: "web", device: "phone", machine: "box" }, dial: async () => `ws://127.0.0.1:${server.port}/` }, p as any);
   await until(() => !!agent);
   await Bun.sleep(100);
-  // a sidebar call with no chat: the opening says it is with Shepherdr
+  // a sidebar call with no chat: the opening says it is with herdr-orchestrator
   const open = heard.findLast((m) => m.type === "conversation_initiation_client_data");
-  expect(open.conversation_config_override.agent.prompt.prompt).toContain("It is with Shepherdr, not one agent");
+  expect(open.conversation_config_override.agent.prompt.prompt).toContain("It is with herdr-orchestrator, not one agent");
   // send to Home: followed from now on
   const n = results.length;
   agent.send(JSON.stringify({ type: "client_tool_call", client_tool_call: { tool_name: "send", tool_call_id: "s1", parameters: { to: "home on this computer", text: "Check the build" } } }));

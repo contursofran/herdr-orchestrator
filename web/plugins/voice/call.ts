@@ -124,7 +124,7 @@ export function setLockScreen(c: Controls | null, isMuted = false) {
   if (!ms) return
   const set = (action: string, f: (() => void) | null) => { try { ms.setActionHandler(action as MediaSessionAction, f) } catch { /* not this browser's */ } }
   try {
-    ms.metadata = c && typeof MediaMetadata !== 'undefined' ? new MediaMetadata({ title: 'Voice call', artist: c.title, album: 'Shepherdr' }) : null
+    ms.metadata = c && typeof MediaMetadata !== 'undefined' ? new MediaMetadata({ title: 'Voice call', artist: c.title, album: 'herdr-orchestrator' }) : null
     ms.playbackState = c ? 'playing' : 'none'
   } catch { /* no metadata here */ }
   set('hangup', c ? c.hangUp : null)

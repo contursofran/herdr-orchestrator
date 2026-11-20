@@ -14,7 +14,7 @@ type Got = { hosts: Host[]; last: { at: number; hosts: (Host | null)[]; running?
 const call = (go: boolean): Promise<Got> =>
   fetch('api/machines/find', go ? { method: 'POST', headers: { 'x-shepherdr': '1' } } : undefined)
     .then((r) => r.json())
-    .catch(() => ({ hosts: [], last: null, wait_ms: 0, error: "Couldn't reach Shepherdr. Try again." }))
+    .catch(() => ({ hosts: [], last: null, wait_ms: 0, error: "Couldn't reach herdr-orchestrator. Try again." }))
 
 const mins = (ms: number) => Math.max(1, Math.ceil(ms / 60000))
 
@@ -45,7 +45,7 @@ export function FindMachines({ phone }: { phone: boolean }) {
       <div className={phone ? card : undefined}>
         <div className={clsx(rowLook(phone), 'flex-col items-stretch! gap-2 pb-3!')}>
           <Small className="text-pretty">
-            Shepherdr only contacts machines you linked. To find others, it can try to log in once to each host below, from
+            herdr-orchestrator only contacts machines you linked. To find others, it can try to log in once to each host below, from
             this computer&apos;s ssh config and Tailscale. It runs only when you press the button, at most every 10 minutes.
           </Small>
           {!got ? (

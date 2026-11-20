@@ -1,4 +1,4 @@
-# Working on Shepherdr
+# Working on herdr-orchestrator
 
 How to run, build and lay out the code: [docs/develop.md](docs/develop.md).
 
@@ -9,7 +9,7 @@ How to run, build and lay out the code: [docs/develop.md](docs/develop.md).
 - Shell checks: plain `bash -n` is the real one. Dash (`sh -n` here) misses bash-only parse errors that macOS's bash 3.2
   hits, so run `bash -n` on every script.
 - Installer tests run from `test/`: `cd test && python3 -m unittest test_install`. To run an older installer copy for a
-  before-check, export `SHEPHERDR_HANDED_OVER=1` (else it hands over to the source's `bin/shepherdr`), and use a full
+  before-check, export `SHEPHERDR_HANDED_OVER=1` (else it hands over to the source's `bin/herdr-orchestrator`), and use a full
   `git archive` of the tree, since `herdr_task` lives beside `bin/`.
 - herdr-browser's library check: `test/test_herdr_browser_libs.py` fakes ldd and agent-browser; a real missing-library
   Chrome needs gcc, linking a library built with `-Wl,-soname` and then deleted.
@@ -39,7 +39,7 @@ How to run, build and lay out the code: [docs/develop.md](docs/develop.md).
 
 - A fresh worktree: `bun install && bun web/build-plugins.ts` before `bunx tsc` or a build (else missing types and
   `web/generated`).
-- A branch's web app on the machine that serves it: build it (`bun run build`), then send `bin/shepherdr`'s
+- A branch's web app on the machine that serves it: build it (`bun run build`), then send `bin/herdr-orchestrator`'s
   `pack(<worktree>)` to `INSTALL_THERE` over `hc exec --on <machine> --stdin` (what `cmd_web_install_on` does from
   the installed copy). Browser pages can't use the local service on 127.0.0.1.
 - `herdr-browser screenshot` takes an absolute path (a relative one lands in the repo). Headless agent-browser has no
@@ -49,12 +49,12 @@ How to run, build and lay out the code: [docs/develop.md](docs/develop.md).
   before blaming the reader.
 - A branch's web app with live data, the installed one untouched: `vite preview` of its build behind
   `tailscale serve --set-path`, proxying `/api` (changeOrigin, origin header) to the serving machine's `/shepherdr`
-  (`shepherdr web status` says which). Put the Mac mini back on the release the same way from
+  (`herdr-orchestrator web status` says which). Put the Mac mini back on the release the same way from
   `~/.local/share/shepherdr`.
 - A test space's Assistant without the window: `hc run` it with the chat slot labels from the newest
   `data/backups/*/sidebar.json` (`coordinator.slots`), as `service/actions.ts` does; answer the folder-trust prompt
   with `hc keys <t> down enter`.
-- No Shepherdr service runs on the dev VM: to screenshot a web dialog, serve `web/dist` with a tiny Bun stub answering
+- No herdr-orchestrator service runs on the dev VM: to screenshot a web dialog, serve `web/dist` with a tiny Bun stub answering
   only the APIs it needs, never the full service: upgrade `/api/ws` and send
   `{type:'snapshot',snapshot:{places,machines,tasks,...}}`; 404 other `/api`. A later pushed `chat` event (setTimeout) makes
   replies arrive while scrolled up (the Latest pill's count). Run the stub in the background, or it dies with the shell call. Each

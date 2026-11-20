@@ -12,7 +12,7 @@ export type SourceArgs = { task?: string; place?: string; chat?: string; artifac
  *  (found from the look's id); rest: the path's rest is its own path (a file, a folder) instead of a drill into it.
  *  serves: the web app's reads it covers ("api:<path>" a GET, "action:<type>" a read action). */
 export const SOURCES: Record<string, { about: string; arg?: "task" | "task-or-space" | "space" | "chat" | "artifact" | "machine" | "role"; rest?: boolean; serves: string[] }> = {
-  insights: { about: "Usage insights: how the person has used Shepherdr (screens and time on them, actions, features, errors, asks), from this machine's private log (the add-on's own file; Settings shows its switch)", serves: ["log:usage.jsonl"] },
+  insights: { about: "Usage insights: how the person has used herdr-orchestrator (screens and time on them, actions, features, errors, asks), from this machine's private log (the add-on's own file; Settings shows its switch)", serves: ["log:usage.jsonl"] },
   evidence: { about: "a task's Accept card: commits, files, checks, proof", arg: "task", serves: ["action:evidence"] },
   changes: { about: "a task's or space's Changes: files changed, lines added and removed", arg: "task-or-space", serves: ["api:worktree"] },
   patch: { about: "one changed file's diff (path: the file)", arg: "task-or-space", rest: true, serves: ["api:worktree"] },
@@ -28,7 +28,7 @@ export const SOURCES: Record<string, { about: string; arg?: "task" | "task-or-sp
   worktree: { about: "a worktree space's state: uncommitted files, unpushed commits", arg: "space", serves: ["action:worktree"] },
   hosts: { about: "machines on the person's network that can be added", serves: ["action:machine-hosts"] },
   folders: { about: "a machine's folders, as New space browses them (path: the folder; id: the machine)", arg: "machine", rest: true, serves: ["api:folders", "api:newspace"] },
-  me: { about: "Shepherdr's version, who is signed in, the web app's link, add-ons off", serves: ["api:me"] },
+  me: { about: "herdr-orchestrator's version, who is signed in, the web app's link, add-ons off", serves: ["api:me"] },
 };
 
 /** The web app's reads that are not data to see, each with why (the guard test needs every one in SOURCES or here). */

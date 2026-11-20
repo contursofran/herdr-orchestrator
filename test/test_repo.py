@@ -41,7 +41,7 @@ class Repo(unittest.TestCase):
                 self.assertIn(n, ids, f"{a['id']} needs {n}")
 
     def test_layout_has_no_live_values(self):
-        text = open(J("layouts", "shepherdr.json")).read()
+        text = open(J("layouts", "herdr-orchestrator.json")).read()
         d = json.loads(text)
         self.assertNotRegex(text, r'"terminal":\s*"t\w+"')
         self.assertNotIn("art-", text)
@@ -61,7 +61,7 @@ class Repo(unittest.TestCase):
             for k in kids:
                 yield from walk(k)
 
-        d = json.load(open(J("layouts", "shepherdr.json")))
+        d = json.load(open(J("layouts", "herdr-orchestrator.json")))
         found = list(walk(d))
         self.assertTrue(found)
         for node, child in found:
@@ -71,7 +71,7 @@ class Repo(unittest.TestCase):
     def test_keys_name_our_layout_and_parse(self):
         keys = json.load(open(J("keys.json")))
         layouts = [c for c in keys if c.startswith("layout:")]
-        self.assertEqual(layouts, ["layout:shepherdr"])
+        self.assertEqual(layouts, ["layout:herdr-orchestrator"])
         for a in [self.addons["core"]] + self.addons["addons"]:
             for k in a.get("keys", []):
                 ctx, key = k.split(" ", 1)
@@ -330,8 +330,8 @@ class Repo(unittest.TestCase):
                 self.assertIn(f"src/screens/{n}", named, f"web/src/screens/{n} belongs to no feature")
 
     def test_version_everywhere(self):
-        v = re.search(r'^VERSION = "([^"]+)"', open(J("bin", "shepherdr")).read(), re.M).group(1)
-        self.assertEqual(v, "3.1.44")
+        v = re.search(r'^VERSION = "([^"]+)"', open(J("bin", "herdr-orchestrator")).read(), re.M).group(1)
+        self.assertEqual(v, "0.1.0")
         self.assertRegex(open(J("CHANGELOG.md")).read(), rf"(?m)^## {re.escape(v)}\b", "CHANGELOG's newest entry")
         self.assertIn(v, open(J("RECIPE.md")).read())
         self.assertIn(v, open(J("README.md")).read())

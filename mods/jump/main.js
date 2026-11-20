@@ -34,7 +34,7 @@ import { showInSidebar, hasSidebarView } from "./artifact-sidebar.js";
 import { TEXT, RADIUS } from "./ui.js";
 
 // Our layout with the Tasks panel, for a task picked where the shown one has none.
-const TASKS_LAYOUT = "shepherdr";
+const TASKS_LAYOUT = "herdr-orchestrator";
 
 const KINDS = ["space", "task", "artifact", "machine"];
 const GROUP = { space: "Spaces", task: "Tasks", artifact: "Artifacts", machine: "Machines" };

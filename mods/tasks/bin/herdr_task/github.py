@@ -200,7 +200,7 @@ def pr_body(s, task, summary=None):
         lines += ["", "## Details", "", task["details"].strip()]
     proof = (task.get("proof") or {}).get("title")
     if proof:
-        lines += ["", "## Proof", "", f"Shepherdr's proof artifact: {proof}"]
+        lines += ["", "## Proof", "", f"herdr-orchestrator's proof artifact: {proof}"]
     return "\n".join(lines)
 
 

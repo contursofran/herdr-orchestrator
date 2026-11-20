@@ -1886,8 +1886,8 @@ def web_link(aid):
     return f"{base}?artifact={urllib.parse.quote(aid, safe='')}" if base else None
 
 
-NO_LINK = ("No web link is known here yet: Shepherdr's web app isn't served, or the machine serving it hasn't "
-           "linked this one (`shepherdr web status` there says).")
+NO_LINK = ("No web link is known here yet: herdr-orchestrator's web app isn't served, or the machine serving it hasn't "
+           "linked this one (`herdr-orchestrator web status` there says).")
 
 
 def known(aid, machine):
@@ -1995,7 +1995,7 @@ def viewer_page():
     return next((os.path.realpath(p) for p in VIEWERS if os.path.isfile(p)), None)
 
 
-NO_VIEWER = ("The artifact viewer isn't on this machine yet: Shepherdr's next sync brings it (`herdr-task machines sync` "
+NO_VIEWER = ("The artifact viewer isn't on this machine yet: herdr-orchestrator's next sync brings it (`herdr-task machines sync` "
              "on the main machine), or build it in a checkout: `bun run build`.")
 
 
@@ -2258,14 +2258,14 @@ def cmd_guide(_o):
         with open(GUIDE) as f:
             sys.stdout.write(f.read())
     except FileNotFoundError:
-        raise Fail(f"The guide isn't installed here ({os.path.realpath(GUIDE)}). Update Shepherdr: `shepherdr update`.")
+        raise Fail(f"The guide isn't installed here ({os.path.realpath(GUIDE)}). Update herdr-orchestrator: `herdr-orchestrator update`.")
     return 0
 
 
 # ---- another machine ------------------------------------------------------------------------
 
-# Shepherdr's installer holds every copy of the helpers to other machines (this file, removed by
-# `shepherdr doctor` once the install is whole), as herdr-task's base.sync_held.
+# herdr-orchestrator's installer holds every copy of the helpers to other machines (this file, removed by
+# `herdr-orchestrator doctor` once the install is whole), as herdr-task's base.sync_held.
 # Its state folder's, or an older installer's in ~/.herdr: either holds.
 SYNC_HOLDS = (os.path.join(os.path.dirname(SHEP(".herdr/secret-drop")), "sync-hold"), os.path.join(HOME, ".herdr", "sync-hold"))
 
@@ -2275,7 +2275,7 @@ def sync_held():
     for p in SYNC_HOLDS:
         try:
             with open(p) as f:
-                return f.readline().strip() or "held by Shepherdr's installer"
+                return f.readline().strip() or "held by herdr-orchestrator's installer"
         except OSError:
             continue
     return None
@@ -2299,7 +2299,7 @@ def remote(machine, argv):
         held = sync_held()
         if held:
             raise Fail(f"herdr-artifact isn't current on {machine}, and copies to other machines wait: {held}. "
-                       "Run `shepherdr doctor` once the install is whole.")
+                       "Run `herdr-orchestrator doctor` once the install is whole.")
         r = subprocess.run(["hc", "file", "write", "--on", machine, target], input=body, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if r.returncode != 0:
             raise Fail(f"Couldn't install herdr-artifact on {machine}: {r.stderr.decode().strip()}")

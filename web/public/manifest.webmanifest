@@ -1,6 +1,6 @@
 {
-  "name": "Shepherdr",
-  "short_name": "Shepherdr",
+  "name": "herdr-orchestrator",
+  "short_name": "herdr-orchestrator",
   "description": "Your agents, tasks and chats from a phone, tablet or desktop.",
   "id": "./",
   "start_url": "./",

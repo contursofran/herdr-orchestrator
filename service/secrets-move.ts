@@ -33,7 +33,7 @@ const json = args.includes("--json"), restore = args.includes("--restore");
 const toIdArg = (() => { const i = args.indexOf("--to-id"); return i >= 0 ? args[i + 1] ?? "" : ""; })();
 const [cmd, target] = args.filter((a, i) => !a.startsWith("--") && args[i - 1] !== "--to-id");
 const say = (s: string) => { if (!json) console.log(s); };
-function fail(s: string): never { if (json) console.log(JSON.stringify({ ok: false, error: s })); else console.error(`shepherdr: ${s}`); process.exit(1); }
+function fail(s: string): never { if (json) console.log(JSON.stringify({ ok: false, error: s })); else console.error(`herdr-orchestrator: ${s}`); process.exit(1); }
 
 const HERDR = join(HOME, ".herdr");   // an older Shepherdr's backups are here
 const VAULT = where().vault, MARK = where()["secret-remote"], SECRETS = dirname(VAULT);
@@ -81,7 +81,7 @@ if (cmd === "where") {
   else say(amMain ? `This computer keeps the secrets${record?.auto ? " (following Serve from)" : ""}.` : record ? `${words(mainName)} keeps the secrets${record.auto ? " (following Serve from)" : ""}.` : "Another machine keeps the secrets (none is named yet: this one is marked remote).");
   process.exit(0);
 }
-if (cmd !== "move-to" || (!target && !toIdArg)) fail("usage: shepherdr secrets move-to <machine|here> [--restore] [--json] | shepherdr secrets where");
+if (cmd !== "move-to" || (!target && !toIdArg)) fail("usage: herdr-orchestrator secrets move-to <machine|here> [--restore] [--json] | herdr-orchestrator secrets where");
 
 const toId = toIdArg || (target === "here" || target === me.name ? me.id : links[target!]);
 if (!toId) fail(`${target} isn't a machine linked from here (hc machine ls).`);
@@ -97,9 +97,9 @@ function backups() {
   return [...new Set([...of(HERDR), ...of(SECRETS)])].sort((a, b) => a.slice(a.lastIndexOf("/")).localeCompare(b.slice(b.lastIndexOf("/"))));
 }
 if (restore) {
-  if (to !== null) fail("--restore puts this machine's own backup back: shepherdr secrets move-to here --restore.");
+  if (to !== null) fail("--restore puts this machine's own backup back: herdr-orchestrator secrets move-to here --restore.");
   if (amMain) fail("This computer keeps the secrets already.");
-  if (typeof mainName === "string" && connected.includes(mainName)) fail(`${mainName} keeps them and can be reached: move them back from there, with what was added since (shepherdr secrets move-to ${me.name} --json, or Settings › Secrets).`);
+  if (typeof mainName === "string" && connected.includes(mainName)) fail(`${mainName} keeps them and can be reached: move them back from there, with what was added since (herdr-orchestrator secrets move-to ${me.name} --json, or Settings › Secrets).`);
   const bp = backups().pop(), b = bp?.slice(bp.lastIndexOf("/") + 1);
   if (!existsSync(VAULT)) {
     if (!b) fail(`There's no backup of the secrets here (${SECRETS}/vault.json.moved-*).`);
@@ -119,11 +119,11 @@ if (restore) {
 // ---- not the machine that keeps them: it does the move --------------------------------------------------------------
 if (!amMain) {
   if (typeof mainName !== "string") fail(record ? "The machine that keeps the secrets isn't linked from here: move them from there." : "This machine is marked remote and no machine is named to keep the secrets: run this on the one that has them.");
-  if (!connected.includes(mainName)) fail(`${mainName} keeps the secrets and can't be reached now: it needs to be on (or, gone for good, \`shepherdr secrets move-to here --restore\` where a backup is).`);
-  const r = await exec(["sh", "-c", `${PATHS}exec shepherdr secrets move-to --to-id "$1" --json`, "sh", toId], mainName, undefined, 180);
+  if (!connected.includes(mainName)) fail(`${mainName} keeps the secrets and can't be reached now: it needs to be on (or, gone for good, \`herdr-orchestrator secrets move-to here --restore\` where a backup is).`);
+  const r = await exec(["sh", "-c", `${PATHS}exec herdr-orchestrator secrets move-to --to-id "$1" --json`, "sh", toId], mainName, undefined, 180);
   let out: any = null;
   try { out = JSON.parse(r.stdout.trim().split("\n").pop() ?? ""); } catch {}
-  if (!out) fail(`${mainName} didn't move them: ${(r.stderr.trim().split("\n").pop() ?? "").replace(/^shepherdr: /, "") || `exit ${r.code}`}`);
+  if (!out) fail(`${mainName} didn't move them: ${(r.stderr.trim().split("\n").pop() ?? "").replace(/^herdr-orchestrator: /, "") || `exit ${r.code}`}`);
   if (!out.ok) fail(out.error);
   if (json) console.log(JSON.stringify({ ...out, to }));
   else say(`${to ? to : "This computer"} keeps the secrets now (moved by ${mainName}).`);
@@ -154,7 +154,7 @@ if (!connected.includes(to)) fail(`${to} is offline: it needs to be on to take t
 const w = await exec(["sh", "-c", `${PATHS}herdr-secret where --json`], to);
 let whereThere: any = null;
 try { whereThere = JSON.parse(w.stdout.trim().split("\n").pop() ?? ""); } catch {}
-if (w.code !== 0 || !whereThere || typeof whereThere.here !== "boolean") fail(`herdr-secret on ${to} doesn't know where secrets are kept yet: update Shepherdr there first (shepherdr update, or the release).`);
+if (w.code !== 0 || !whereThere || typeof whereThere.here !== "boolean") fail(`herdr-secret on ${to} doesn't know where secrets are kept yet: update herdr-orchestrator there first (herdr-orchestrator update, or the release).`);
 const ml = await exec(["sh", "-c", `${PATHS}hc machine ls --json`], to);
 let theirs: Record<string, string> = {};
 try { theirs = Object.fromEntries((JSON.parse(ml.stdout).machines ?? []).filter((m: any) => m.id && !m.temporary).map((m: any) => [m.name, m.id])); }
@@ -229,7 +229,7 @@ if (existsSync(VAULT)) { renameSync(VAULT, join(SECRETS, aside)); chmodSync(join
 writeFileSync(MARK, "");
 if (json) console.log(JSON.stringify({ ok: true, to, moved: moved.length, keptThere: keptThere.length, unnamed, backupHere: existsSync(join(SECRETS, aside)) ? aside : null, backupThere: backup }));
 else {
-  say(`${to} keeps the secrets now. This computer's copy is ${join(SECRETS, aside)} (to roll back: shepherdr secrets move-to ${me.name}, from anywhere).`);
+  say(`${to} keeps the secrets now. This computer's copy is ${join(SECRETS, aside)} (to roll back: herdr-orchestrator secrets move-to ${me.name}, from anywhere).`);
   if (unnamed.length) say(`${to} doesn't link what these were kept for, so they keep this machine's names: ${unnamed.join(", ")}.`);
 }
 c.close();
