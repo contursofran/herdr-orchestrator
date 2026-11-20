@@ -1,5 +1,5 @@
 """Tasks' browsers (HERD-57): each task has one agent-browser session, driven through herdr-browser
-(~/.config/herdr-app/bin), on the machine where the task runs. Its files are in ~/.local/state/shepherdr/browser:
+(~/.config/herdr-app/bin), on the machine where the task runs. Its files are in ~/.local/state/herdr-orchestrator/browser:
 the profile folder <name> (sign-ins), <name>.task (its herdr.task key), <name>.used (the agent's or
 the person's last use), <name>.you (the person drives it), <name>.view (the panel's live viewer,
 bin/herdr-browser-view, is wanted: it ends by itself once this goes stale). A tick (browser_pass) closes:

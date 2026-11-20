@@ -38,12 +38,12 @@ RECIPE.md, preview.png   the herdr.dev listing
   path in new code: Python reads `layout.Where().path(kind)` (herdr-task: `base.WHERE`), the service `where()` from
   `service/paths.ts`, a mod `dirs()` from `lib/dirs.js`, a one-file helper (herdr-secret, herdr-artifact) its SHEP
   block (`bin/sync-shared` writes it from `layout.py`). A script run on another machine starts with `SH` (core/paths.js
-  or layout.py) and uses `$SHEP_TASKS`, `$SHEP_SETTINGS`, ...: right on a machine moved or not yet.
+  or layout.py) and uses `$ORCH_TASKS`, `$ORCH_SETTINGS`, ...: right on a machine moved or not yet.
 - A new kind of data: add it to `KINDS` in `layout.py` and `core/paths.js` (test/test_layout.py checks they agree),
   then `bin/sync-shared`.
 - Tests never touch the real folders: herdr-task moves nothing when `HERDR_TASK_STORE`, `HERDR_TASK_SETTINGS` or
-  `SHEPHERDR_NO_MIGRATE` is set; `test/test_layout.py` builds throwaway homes (`layout.migrate(home=..., env={})`).
-  `herdr-orchestrator --root <scratch>` ignores `SHEPHERDR_HOME` and `XDG_*`.
+  `HERDR_ORCH_NO_MIGRATE` is set; `test/test_layout.py` builds throwaway homes (`layout.migrate(home=..., env={})`).
+  `herdr-orchestrator --root <scratch>` ignores `HERDR_ORCH_HOME` and `XDG_*`.
 
 ## Checks
 
@@ -56,7 +56,7 @@ for f in $(find mods lib core -name '*.js'); do node --input-type=module --check
 bun test service core web && bunx tsc --noEmit -p . && (cd web && bunx vite build)   # the service and the web app
 ```
 
-The web app against your live data: `bun service/main.ts` (stop the installed service first: it holds port 7788),
+The web app against your live data: `bun service/main.ts` (stop the installed service first: it holds port 7789),
 then open the tailnet link. Never on a changed `HOME` or `HERDR_APP_HOME`.
 
 GitHub runs these and more on every pull request (`.github/workflows/check.yml`). `herdr-app check <mod folder>`

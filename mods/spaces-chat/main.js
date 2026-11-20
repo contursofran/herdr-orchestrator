@@ -98,7 +98,7 @@ function nameText(text, fresh, color, t) {
 }
 
 // A machine's Autopilot file (herdr-task's .autopilot.json there), read over herdr-core.
-const READ_PILOTS = SH + 'cat "$SHEP_TASKS/.autopilot.json" 2>/dev/null || true';
+const READ_PILOTS = SH + 'cat "$ORCH_TASKS/.autopilot.json" 2>/dev/null || true';
 
 // The spaces on Autopilot in a machine's file -> [[key, "on" | "waking"]] ("waking" while a wake runs or waits for its
 // Assistant): this computer's by space id, a linked machine's as "<machine>/<its id there>".
@@ -142,7 +142,7 @@ export default class Spaces extends View {
     this.machinesRead = false; // hc machine ls answered once: a machine missing from it is offline
     this.refreshMachines(cx);
     cx.timer.every(15000, cx => this.refreshMachines(cx));
-    // Each space on Autopilot, this computer's and linked machines' (herdr-task's ~/.local/share/shepherdr/tasks/.autopilot.json): "on", or "waking"
+    // Each space on Autopilot, this computer's and linked machines' (herdr-task's ~/.local/share/herdr-orchestrator/tasks/.autopilot.json): "on", or "waking"
     // while a wake runs or waits for its Assistant; its row shows a mark (row()). Read every 5 s.
     this.pilots = new Map();
     this.readPilots(cx);

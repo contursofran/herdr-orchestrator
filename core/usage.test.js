@@ -27,7 +27,7 @@ test("lines: one JSON object per line; a time from the future is now", () => {
 });
 
 test("the window's append: creates the folder, appends, and turns a full log into the one old file", () => {
-  const d = join(mkdtempSync(join(tmpdir(), "usage-")), "shepherdr");
+  const d = join(mkdtempSync(join(tmpdir(), "usage-")), "herdr-orchestrator");
   const run = (text, cap = CAP) => Bun.spawnSync(["sh", "-c", APPEND, "usage", d, text, String(cap)]);
   run('{"a":1}\n');
   run('{"a":2}\n');
@@ -43,7 +43,7 @@ test("the window's append: creates the folder, appends, and turns a full log int
 
 test("Delete on a machine: both files go, and its moment is marked for late batches", () => {
   const home = mkdtempSync(join(tmpdir(), "usage-home-"));
-  const d = join(home, ".herdr", "shepherdr");
+  const d = join(home, ".herdr", "herdr-orchestrator");
   Bun.spawnSync(["sh", "-c", APPEND, "usage", d, '{"a":1}\n', String(CAP)]);
   writeFileSync(join(d, "usage.1.jsonl"), "old\n");
   // a throwaway HOME for this shell line only

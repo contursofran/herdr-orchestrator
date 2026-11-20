@@ -1,5 +1,5 @@
 // Settings in step with the machine that serves the web app (Serve from, core/host.js). The host holds the truth:
-// the settings file (~/.config/shepherdr/settings.json) and the role instructions (~/.config/herdr-core/templates/*.md). This machine's window and
+// the settings file (~/.config/herdr-orchestrator/settings.json) and the role instructions (~/.config/herdr-core/templates/*.md). This machine's window and
 // herdr-task go on reading and writing their own copies here, so every 5 s, while the host can be reached, this
 // service merges the two: each side's own changes since they were last the same go to the other (the host's when both
 // changed one). The file is moved between the two machines' names (core/host.js relocateSettings); what they were
@@ -13,7 +13,7 @@ import * as HC from "../core/host.js";
 import { SH } from "../core/paths.js";
 
 const { relocateSettings, merge3 } = HC as any;
-const REL = ".herdr/shepherdr.json";   // the settings file: its old place, as a name (read and written through SH)
+const REL = ".herdr/herdr-orchestrator.json";   // the settings file: its old place, as a name (read and written through SH)
 const TEMPLATES = ["assistant.md", "worker.md", "reviewer.md"];
 const TPL_REL = ".config/herdr-core/templates";
 const BASE = join(DATA, "host-base.json");
@@ -45,7 +45,7 @@ export class Sync {
   private async read(on: string, rel: string): Promise<string | null> {
     if (rel === REL) {
       // the settings file wherever the host keeps it (its Shepherdr folders, or ~/.herdr on an older one)
-      const r = await this.hub.call<{ code: number; stdout: string; stderr: string }>("machine.exec", { on, argv: ["sh", "-c", SH + '[ -e "$SHEP_SETTINGS" ] || exit 3; cat "$SHEP_SETTINGS"'], timeout: 20 }, 25_000);
+      const r = await this.hub.call<{ code: number; stdout: string; stderr: string }>("machine.exec", { on, argv: ["sh", "-c", SH + '[ -e "$ORCH_SETTINGS" ] || exit 3; cat "$ORCH_SETTINGS"'], timeout: 20 }, 25_000);
       if (r.code === 3) return null;
       if (r.code !== 0) throw new Error("couldn't read the settings there");
       return Buffer.from(r.stdout ?? "", "base64").toString("utf8");
@@ -58,7 +58,7 @@ export class Sync {
   private async write(on: string, rel: string, text: string) {
     // a test never writes another machine's settings or templates
     if (underTest()) throw new Error("A test may not write another machine's files.");
-    const to = rel === REL ? SH + 'f="$SHEP_SETTINGS"; ' : 'f="$1"; ';
+    const to = rel === REL ? SH + 'f="$ORCH_SETTINGS"; ' : 'f="$1"; ';
     const r = await this.hub.call<{ code: number }>("machine.exec", { on, argv: ["sh", "-c", to + 'mkdir -p "$(dirname "$f")" && umask 077 && cat > "$f.host-tmp" && mv "$f.host-tmp" "$f"', "sh", rel],
       input: Buffer.from(text).toString("base64"), timeout: 20 }, 25_000);
     if (r.code !== 0) throw new Error(`couldn't write ${rel} there`);

@@ -1,8 +1,8 @@
 // Where Shepherdr keeps its data (core/paths.js; the move: mods/tasks/bin/herdr_task/layout.py): its own folders,
-// ~/.local/state/shepherdr/service for the service's own files, ~/.local/share/shepherdr/tasks for herdr-task's lists,
-// ~/.config/shepherdr/settings.json, ... once this machine's data moved there, else the old ~/.herdr paths (which
+// ~/.local/state/herdr-orchestrator/service for the service's own files, ~/.local/share/herdr-orchestrator/tasks for herdr-task's lists,
+// ~/.config/herdr-orchestrator/settings.json, ... once this machine's data moved there, else the old ~/.herdr paths (which
 // then link to the new ones). The installer moves the data before it starts the service, so its paths are read once.
-// SHEPHERDR_DATA moves only the service's files (tests); it never changes HOME, so herdr-core and herdr-task stay the real ones.
+// HERDR_ORCH_DATA moves only the service's files (tests); it never changes HOME, so herdr-core and herdr-task stay the real ones.
 import { homedir } from "node:os";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { mkdirSync, chmodSync, lstatSync, readlinkSync, realpathSync, readFileSync, existsSync } from "node:fs";
@@ -18,11 +18,11 @@ export function where(home = HOME, env: Record<string, string | undefined> = pro
   try { layout = readFileSync(join(r.data, "LAYOUT"), "utf8"); } catch {}
   return P.pathsFrom(home, r, P.isMigrated(layout, existsSync(join(home, P.LEGACY, P.ROLLBACK))));
 }
-export const DATA = process.env.SHEPHERDR_DATA || where().service;
+export const DATA = process.env.HERDR_ORCH_DATA || where().service;
 // The one-copy lock: a second service finds it answering. A socket's path must stay under 104 bytes (macOS; Linux 108):
 // with a long home the state folder's is too long, so the first short one of: the state folder, $XDG_RUNTIME_DIR (the
-// user's own, made by the system), the old ~/.herdr/shepherdr when it is still a link to the same folder, then
-// /tmp/shepherdr-<uid> only when it is this user's own folder (not a link, not someone else's).
+// user's own, made by the system), the old ~/.herdr/herdr-orchestrator when it is still a link to the same folder, then
+// /tmp/herdr-orch-<uid> only when it is this user's own folder (not a link, not someone else's).
 const short = (p: string) => Buffer.byteLength(p) < 100;
 function mine(dir: string, uid: number): boolean {
   try { const st = lstatSync(dir); return st.isDirectory() && !st.isSymbolicLink() && st.uid === uid && (st.mode & 0o077) === 0; }
@@ -31,29 +31,30 @@ function mine(dir: string, uid: number): boolean {
 export function sockPath(data: string, uid = process.getuid?.() ?? 0, env: Record<string, string | undefined> = process.env, home = HOME): string {
   const own = join(data, "service.sock");
   if (short(own)) return own;
-  const run = env.XDG_RUNTIME_DIR?.startsWith("/") ? join(env.XDG_RUNTIME_DIR, "shepherdr-service.sock") : null;
+  const run = env.XDG_RUNTIME_DIR?.startsWith("/") ? join(env.XDG_RUNTIME_DIR, "herdr-orch-service.sock") : null;
   if (run && short(run)) return run;
-  const old = join(home, ".herdr", "shepherdr");
+  const old = join(home, ".herdr", "herdr-orchestrator");
   try { if (short(join(old, "service.sock")) && realpathSync(old) === realpathSync(data)) return join(old, "service.sock"); } catch {}
-  const tmp = join("/tmp", `shepherdr-${uid}`);
+  const tmp = join("/tmp", `herdr-orch-${uid}`);
   return mine(tmp, uid) ? join(tmp, "service.sock") : own;   // none: the long one, and the bind says why
 }
 export const SOCK = sockPath(DATA);
 export const TOKEN = join(DATA, "token");         // local callers (the Herdr window, the CLI) show this
 export const LOG = join(DATA, "service.log");
-export const PORT = Number(process.env.SHEPHERDR_PORT || 7788);
-export const MOUNT = "/shepherdr";                // tailscale serve --set-path; never funnel
+export const PORT = Number(process.env.HERDR_ORCH_PORT || 7789);
+export const MOUNT = "/herdr-orchestrator";      // tailscale serve --set-path; never funnel
+export const servicePath = (path: string) => path.startsWith(`${MOUNT}/`) ? path.slice(MOUNT.length) : path;
 
-// The settings file, ~/.config/shepherdr/settings.json (HERDR_TASK_SETTINGS: a test's own). Read at each use, so a
+// The settings file, ~/.config/herdr-orchestrator/settings.json (HERDR_TASK_SETTINGS: a test's own). Read at each use, so a
 // test's own file holds whichever module loaded first.
 const realSettings = () => where().settings;
 export const settingsFile = () => process.env.HERDR_TASK_SETTINGS || realSettings();
-/** Running under bun test (test/preload.ts sets SHEPHERDR_TEST; bun sets NODE_ENV=test). */
-export const underTest = () => !!process.env.SHEPHERDR_TEST || process.env.NODE_ENV === "test";
+/** Running under bun test (test/preload.ts sets HERDR_ORCH_TEST; bun sets NODE_ENV=test). */
+export const underTest = () => !!process.env.HERDR_ORCH_TEST || process.env.NODE_ENV === "test";
 /** The settings file to write: a test is refused the real one, so it can never change the person's settings (nor have
  *  the window and herdr-task send them on to their Assistants and other machines). */
 export function writableSettings(path = settingsFile()): string {
-  if (underTest() && [realSettings(), join(HOME, ".herdr", "shepherdr.json"), paths_new().settings].some((p) => landing(path) === landing(p)))
+  if (underTest() && [realSettings(), join(HOME, ".herdr", "herdr-orchestrator.json"), paths_new().settings].some((p) => landing(path) === landing(p)))
     throw new Error("A test may not write the real settings file.");
   return path;
 }
@@ -81,8 +82,8 @@ function landing(path: string, hops = 0): string {
   }
 }
 const inside = (path: string, dir: string) => {
-  const r = relative(landing(dir), landing(path));
-  return r === "" || (!r.startsWith("..") && !isAbsolute(r));
+  const contained = (r: string) => r !== ".." && !r.startsWith("../") && !isAbsolute(r);
+  return contained(relative(dir, path)) || contained(relative(landing(dir), landing(path)));
 };
 
 // The new layout's paths whether or not this machine moved yet: a test may write neither.

@@ -8,7 +8,7 @@
 
 // Where each machine's herdr-task keeps its reach map (refreshed by its scheduler every 5 minutes).
 import { SH } from "./paths.js";
-export const REACH_FILE = SH + 'cat "${HERDR_TASK_STORE:-$SHEP_TASKS}/.reach.json" 2>/dev/null';
+export const REACH_FILE = SH + 'cat "${HERDR_TASK_STORE:-$ORCH_TASKS}/.reach.json" 2>/dev/null';
 
 // Every machine in a reach map once, nearest first, with the route that reaches it from the map's start (as
 // herdr_task/machines.py nodes(): herdr-core links before ssh).

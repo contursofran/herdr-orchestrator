@@ -1,9 +1,10 @@
 // Who may use the service. Two ways in, nothing else:
 // - through tailscale serve: Tailscale's login header must be the machine owner's, on the machine's own name, on a
 //   connection tailscaled (or the owner) opened (peer.ts: another user here can't just send the header);
-// - on this machine (the Herdr window, the CLI): the token in ~/.local/state/shepherdr/service/token, on 127.0.0.1.
+// - on this machine (the Herdr window, the CLI): the token in ~/.local/state/herdr-orchestrator/service/token, on 127.0.0.1.
 // Writes and sockets also need the page's own origin, and writes a header no plain form or link can send.
 // The service listens on 127.0.0.1 only, so the tailnet reaches it through tailscale serve alone.
+import { servicePath } from "./paths.ts";
 
 // httpsPort: the tailnet HTTPS port the web app is shared on (none: 443); the page's host and origin carry it when it
 // isn't 443, and only that port gets in.
@@ -19,12 +20,12 @@ function pageLink(req: Request, socket: boolean) {
   const h = req.headers;
   if (socket || req.method !== "GET") return false;
   if (h.get("sec-fetch-mode") !== "navigate" || h.get("sec-fetch-dest") !== "document") return false;
-  const path = new URL(req.url).pathname.replace(/^\/shepherdr(?=\/)/, "");
+  const path = servicePath(new URL(req.url).pathname);
   return !/^\/api(\/|$)/.test(path);
 }
 
 // asWrite: a GET checked as a write (the glance feed, SHEP-246: its stream with native=1 quiets that device's web push):
-// the origin and x-shepherdr: 1
+// the origin and x-herdr-orch: 1
 export function gate(req: Request, g: Gate, socket = false, peerTrusted = false, asWrite = false): Pass {
   const h = req.headers;
   const host = (h.get("host") ?? "").toLowerCase();
@@ -42,7 +43,7 @@ export function gate(req: Request, g: Gate, socket = false, peerTrusted = false,
     if (write) {
       const origin = h.get("origin");
       if (origin !== (hp === 443 ? `https://${g.dns}` : `https://${g.dns}:${hp}`)) return { ok: false, status: 403, why: "wrong origin" };
-      if (!socket && h.get("x-shepherdr") !== "1") return { ok: false, status: 403, why: "missing x-shepherdr" };
+      if (!socket && h.get("x-herdr-orch") !== "1") return { ok: false, status: 403, why: "missing x-herdr-orch" };
     }
     return { ok: true, who: login, via: "tailnet" };
   }

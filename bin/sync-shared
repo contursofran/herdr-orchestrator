@@ -67,7 +67,7 @@ def write(path, data):
     os.replace(tmp, path)
 
 
-SHEP_BLOCKS = ["bin/herdr-secret", "mods/artifacts/bin/herdr-artifact"]
+ORCH_BLOCKS = ["bin/herdr-secret", "mods/artifacts/bin/herdr-artifact"]
 
 
 def shep_blocks(check):
@@ -81,7 +81,7 @@ def shep_blocks(check):
     except (OSError, ImportError, SyntaxError) as e:
         return [f"mods/tasks/bin/herdr_task/layout.py: {e}"], []
     bad, made = [], []
-    for rel in SHEP_BLOCKS:
+    for rel in ORCH_BLOCKS:
         path = os.path.join(HOME, rel)
         text = (read(path) or b"").decode()
         if not text:

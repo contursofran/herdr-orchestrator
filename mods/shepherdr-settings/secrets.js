@@ -1,5 +1,5 @@
 // Secrets for agents (bin/herdr-secret): the vault on the machine that keeps them (Settings ›
-// Secrets › Kept on, `herdr-secret where`), ~/.local/share/shepherdr/secrets/vault.json there (owner-only), values by name
+// Secrets › Kept on, `herdr-secret where`), ~/.local/share/herdr-orchestrator/secrets/vault.json there (owner-only), values by name
 // for Everywhere, a machine or a space, the most specific winning. On another machine every read
 // and write goes there through herdr-secret (names, set, rm: it passes them on over hc). The
 // person's masked boxes (an agent's ask card in its chat, Settings > Secrets) write it here

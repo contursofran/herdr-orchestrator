@@ -1,5 +1,5 @@
 // Shepherdr's shared data (pins, sidebar sections and icons, Notify, switches, artifact answers): one herdr-core
-// document, "shepherdr", on the machine that serves the web app (Serve from: service/host.ts). Here when this machine
+// document, "herdr-orchestrator", on the machine that serves the web app (Serve from: service/host.ts). Here when this machine
 // serves; else the host's, read and written through herdr-core's link and moved between the two machines' names
 // (core/host.js), so everything above this sees it in this machine's words. Writes are versioned, so two writers never
 // undo each other: a write that lost the race reads the new version and applies its change again. Every write is a
@@ -10,7 +10,7 @@ import * as HC from "../core/host.js";
 
 const { relocate, relocateDoc, keepForeign } = HC as any;
 
-export const DOC = "shepherdr";
+export const DOC = "herdr-orchestrator";
 export type Doc = { version: number; value: Record<string, unknown> };
 
 export class Store {

@@ -99,6 +99,7 @@ test("order, words and keys", () => {
   expect(ago(NOW, true, NOW)).toBe("just now");
   expect(autoPrefix("/x/herdr-app-ttt")).toBe("HAT");
   expect(autoPrefix("/x/shepherdr")).toBe("SHEP");
+  expect(autoPrefix("/x/herdr-orchestrator")).toBe("HO");
   expect(refOf({ prefix: "SHEP" }, { id: 7 })).toBe("SHEP-7");
   expect(taskKey({ machine: null, folder: "/f" }, { id: 7 })).toBe(":/f#7");
   expect(matches("ship web", "SHEP-7", "Ship the Web client")).toBe(true);

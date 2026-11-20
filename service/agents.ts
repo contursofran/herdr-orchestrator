@@ -133,7 +133,7 @@ export class Agents {
 
   /** whether another machine answers now (hc machine ls: connected) */
   private async reachable(machine: string) {
-    const r = await run([process.env.SHEPHERDR_HC || "hc", "machine", "ls", "--json"]).catch(() => null);
+    const r = await run([process.env.HERDR_ORCH_HC || "hc", "machine", "ls", "--json"]).catch(() => null);
     try { return (JSON.parse(r?.out ?? "{}").machines ?? []).some((m: any) => m.name === machine.split("/")[0] && m.state === "connected"); } catch { return true; }
   }
 
@@ -200,7 +200,7 @@ export class Agents {
     const state = t.status?.state;
     if (state === "working") throw new Error("It's busy with a turn. Switch once it's done, or stop it first.");
     if (state === "blocked") throw new Error("It's waiting on a question. Answer it, then switch.");
-    const hc = (args: string[]) => run([process.env.SHEPHERDR_HC || "hc", ...args]);
+    const hc = (args: string[]) => run([process.env.HERDR_ORCH_HC || "hc", ...args]);
     // a send returns once a turn starts or ~5 s pass, and a command starts none: its answer on screen is what counts,
     // so each is waited for only as long as a refusal takes (it comes at once), not for the rest
     const io = {
@@ -242,7 +242,7 @@ export class Agents {
       let out: any = {};
       try { out = JSON.parse(r.out || "{}"); } catch {}
       if (r.code !== 0 || !out.terminal) throw new Error((r.err || r.out).trim() || "herdr-task switch failed");
-      if (pane) await run([process.env.SHEPHERDR_HC || "hc", "label", out.terminal, `herdr.chat=${chatLabel(pane)}`, `herdr.chat.origin=${t.labels?.["herdr.chat.origin"] || addr}`]);
+      if (pane) await run([process.env.HERDR_ORCH_HC || "hc", "label", out.terminal, `herdr.chat=${chatLabel(pane)}`, `herdr.chat.origin=${t.labels?.["herdr.chat.origin"] || addr}`]);
       await run(["herdr-app", "do", "terminal.park", "--terminal", out.terminal]);
       this.used(pick);
       return out.terminal as string;

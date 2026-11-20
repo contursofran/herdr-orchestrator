@@ -134,7 +134,7 @@ export class Model {
   }
 
   private autopilot: Record<string, any> = {};
-  /** Each other machine's Autopilot file (its ~/.local/share/shepherdr/tasks/.autopilot.json, read with its lists): its spaces' switches
+  /** Each other machine's Autopilot file (its ~/.local/share/herdr-orchestrator/tasks/.autopilot.json, read with its lists): its spaces' switches
    *  and wakes, kept and woken there. */
   private pilots = new Map<string, any>();
   /** Shepherdr settings as this machine has them (each space's own Autopilot, another machine's by "vm/sp1"). */

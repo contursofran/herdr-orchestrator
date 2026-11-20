@@ -70,11 +70,11 @@ self.addEventListener('push', (e) => {
   )
 })
 
-/** one of the app's actions, as its pages send them (the same gate: this origin, x-shepherdr): { ok } or { error } */
+/** one of the app's actions, as its pages send them (the same gate: this origin, x-herdr-orch): { ok } or { error } */
 const act = (body) =>
   fetch(new URL('api/action', self.registration.scope), {
     method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-shepherdr': '1' },
+    headers: { 'content-type': 'application/json', 'x-herdr-orch': '1' },
     body: JSON.stringify(body),
   })
     .then(async (r) => {

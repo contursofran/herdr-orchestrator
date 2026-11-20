@@ -480,7 +480,7 @@ class TestsOnAThrowawayHome(unittest.TestCase):
                 self.assertTrue(isinstance(first, ast.Import) and first.names[0].name == "home_guard",
                                 f"test/{f}: `import home_guard` must be its first statement")
         preload = open(J("test", "preload.ts")).read()
-        self.assertIn("SHEPHERDR_HC", preload)
+        self.assertIn("HERDR_ORCH_HC", preload)
         self.assertIn("HC_TERMINAL_SOCKET", preload)
 
     def test_the_run_is_on_a_throwaway_home(self):

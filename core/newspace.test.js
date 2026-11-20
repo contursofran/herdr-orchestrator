@@ -44,7 +44,7 @@ test("the field's list follows the typed path, as a shell completes one", () => 
   const home = "/h/me";
   expect(N.typedDir("~/dev/", home)).toEqual({ dir: "/h/me/dev", word: "" });
   expect(N.typedDir("~/dev/sh", home)).toEqual({ dir: "/h/me/dev", word: "sh" });
-  expect(N.typedDir("~/dev/shepherdr/", home)).toEqual({ dir: "/h/me/dev/shepherdr", word: "" });
+  expect(N.typedDir("~/dev/herdr-orchestrator/", home)).toEqual({ dir: "/h/me/dev/herdr-orchestrator", word: "" });
   expect(N.typedDir("~/", home)).toEqual({ dir: home, word: "" });
   expect(N.typedDir("~/de", home)).toEqual({ dir: home, word: "de" });
   expect(N.typedDir("/", home)).toEqual({ dir: "/", word: "" });

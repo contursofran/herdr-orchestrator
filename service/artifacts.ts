@@ -3,7 +3,7 @@
 // on the web (web/src/screens/Recipe.tsx); an older GPUI-only one says to open it in the window. A note or an answer
 // from the web goes to the agent that keeps it with herdr-artifact note, as the window's Mark up sends it.
 // Another machine's artifacts are read there as the window's chat and Jump read them (every registry in its
-// ~/.local/share/shepherdr/artifacts, through herdr-core's machine.exec), each marked with its machine; their files come from there
+// ~/.local/share/herdr-orchestrator/artifacts, through herdr-core's machine.exec), each marked with its machine; their files come from there
 // too, and a note to one goes through `herdr-artifact --on <machine>`, as the window's Artifacts panel reaches it.
 import { existsSync, watch, readFileSync, statSync } from "node:fs";
 import { join, extname, normalize } from "node:path";
@@ -13,7 +13,7 @@ import type { Hub } from "./hub.ts";
 import { served } from "./media.ts";
 
 // Every registry on a machine, each followed by a record separator (mods/jump, mods/chat read them the same way).
-const READ_ARTS = SH + 'cd "$SHEP_ARTIFACTS" 2>/dev/null || exit 0; for f in *.json .*.json; do [ -f "$f" ] && cat "$f" && printf "\\n\\036\\n"; done; true';
+const READ_ARTS = SH + 'cd "$ORCH_ARTIFACTS" 2>/dev/null || exit 0; for f in *.json .*.json; do [ -f "$f" ] && cat "$f" && printf "\\n\\036\\n"; done; true';
 const MACHINE = /^[\w.-]{1,64}$/;
 
 const STORE = where().artifacts;
@@ -113,7 +113,7 @@ export class Artifacts {
     const headers = { "content-security-policy": SHOWN, "x-content-type-options": "nosniff", "cache-control": "private, max-age=3600" };
     if (machine) {
       // there: the same path under its own artifacts/files (new or old layout), read only if it is a file
-      const r = await this.exec(machine, ["sh", "-c", SH + 'f="$SHEP_ARTIFACTS/files/$1/v$2/$3"; [ -f "$f" ] && exec cat -- "$f"; exit 1', "file", id, String(v), rel]).catch(() => null);
+      const r = await this.exec(machine, ["sh", "-c", SH + 'f="$ORCH_ARTIFACTS/files/$1/v$2/$3"; [ -f "$f" ] && exec cat -- "$f"; exit 1', "file", id, String(v), rel]).catch(() => null);
       if (!r || r.code !== 0) return new Response("no such file", { status: 404, headers: { "cache-control": "no-store" } });
       return served(new Blob([r.out]), type, range, headers);
     }

@@ -73,7 +73,7 @@ export class Host {
       remotes: this.remotes().map((n) => links[n]).filter(Boolean), at: Date.now() };
   }
 
-  /** The machines this one's herdr-task has run tasks on (~/.local/share/shepherdr/tasks/.remote/<name>). */
+  /** The machines this one's herdr-task has run tasks on (~/.local/share/herdr-orchestrator/tasks/.remote/<name>). */
   remotes(): string[] {
     try { return readdirSync(join(where().tasks, ".remote")).filter((x) => /^[\w.-]+$/.test(x) && !x.endsWith(".secret")); } catch { return []; }
   }

@@ -17,9 +17,9 @@ import { argvFor, NAMES } from "../core/agents.js";
 export const withWindow = () => existsSync(join(process.env.HERDR_APP_HOME || join(HOME, ".config", "herdr-app"), "mods", "spaces-chat"));
 
 async function run(cmd: string[]) {
-  // the window's herdr-app: SHEPHERDR_HERDR_APP in tests (as service/actions.ts)
-  if (cmd[0] === "herdr-app" && process.env.SHEPHERDR_HERDR_APP) cmd = [process.env.SHEPHERDR_HERDR_APP, ...cmd.slice(1)];
-  if (cmd[0] === "hc" && process.env.SHEPHERDR_HC) cmd = [process.env.SHEPHERDR_HC, ...cmd.slice(1)];
+  // the window's herdr-app: HERDR_ORCH_HERDR_APP in tests (as service/actions.ts)
+  if (cmd[0] === "herdr-app" && process.env.HERDR_ORCH_HERDR_APP) cmd = [process.env.HERDR_ORCH_HERDR_APP, ...cmd.slice(1)];
+  if (cmd[0] === "hc" && process.env.HERDR_ORCH_HC) cmd = [process.env.HERDR_ORCH_HC, ...cmd.slice(1)];
   const p = Bun.spawn(cmd, { stdout: "pipe", stderr: "pipe", stdin: "ignore" });
   const [out, err] = await Promise.all([new Response(p.stdout).text(), new Response(p.stderr).text()]);
   return { code: await p.exited, out, err };

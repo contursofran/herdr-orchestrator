@@ -19,7 +19,7 @@ schedule, the fields a space can set (`FIELDS`), a level's own (`levelOf`), the 
 
 ## The data
 
-herdr-orchestrator settings (`~/.herdr/shepherdr.json`, which goes to every machine): `"autopilot": { every, events, heartbeat }`
+herdr-orchestrator settings (`~/.herdr/herdr-orchestrator.json`, which goes to every machine): `"autopilot": { every, events, heartbeat }`
 in `everywhere` and in `spaces[<id>]`, each field only where it's set (`every` is the schedule's words, `""` for none).
 herdr-task (`~/.herdr/tasks/.autopilot.json`) keeps each space's own `on` and how its wakes go (next_run, pending,
 inflight, last_wake, progress). Its `everywhere` ({every, events}) and the file `~/.config/herdr-core/autopilot/everywhere.md`

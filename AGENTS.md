@@ -9,7 +9,7 @@ How to run, build and lay out the code: [docs/develop.md](docs/develop.md).
 - Shell checks: plain `bash -n` is the real one. Dash (`sh -n` here) misses bash-only parse errors that macOS's bash 3.2
   hits, so run `bash -n` on every script.
 - Installer tests run from `test/`: `cd test && python3 -m unittest test_install`. To run an older installer copy for a
-  before-check, export `SHEPHERDR_HANDED_OVER=1` (else it hands over to the source's `bin/herdr-orchestrator`), and use a full
+  before-check, export `HERDR_ORCH_HANDED_OVER=1` (else it hands over to the source's `bin/herdr-orchestrator`), and use a full
   `git archive` of the tree, since `herdr_task` lives beside `bin/`.
 - herdr-browser's library check: `test/test_herdr_browser_libs.py` fakes ldd and agent-browser; a real missing-library
   Chrome needs gcc, linking a library built with `-Wl,-soname` and then deleted.
@@ -48,9 +48,9 @@ How to run, build and lay out the code: [docs/develop.md](docs/develop.md).
 - Claude Code may log an agent's message only as a thinking block: replay a real log through `core/chat-log.js`
   before blaming the reader.
 - A branch's web app with live data, the installed one untouched: `vite preview` of its build behind
-  `tailscale serve --set-path`, proxying `/api` (changeOrigin, origin header) to the serving machine's `/shepherdr`
+  `tailscale serve --set-path`, proxying `/api` (changeOrigin, origin header) to the serving machine's `/herdr-orchestrator`
   (`herdr-orchestrator web status` says which). Put the Mac mini back on the release the same way from
-  `~/.local/share/shepherdr`.
+  `~/.local/share/herdr-orchestrator`.
 - A test space's Assistant without the window: `hc run` it with the chat slot labels from the newest
   `data/backups/*/sidebar.json` (`coordinator.slots`), as `service/actions.ts` does; answer the folder-trust prompt
   with `hc keys <t> down enter`.
@@ -79,11 +79,11 @@ How to run, build and lay out the code: [docs/develop.md](docs/develop.md).
 - herdr-task tests that need a real task list on disk plus a faked `begin()`: reuse Scheduled's setUp/run_cmd/tick_at as class
   attributes (see DoubleStart) instead of subclassing, which reruns Scheduled's tests.
 - Before-checks against main: `git archive origin/main | tar -x -C <scratch>`, copy the branch's new tests in, run there
-  (installer: `SHEPHERDR_HANDED_OVER=1`; a git worktree of main fails, it's checked out in ~/dev/shepherdr). Patch new names
+  (installer: `HERDR_ORCH_HANDED_OVER=1` on revisions using the new namespace). Patch new names
   with `mock.patch.object(..., create=True)` so the same test runs on both.
 - Tests that run accept or merge with the real `finish()` must stub `github.live_agents` and `live_helpers` (hc is
   refused under test).
-- Bun.spawn ignores a PATH changed inside a test: point the service at fakes with `SHEPHERDR_HERDR_APP` / `SHEPHERDR_HC`.
+- Bun.spawn ignores a PATH changed inside a test: point the service at fakes with `HERDR_ORCH_HERDR_APP` / `HERDR_ORCH_HC`.
 - `bun test` from service/ alone skips bunfig's preload (2 false failures): run `bun test service core web` from the repo root.
 - Window-mod methods that need `cx.spawn`'s result in a bun test: give the stub cx a spawn that keeps the promise (see the
   #1010 tests in service/spaces-sidebar.test.ts). ShepherdrSettings menus go through `mods/shepherdr-settings/over.js`.
@@ -108,7 +108,7 @@ How to run, build and lay out the code: [docs/develop.md](docs/develop.md).
 - Crash recovery for real: a throwaway core, `HC_SESSION=<name> hc ...` with `HC_TERMINAL_SOCKET` and Claude's
   `CLAUDE_*` env unset (`CLAUDE_CODE_CHILD_SESSION` turns off transcripts).
 - Service code against a throwaway core (`HC_SESSION=x`): Hub ignores `HC_SESSION`, so pass `new Hub(<wrapper script
-  that exports HC_SESSION and execs hc>)` and set `SHEPHERDR_HC` to it; start that core from `env -i` or its agents
+  that exports HC_SESSION and execs hc>)` and set `HERDR_ORCH_HC` to it; start that core from `env -i` or its agents
   inherit `CLAUDE_CODE_CHILD_SESSION` (no transcripts).
 - A real `herdr-task switch` test without touching people's tasks: a fake hc on PATH exporting `HC_SESSION=<name>`,
   `HERDR_TASK_STORE=<tmp>`, a scratch git repo with `add --here` and `start --space <any>`; answer the trust prompt with
@@ -148,4 +148,4 @@ How to run, build and lay out the code: [docs/develop.md](docs/develop.md).
 - From SHEP-240: a second visible browser page on the dev VM: run ~/.agent-browser/browsers/chrome-*/chrome --headless=new --remote-debugging-port=<p> <url> in the background and screenshot over CDP (Page.captureScreenshot); herdr-browser's --headers don't reach WebSockets.
 - From SHEP-258: Codex's model list comes from its own catalog: npm i --prefix <scratch> @openai/codex@<ver> and run its codex debug models to see a newer CLI's models and service_tiers without touching the installed one.
 - From SHEP-259: Python's zipimport reopens a zipapp by path on every import: test a swap by starting the zipapp, replacing its file, then importing (test/test_zipapp_swap.py).
-- From SHEP-263: a real service on a throwaway core: HOME=<scratch home> (with ~/.local/share/shepherdr/LAYOUT copied), SHEPHERDR_HC=<wrapper exporting HC_SESSION, exec hc> (the hub drops HC_SESSION: without it the service attaches to the REAL core), fake herdr-task/herdr-app/tailscale first on PATH.
+- From SHEP-263: a real service on a throwaway core: HOME=<scratch home> (with ~/.local/share/herdr-orchestrator/LAYOUT copied), HERDR_ORCH_HC=<wrapper exporting HC_SESSION, exec hc> (the hub drops HC_SESSION: without it the service attaches to the REAL core), fake herdr-task/herdr-app/tailscale first on PATH.

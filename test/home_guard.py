@@ -25,11 +25,11 @@ def _real_home():
 REAL = os.path.realpath(_real_home())
 # The person's Herdr and Shepherdr state: data, settings, the synced question hook, chat cards, agents' own configs.
 REAL_DIRS = [os.path.join(REAL, p) for p in (
-    ".herdr", ".config/herdr-app", ".config/herdr-core", ".config/shepherdr", ".local/share/herdr",
-    ".local/share/shepherdr", ".local/state/herdr-core", ".local/state/shepherdr", ".cache/shepherdr", ".claude", ".codex")]
+    ".herdr", ".config/herdr-app", ".config/herdr-core", ".config/herdr-orchestrator", ".local/share/herdr",
+    ".local/share/herdr-orchestrator", ".local/state/herdr-core", ".local/state/herdr-orchestrator", ".cache/herdr-orchestrator", ".claude", ".codex")]
 # What the person's environment points at its own terminal, chat and agent with.
 DROP = ("HC_TERMINAL_SOCKET", "HC_TERMINAL_ID", "HC_SCOPE", "HC_SOCKET", "HC_SESSION", "HERDR_BROWSER_TASK",
-        "HERDR_ASK_CHAINED", "HERDR_APP_HOME", "SHEPHERDR_HOME", "SHEPHERDR_DATA", "HERDR_TASK_STORE",
+        "HERDR_ASK_CHAINED", "HERDR_APP_HOME", "HERDR_ORCH_HOME", "HERDR_ORCH_DATA", "HERDR_TASK_STORE",
         "HERDR_TASK_SETTINGS", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "XDG_CACHE_HOME",
         "CLAUDE_CODE_MESSAGING_SOCKET", "CLAUDE_CODE_MESSAGING_TOKEN")
 
@@ -45,7 +45,7 @@ def _inside(path, dirs):
 
 def touches(path):
     """Whether opening this path reaches the person's real Herdr state (this repo's own files don't count: a worktree
-    lives under ~/.local/share/shepherdr)."""
+    lives under ~/.local/share/herdr-orchestrator)."""
     if not isinstance(path, (str, bytes, os.PathLike)):
         return False
     path = os.fsdecode(path)

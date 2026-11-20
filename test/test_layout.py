@@ -29,7 +29,7 @@ BUN = shutil.which("bun")
 # panel's and the web's read of artifacts. Its sync script is test/fixtures/install-3.1.26.py.
 OLD_READ_LISTS = ('cd "$HOME/.herdr/tasks" 2>/dev/null || exit 0; for f in *.json .*.json; do [ -f "$f" ] && printf "%s\\n" "$f" '
                   '&& cat "$f" && printf "\\n@@herdr-task-list@@\\n"; done; true')
-OLD_PUSH = '''f="$HOME/.herdr/shepherdr.json"; mkdir -p "$HOME/.herdr" || exit 1
+OLD_PUSH = '''f="$HOME/.herdr/herdr-orchestrator.json"; mkdir -p "$HOME/.herdr" || exit 1
 if [ -f "$f" ] && ! grep -q '"pushed_from"' "$f"; then echo own; exit 0; fi
 if [ -f "$f" ] && [ "$(cat "$f")" = "$1" ]; then exit 0; fi
 umask 077; printf '%s\\n' "$1" > "$f.tmp" && mv "$f.tmp" "$f"'''
@@ -99,16 +99,16 @@ def realistic(home):
     write(os.path.join(h, "artifacts", "files", "plan-1a2b", "v2", "index.html"), "<h1>plan</h1>\n")
     write(os.path.join(h, "artifacts", "notes", "shot-1.png"), "png")
     write(os.path.join(h, "vault.json"), json.dumps({"version": 1, "secrets": [{"name": "API_KEY", "scope": "everywhere", "value": "fake-value"}]}), 0o600)
-    write(os.path.join(h, "shepherdr.json"), json.dumps({"version": 1, "everywhere": {"tasks": {"merge": "ask"}},
+    write(os.path.join(h, "herdr-orchestrator.json"), json.dumps({"version": 1, "everywhere": {"tasks": {"merge": "ask"}},
                                                          "spaces": {"sp1": {"tasks": {"review_rounds": 2}}}}))
     write(os.path.join(h, "model-picks.json"), json.dumps({"claude": {"pin": "opus"}}))
     write(os.path.join(h, "browser", "dev-shop-2", "Default", "Cookies"), "signed in")
     write(os.path.join(h, "browser", "dev-shop-2.task"), "dev-shop#2\n")
-    write(os.path.join(h, "shepherdr", "service.json"), json.dumps({"port": 7788, "id": "svc-1"}))
-    write(os.path.join(h, "shepherdr", "token"), "local-token\n", 0o600)
-    write(os.path.join(h, "shepherdr", "usage.jsonl"), '{"kind":"view"}\n')
+    write(os.path.join(h, "herdr-orchestrator", "service.json"), json.dumps({"port": 7789, "id": "svc-1"}))
+    write(os.path.join(h, "herdr-orchestrator", "token"), "local-token\n", 0o600)
+    write(os.path.join(h, "herdr-orchestrator", "usage.jsonl"), '{"kind":"view"}\n')
     sock, here = socket.socket(socket.AF_UNIX), os.getcwd()
-    os.chdir(os.path.join(h, "shepherdr"))   # bound by a short name: a long home's path passes the socket limit
+    os.chdir(os.path.join(h, "herdr-orchestrator"))   # bound by a short name: a long home's path passes the socket limit
     try:
         sock.bind("service.sock")   # the live service's socket (its file moves with the folder)
     finally:
@@ -127,7 +127,7 @@ class Home(unittest.TestCase):
     def setUp(self):
         self.home = tempfile.mkdtemp(prefix="shep-layout-")
         self.addCleanup(shutil.rmtree, self.home, True)
-        # the throwaway home's folders: never the person's (no SHEPHERDR_HOME or XDG_* from this shell)
+        # the throwaway home's folders: never the person's (no HERDR_ORCH_HOME or XDG_* from this shell)
         self.env = {}
 
     def w(self):
@@ -143,10 +143,10 @@ class Fresh(Home):
         self.assertEqual(res["state"], "migrated")
         w = self.w()
         self.assertTrue(w.migrated)
-        self.assertEqual(w.path("tasks"), os.path.join(self.home, ".local/share/shepherdr/tasks"))
-        self.assertEqual(w.path("settings"), os.path.join(self.home, ".config/shepherdr/settings.json"))
+        self.assertEqual(w.path("tasks"), os.path.join(self.home, ".local/share/herdr-orchestrator/tasks"))
+        self.assertEqual(w.path("settings"), os.path.join(self.home, ".config/herdr-orchestrator/settings.json"))
         self.assertTrue(os.path.isdir(w.path("tasks")))
-        self.assertTrue(os.path.isfile(os.path.join(self.home, ".cache/shepherdr/CACHEDIR.TAG")))
+        self.assertTrue(os.path.isfile(os.path.join(self.home, ".cache/herdr-orchestrator/CACHEDIR.TAG")))
         # the old paths lead to the new ones (an older Shepherdr on another machine reads them over herdr-core)
         for k in L.KINDS:
             self.assertEqual(os.path.realpath(w.old(k)), os.path.realpath(w.new(k)), k)
@@ -154,7 +154,7 @@ class Fresh(Home):
         self.assertEqual(stat.S_IMODE(os.stat(w.path("browser")).st_mode), 0o700)
 
     def test_layout_newer_stops(self):
-        write(os.path.join(self.home, ".local/share/shepherdr/LAYOUT"), "3\n")
+        write(os.path.join(self.home, ".local/share/herdr-orchestrator/LAYOUT"), "3\n")
         res = self.migrate()
         self.assertEqual(res["state"], "newer")
         self.assertFalse(os.path.exists(os.path.join(self.home, ".herdr")))
@@ -195,7 +195,7 @@ class Upgrade(Home):
         # the task list keeps its worktree paths; a new task's worktree goes to the new root
         lst = json.load(open(os.path.join(w.path("tasks"), "dev-shop.json")))
         self.assertEqual(lst["tasks"][1]["worktree"], self.x["live"])
-        self.assertEqual(w.worktrees(), os.path.join(self.home, ".local/share/shepherdr/worktrees"))
+        self.assertEqual(w.worktrees(), os.path.join(self.home, ".local/share/herdr-orchestrator/worktrees"))
         self.assertEqual(w.worktrees("~/big/wt"), os.path.expanduser("~/big/wt"))
         # what isn't Shepherdr 3's data stays where it was
         self.assertTrue(os.path.isfile(os.path.join(self.x["herdr"], "instructions", "worker.md")))
@@ -216,7 +216,7 @@ class Upgrade(Home):
         self.assertEqual(res["state"], "would migrate")
         self.assertIn("tasks", res["moved"])
         self.assertEqual(snapshot(self.x["herdr"]), self.before)
-        self.assertFalse(os.path.exists(os.path.join(self.home, ".local/share/shepherdr")))
+        self.assertFalse(os.path.exists(os.path.join(self.home, ".local/share/herdr-orchestrator")))
 
     def test_a_crash_halfway_is_finished_by_the_next_run(self):
         # a power cut after the third kind moved: os.rename fails from then on, as if the process died there
@@ -279,7 +279,7 @@ class Upgrade(Home):
     def test_another_disk_a_write_between_the_check_and_the_swap(self):
         # an older writer saves settings in the old copy after it was checked: the change reaches the new place
         real = os.rename
-        lst = os.path.join(self.x["herdr"], "shepherdr.json")
+        lst = os.path.join(self.x["herdr"], "herdr-orchestrator.json")
 
         def cross(a, b):
             if a.startswith(self.x["herdr"] + "/") and not a.endswith(".shep-link") and not b.startswith(self.x["herdr"] + "/"):
@@ -297,7 +297,7 @@ class Upgrade(Home):
     def test_another_disk_a_crash_before_the_catch_up(self):
         # a settings save in the old copy after its check, then the power goes right after the swap: the next run catches up
         real_rename, real_catch = os.rename, L._catch_up
-        lst = os.path.join(self.x["herdr"], "shepherdr.json")
+        lst = os.path.join(self.x["herdr"], "herdr-orchestrator.json")
 
         def cross(a, b):
             if a.startswith(self.x["herdr"] + "/") and not a.endswith(".shep-link") and not b.startswith(self.x["herdr"] + "/"):
@@ -321,7 +321,7 @@ class Upgrade(Home):
     def test_another_disk_a_crash_between_the_swap_and_its_link(self):
         # the old copy renamed to its backup, then the power goes before the link is in place
         real_rename, real_replace = os.rename, os.replace
-        lst = os.path.join(self.x["herdr"], "shepherdr.json")
+        lst = os.path.join(self.x["herdr"], "herdr-orchestrator.json")
         tmp_link = lst + ".shep-link"
 
         def cross(a, b):
@@ -437,10 +437,10 @@ class Upgrade(Home):
         self.assertTrue(os.path.isdir(os.path.join(self.x["herdr"], "worktrees")), "worktrees and Herdr's own stay")
 
     def test_a_squatter_at_the_new_place_is_set_aside(self):
-        write(os.path.join(self.home, ".local/share/shepherdr/tasks/stray.json"), "{}")
+        write(os.path.join(self.home, ".local/share/herdr-orchestrator/tasks/stray.json"), "{}")
         res = self.migrate()
         self.assertEqual(res["state"], "migrated")
-        aside = [n for n in os.listdir(os.path.join(self.home, ".local/share/shepherdr")) if n.startswith("tasks.aside-")]
+        aside = [n for n in os.listdir(os.path.join(self.home, ".local/share/herdr-orchestrator")) if n.startswith("tasks.aside-")]
         self.assertEqual(len(aside), 1)
         self.assertTrue(any("set aside" in n for n in res["notes"]))
         self.assertTrue(os.path.isfile(os.path.join(self.w().path("tasks"), "dev-shop.json")))
@@ -467,7 +467,7 @@ class Upgrade(Home):
 class CustomRoots(Home):
     def test_shepherdr_home(self):
         one = os.path.join(self.home, "one")
-        self.env = {"SHEPHERDR_HOME": one}
+        self.env = {"HERDR_ORCH_HOME": one}
         realistic(self.home)
         self.assertEqual(self.migrate()["state"], "migrated")
         w = self.w()
@@ -475,7 +475,7 @@ class CustomRoots(Home):
         self.assertEqual(w.path("settings"), os.path.join(one, "config", "settings.json"))
         self.assertEqual(w.path("browser"), os.path.join(one, "state", "browser"))
         self.assertTrue(os.path.isfile(os.path.join(one, "cache", "CACHEDIR.TAG")))
-        # a process that doesn't see SHEPHERDR_HOME still finds the data, through the old paths' links
+        # a process that doesn't see HERDR_ORCH_HOME still finds the data, through the old paths' links
         plain = L.Where(home=self.home, env={}, mac=False)
         self.assertFalse(plain.migrated)
         self.assertTrue(os.path.isfile(os.path.join(plain.path("tasks"), "dev-shop.json")))
@@ -484,13 +484,13 @@ class CustomRoots(Home):
         self.env = {"XDG_CONFIG_HOME": os.path.join(self.home, "c"), "XDG_DATA_HOME": os.path.join(self.home, "d"),
                     "XDG_STATE_HOME": os.path.join(self.home, "s"), "XDG_CACHE_HOME": "relative/is/ignored"}
         r = L.roots(self.home, self.env, mac=False)
-        self.assertEqual(r["config"], os.path.join(self.home, "c", "shepherdr"))
-        self.assertEqual(r["data"], os.path.join(self.home, "d", "shepherdr"))
-        self.assertEqual(r["cache"], os.path.join(self.home, ".cache", "shepherdr"))
-        self.assertEqual(L.roots(self.home, {}, mac=True)["cache"], os.path.join(self.home, "Library", "Caches", "shepherdr"))
+        self.assertEqual(r["config"], os.path.join(self.home, "c", "herdr-orchestrator"))
+        self.assertEqual(r["data"], os.path.join(self.home, "d", "herdr-orchestrator"))
+        self.assertEqual(r["cache"], os.path.join(self.home, ".cache", "herdr-orchestrator"))
+        self.assertEqual(L.roots(self.home, {}, mac=True)["cache"], os.path.join(self.home, "Library", "Caches", "herdr-orchestrator"))
 
     def test_installer_root_ignores_the_shells_folders(self):
-        # `install --root <scratch>` must never reach the real folders through SHEPHERDR_HOME or XDG_*
+        # `install --root <scratch>` must never reach the real folders through HERDR_ORCH_HOME or XDG_*
         sys.path.insert(0, os.path.join(ROOT, "bin"))
         import importlib.machinery
         import importlib.util
@@ -498,9 +498,9 @@ class CustomRoots(Home):
         spec = importlib.util.spec_from_loader("shepherdr_installer", loader)
         inst = importlib.util.module_from_spec(spec)
         loader.exec_module(inst)
-        with mock.patch.dict(os.environ, {"SHEPHERDR_HOME": "/nonexistent/real", "XDG_DATA_HOME": "/nonexistent/xdg"}):
+        with mock.patch.dict(os.environ, {"HERDR_ORCH_HOME": "/nonexistent/real", "XDG_DATA_HOME": "/nonexistent/xdg"}):
             w = inst.where_for(self.home)
-            self.assertEqual(w.roots["data"], os.path.join(self.home, ".local/share/shepherdr"))
+            self.assertEqual(w.roots["data"], os.path.join(self.home, ".local/share/herdr-orchestrator"))
             self.assertEqual(inst.env_for(self.home), {})
 
 
@@ -574,28 +574,28 @@ class MixedVersions(unittest.TestCase):
         self.assertIn("plan-1a2b", self.sh(self.new, OLD_READ_ARTS))
 
     def test_a_new_machine_reads_an_old_one(self):
-        from_new = L.SH + 'cd "$SHEP_TASKS" && ls'
+        from_new = L.SH + 'cd "$ORCH_TASKS" && ls'
         self.assertIn("dev-shop.json", self.sh(self.old, from_new))
         self.assertIn("dev-shop.json", self.sh(self.new, from_new))
-        self.assertEqual(self.sh(self.old, L.SH + 'printf %s "$SHEP_SETTINGS"'), os.path.join(self.old, ".herdr/shepherdr.json"))
-        self.assertEqual(self.sh(self.new, L.SH + 'printf %s "$SHEP_SETTINGS"'), os.path.join(self.new, ".config/shepherdr/settings.json"))
+        self.assertEqual(self.sh(self.old, L.SH + 'printf %s "$ORCH_SETTINGS"'), os.path.join(self.old, ".herdr/herdr-orchestrator.json"))
+        self.assertEqual(self.sh(self.new, L.SH + 'printf %s "$ORCH_SETTINGS"'), os.path.join(self.new, ".config/herdr-orchestrator/settings.json"))
 
     def test_the_new_push_lands_where_each_machine_reads(self):
         if not BUN:
             self.skipTest("bun isn't installed here")
         push = subprocess.run([BUN, "-e", 'import { PUSH } from "./service/settings.ts"; process.stdout.write(PUSH)'],
-                              cwd=ROOT, capture_output=True, text=True, env={**os.environ, "SHEPHERDR_TEST": "1"}).stdout
-        self.assertIn("SHEP_SETTINGS", push)
+                              cwd=ROOT, capture_output=True, text=True, env={**os.environ, "HERDR_ORCH_TEST": "1"}).stdout
+        self.assertIn("ORCH_SETTINGS", push)
         body = json.dumps({"pushed_from": "herdr-app", "here": "vm-a"})
-        for home, where in ((self.old, ".herdr/shepherdr.json"), (self.new, ".config/shepherdr/settings.json")):
+        for home, where in ((self.old, ".herdr/herdr-orchestrator.json"), (self.new, ".config/herdr-orchestrator/settings.json")):
             os.remove(os.path.join(home, where))   # a machine with only a pushed copy
             self.sh(home, push, body)
             self.assertEqual(json.load(open(os.path.join(home, where)))["here"], "vm-a", home)
-        self.assertTrue(os.path.islink(os.path.join(self.new, ".herdr/shepherdr.json")), "the new push keeps the link")
+        self.assertTrue(os.path.islink(os.path.join(self.new, ".herdr/herdr-orchestrator.json")), "the new push keeps the link")
 
     def test_an_old_main_syncing_tools_to_a_new_machine(self):
         # 3.1.26's sync writes ~/.herdr/tools.json and touches ~/.herdr/secret-remote there (its own words)
-        os.remove(os.path.join(self.new, ".local/share/shepherdr/secrets/vault.json"))
+        os.remove(os.path.join(self.new, ".local/share/herdr-orchestrator/secrets/vault.json"))
         payload = {"op": "install", "stamp": ".herdr/tools.json", "files": [], "links": [], "version": "v9", "from": "old-main",
                    "touch": [{"path": ".herdr/secret-remote", "unless": ".herdr/vault.json"}], "force": False}
         r = subprocess.run([sys.executable, "-c", OLD_INSTALL], input=json.dumps(payload), capture_output=True, text=True,
@@ -609,7 +609,7 @@ class MixedVersions(unittest.TestCase):
 
     def test_a_new_main_syncing_tools_to_both(self):
         from herdr_task import machines
-        for home, stamp in ((self.old, ".herdr/tools.json"), (self.new, ".local/share/shepherdr/tools.json")):
+        for home, stamp in ((self.old, ".herdr/tools.json"), (self.new, ".local/share/herdr-orchestrator/tools.json")):
             payload = {"op": "install", "stamp": ".herdr/tools.json", "files": [], "links": [], "version": "v10", "from": "new-main",
                        "touch": [], "force": False}
             r = subprocess.run([sys.executable, "-c", machines.INSTALL], input=json.dumps(payload), capture_output=True, text=True,
@@ -633,7 +633,7 @@ class ProjectId(unittest.TestCase):
             with store.Store(store.locate(repo)) as s:
                 s.new("Cart")
                 s.dirty = True
-            pid = git(repo, "config", "--local", "--get", "shepherdr.id")
+            pid = git(repo, "config", "--local", "--get", "herdr-orchestrator.id")
             self.assertTrue(pid)
             self.assertEqual(json.load(open(s.path))["project_id"], pid)
             os.rename(repo, os.path.join(tmp, "shop-renamed"))
@@ -685,7 +685,7 @@ class OneTable(unittest.TestCase):
         # the browser started before the move: the same path agent-browser knows it by (a link to the same folder)
         self.assertEqual(name("dev-shop#2")["profile"], os.path.join(home, ".herdr", "browser", "dev-shop-2"))
         # a new task's browser: the new place
-        self.assertEqual(name("dev-shop#3")["profile"], os.path.join(home, ".local", "state", "shepherdr", "browser", "dev-shop-3"))
+        self.assertEqual(name("dev-shop#3")["profile"], os.path.join(home, ".local", "state", "herdr-orchestrator", "browser", "dev-shop-3"))
 
 
 class BrowserSessionNames(unittest.TestCase):

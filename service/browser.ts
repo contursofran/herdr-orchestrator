@@ -1,7 +1,7 @@
 // A task's browser on the web (2.1's Browser panel): the task's own agent-browser session (herdr-<task>, the one
 // its agent drives and the window's Browser view shows in a terminal), relayed from agent-browser's stream on
 // 127.0.0.1 to the page: its frames and its address out, the person's mouse, keys and touches in. The person's
-// first input takes it over as in the window ("You're driving": ~/.local/state/shepherdr/browser/<name>.you, which herdr-browser
+// first input takes it over as in the window ("You're driving": ~/.local/state/herdr-orchestrator/browser/<name>.you, which herdr-browser
 // reads to hold the agent off); Hand back ends that. While a page shows it, <name>.view stays fresh, as the window's
 // view keeps it, so the session isn't closed as unwatched. This machine's tasks only.
 import { existsSync, mkdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";

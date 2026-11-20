@@ -18,17 +18,17 @@ export const keptLine = (name, at) => `<hc from="person" secret="${name}">Kept: 
 
 export const declinedLine = (name) => `<hc from="person" secret="${name}">Declined: ${name}. The person won't give it now: go on without it, or say plainly what you can't do without it. Don't ask for its value in the chat.</hc>`;
 
-// Which machine keeps the secrets (Settings › Secrets › Kept on): herdr-core document "shepherdr.secrets" = { id, at, by,
-// auto? } on every machine (id: that machine's herdr-core id), as "shepherdr.host" is for Serve from (core/host.js): the
+// Which machine keeps the secrets (Settings › Secrets › Kept on): herdr-core document "herdr-orchestrator.secrets" = { id, at, by,
+// auto? } on every machine (id: that machine's herdr-core id), as "herdr-orchestrator.host" is for Serve from (core/host.js): the
 // newest record wins, each service hands it on to the machines it links, and a machine believes its own record or a
 // newer one from the machine that keeps the secrets now (none of its own yet: the newest it's handed).
 // By default they follow Serve from (auto: true, "Same as Serve from" in Settings): nobody named a machine, so the
 // services name the one they're on now (autoKeeper) and the machine serving the web app moves them to itself, the safe
 // way (followTo: `shepherdr secrets move-to`, with its backup and rollback); a later Serve from change carries them along
 // the same way. The person picking another machine in Kept on overrides it (a record without auto); picking the Serve
-// from machine follows it again. No record anywhere yet: the machine without ~/.local/share/shepherdr/secrets/remote keeps them
+// from machine follows it again. No record anywhere yet: the machine without ~/.local/share/herdr-orchestrator/secrets/remote keeps them
 // (bin/herdr-secret remote()). `shepherdr secrets move-to <machine>` moves them (service/secrets-move.ts).
-export const SECRETS_DOC = "shepherdr.secrets";
+export const SECRETS_DOC = "herdr-orchestrator.secrets";
 
 /** A record as it may be believed: { id, at, by?, auto? } with a sane time, else null. */
 export function secretsRecord(v, now = Date.now()) {
@@ -52,14 +52,14 @@ export function believeRecord(mine, there) {
 /**
  * The machine that keeps the secrets now, when nobody named one (the same answer on every machine that sees the same
  * facts): where they already are, so nothing moves under a running agent (followTo then moves them to Serve from):
- *   1. the machine whose vault (~/.local/share/shepherdr/secrets/vault.json) has secrets in it, not marked remote;
+ *   1. the machine whose vault (~/.local/share/herdr-orchestrator/secrets/vault.json) has secrets in it, not marked remote;
  *   2. several: the one with the most that isn't serving the web app (moving it there keeps the other's entries:
  *      `move-to` merges), else the lowest id;
  *   3. none has any: the machine serving the web app;
  *   4. none has any, none serves the web app, and every machine is marked remote (each installed the other's copy):
  *      the lowest id, else none could ever keep a secret (#800). Some not marked: each keeps its own, as before.
  * machines: [{ id, count, remote }] (count: secrets in its vault, 0 without one; null: unknown, it can't be asked now).
- * host: the id of the machine serving the web app (shepherdr.host), or null.
+ * host: the id of the machine serving the web app (herdr-orchestrator.host), or null.
  * Returns { id } or null: nothing to decide yet (no vault seen with a machine still unknown, or no host to fall back on).
  */
 export function autoKeeper(machines, host) {

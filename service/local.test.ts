@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { fakeHerdr } from "./fake-herdr";
 
 const HOME = mkdtempSync(join(tmpdir(), "shepherdr-local-"));
-const DATA = join(HOME, ".herdr", "shepherdr");
+const DATA = join(HOME, ".herdr", "herdr-orchestrator");
 const shared = new Map<string, unknown>([["notify", { on: true }]]);
 mock.module("herdr", () => fakeHerdr({
   home: () => HOME,
@@ -25,7 +25,7 @@ const seen: { app: string; path: string; auth: string | null }[] = [];
 const ours = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch(req) {
   const u = new URL(req.url);
   seen.push({ app: "ours", path: u.pathname, auth: req.headers.get("authorization") });
-  if (u.pathname === "/api/health") return Response.json({ ok: true, app: "shepherdr", id: "id-1", jobs: true });
+  if (u.pathname === "/api/health") return Response.json({ ok: true, app: "herdr-orchestrator", id: "id-1", jobs: true });
   if (u.pathname === "/api/state") return Response.json(req.method === "GET" ? { value: {} } : { ok: true });
   return new Response("no", { status: 404 });
 } });

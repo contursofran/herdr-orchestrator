@@ -4,9 +4,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { failedOf, forgetAll, noteFailed, once } from "./send-once.ts";
 
-const was = process.env.SHEPHERDR_DATA;
-beforeAll(() => { process.env.SHEPHERDR_DATA = mkdtempSync(join(tmpdir(), "send-once-")); forgetAll(); });
-afterAll(() => { if (was === undefined) delete process.env.SHEPHERDR_DATA; else process.env.SHEPHERDR_DATA = was; forgetAll(); });
+const was = process.env.HERDR_ORCH_DATA;
+beforeAll(() => { process.env.HERDR_ORCH_DATA = mkdtempSync(join(tmpdir(), "send-once-")); forgetAll(); });
+afterAll(() => { if (was === undefined) delete process.env.HERDR_ORCH_DATA; else process.env.HERDR_ORCH_DATA = was; forgetAll(); });
 
 // SHEP-93: a phone that lost the answer asks again with the same id: it never goes twice
 test("a send asked again while on its way waits for it, and one that went in answers again without going", async () => {

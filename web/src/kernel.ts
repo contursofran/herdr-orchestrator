@@ -755,7 +755,7 @@ let watched = ''
 
 export async function act(a: Action, signal?: AbortSignal) {
   noteAct(a as { type: string; cid?: string; key?: unknown })
-  const r = await fetch('api/action', { method: 'POST', headers: { 'content-type': 'application/json', 'x-shepherdr': '1' }, body: JSON.stringify(a), signal })
+  const r = await fetch('api/action', { method: 'POST', headers: { 'content-type': 'application/json', 'x-herdr-orch': '1' }, body: JSON.stringify(a), signal })
   // with its status: a proxy's 502 is the network (uploads.ts transient), the server's own no is not
   if (!r.ok) {
     noteUsage('error', { type: a.type, status: r.status })

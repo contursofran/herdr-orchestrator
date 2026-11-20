@@ -10,7 +10,7 @@ import * as MC from "../core/machines.js";
 
 const { holdOf, nextRead, healthMeters } = MC as any;
 const SCRIPT = [join(process.env.HERDR_APP_HOME || join(HOME, ".config", "herdr-app"), "mods", "tasks", "bin", "herdr_task", "machine.py"),
-  join(HOME, ".local", "share", "shepherdr", "mods", "tasks", "bin", "herdr_task", "machine.py")].find(existsSync);
+  join(HOME, ".local", "share", "herdr-orchestrator", "mods", "tasks", "bin", "herdr_task", "machine.py")].find(existsSync);
 
 export class Machines {
   stats = new Map<string | null, any>();

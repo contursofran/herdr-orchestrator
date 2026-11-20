@@ -128,7 +128,7 @@ async function agentId(key: string, made = "") {
 // This machine's Shepherdr service answers the tools as for the web app, told this call's agent and what the window
 // shows; what it asks to show goes to the chat (nav/). Its token is the local callers' (token in the service's folder).
 
-const DATA = process.env.SHEPHERDR_DATA || shepPaths().service;
+const DATA = process.env.HERDR_ORCH_DATA || shepPaths().service;
 const TOKEN = join(DATA, "token");
 
 /** The service's address, only when Shepherdr's own service answers there (service.json's port and id, as the window's

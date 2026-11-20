@@ -1,4 +1,4 @@
-"""The person's settings (~/.config/shepherdr/settings.json and per-folder), the agent each task runs, and
+"""The person's settings (~/.config/herdr-orchestrator/settings.json and per-folder), the agent each task runs, and
 the Settings block a task's brief ends with."""
 
 import json
@@ -123,7 +123,7 @@ def settings_for(s, space=None):
     """The settings for this folder's tasks: Shepherdr settings' Everywhere, then this machine's,
     then the override of the space working in this folder (--space's when several do): the most
     specific wins. The window no longer writes agent or task values for a machine (only its
-    machine-only rows, read by machine_limits/machine_option); ones set before still apply here. Written by the settings window (~/.config/shepherdr/settings.json); herdr-task only
+    machine-only rows, read by machine_limits/machine_option); ones set before still apply here. Written by the settings window (~/.config/herdr-orchestrator/settings.json); herdr-task only
     reads them."""
     everywhere, machine, pick = settings_layers(s, space)
     out = {k: dict(v) for k, v in DEFAULTS.items()}

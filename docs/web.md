@@ -6,13 +6,13 @@ on a phone, a tablet or another computer's browser, on the same data. Its look i
 
 ## Where it is
 
-`https://<this machine's tailnet name>/shepherdr/`, shared only on your tailnet with `tailscale serve` (never funnel,
+`https://<this machine's tailnet name>/herdr-orchestrator/`, shared only on your tailnet with `tailscale serve` (never funnel,
 never the open internet); or the always-on machine you serve it from (below). herdr-orchestrator settings → Web shows the link and a QR code for your phone. It needs Tailscale
 running here; without it the service still runs, with no web app.
 
 Another HTTPS port: when something else on this machine already holds the tailnet's 443 (a reverse proxy, a container
 publishing 443, a `tailscale serve --tcp 443` forward), `herdr-orchestrator web https-port 8443` moves it to
-`https://<this machine's tailnet name>:8443/shepherdr/` within seconds, and every link herdr-orchestrator gives follows
+`https://<this machine's tailnet name>:8443/herdr-orchestrator/` within seconds, and every link herdr-orchestrator gives follows
 (`./install.sh --https-port 8443` sets it at install; updates keep it; `herdr-orchestrator web https-port 443` goes back, and
 `herdr-orchestrator web https-port` alone says the one now). When sharing fails, Settings → Web and `herdr-orchestrator doctor` say
 tailscale's own reason, and name a free port when the one asked for is taken. A port is this machine's own: Serve from
@@ -23,10 +23,10 @@ connection it came on). A page from anywhere else can't change anything: writes 
 
 ## How it runs
 
-- One always-on service, `~/.local/share/shepherdr/service/main.ts` on Bun, kept running by `systemctl --user`
-  (`shepherdr.service`) or launchd (`dev.shepherdr.service`). It listens on `127.0.0.1:7788` only
+- One always-on service, `~/.local/share/herdr-orchestrator/service/main.ts` on Bun, kept running by `systemctl --user`
+  (`herdr-orchestrator.service`) or launchd (`dev.herdr-orchestrator.service`). It listens on `127.0.0.1:7789` only
   (another port: `./install.sh --port <n>`, kept for updates). Once the port is its own, it writes the port and a fresh
-  id into `~/.local/state/shepherdr/service/service.json`; the window (`lib/local.js`), the CLI and a voice call read the port there
+  id into `~/.local/state/herdr-orchestrator/service/service.json`; the window (`lib/local.js`), the CLI and a voice call read the port there
   and send the token or the shared state only when `/api/health` answers that id, never to another app on the port.
 - It reads what the window reads, through herdr-core (`hc`): the spaces, Assistants, chats and task lists of every
   connected machine, and herdr-task's files. Shared choices (pins, sidebar sections, Notify, the Window switches)
@@ -114,19 +114,19 @@ machine linked over herdr-core (`hc machine add`, or Add machine in the sidebar)
 - **herdr-orchestrator settings → Web → Serve from**, in the window or the web app: this computer and every linked machine, with
   its system and Offline when it is. Pick one and confirm; to move it back, pick This computer.
 - Or from a terminal: `herdr-orchestrator web serve-from <machine>` (`here` moves it back), `herdr-orchestrator web status`. Its
-  `/shepherdr` already shared to something else there: `--take-link` sets that aside, and moving away puts it back.
+  `/herdr-orchestrator` already shared to something else there: `--take-link` sets that aside, and moving away puts it back.
 
 What a move does, in order: installs herdr-orchestrator's web service on that machine over the link, or brings it up to date
-(`~/.local/share/shepherdr`, under launchd on macOS or a systemd user unit on Linux; Bun from bun.sh when it has
+(`~/.local/share/herdr-orchestrator`, under launchd on macOS or a systemd user unit on Linux; Bun from bun.sh when it has
 none; what it replaces is backed up and `herdr-orchestrator uninstall` there puts it back), copies the pins, sidebar, Notify,
 settings and role instructions over, then tells every machine. The new one shares
-`https://<its tailnet name>/shepherdr/` (127.0.0.1 only, never Funnel), the old one stops sharing its link, and
+`https://<its tailnet name>/herdr-orchestrator/` (127.0.0.1 only, never Funnel), the old one stops sharing its link, and
 Settings → Web shows the new link and its QR code everywhere. It needs Python 3.8+, herdr-core and Tailscale there.
 
 ### One truth, wherever it is served
 
-- **The host** (the machine serving the web app) holds the shared data: the `shepherdr` document (pins, the sidebar's
-  sections and icons, Notify, the Window switches), `~/.config/shepherdr/settings.json` and the role instructions. Chosen
+- **The host** (the machine serving the web app) holds the shared data in the `herdr-orchestrator` document (pins, the sidebar's
+  sections and icons, Notify, the Window switches), `~/.config/herdr-orchestrator/settings.json` and the role instructions. Chosen
   because it is the one that stays on: a pin made on the phone lands there with the window's machine asleep.
 - **Every other machine's service** reads and writes the shared document there, through herdr-core's link, and keeps
   its own settings file and role instructions merged with the host's every 5 s (each side's own changes go to the
@@ -134,7 +134,7 @@ Settings → Web shows the new link and its QR code everywhere. It needs Python 
   be reached, the window keeps its copy and catches up when it's back.
 - **Names** are each machine's own (the laptop calls the mini `mac-mini`, the mini calls the laptop `m3`): the shared
   data is moved between them through herdr-core's machine ids (`core/host.js`).
-- **Which machine serves** is a herdr-core document on each machine, `shepherdr.host`: the newest record wins. A
+- **Which machine serves** is a herdr-core document on each machine, `herdr-orchestrator.host`: the newest record wins. A
   machine believes only its own record and the host's (a box it merely links, like a VM running agents, can't make
   itself the host). The host hands a move on to the machines it links, so one asleep at the move learns it on waking.
   No record (before any move): each machine serves its own, as before.
@@ -152,7 +152,7 @@ Settings → Web shows the new link and its QR code everywhere. It needs Python 
 | The phone and watch app's glance feed ([glance.md](glance.md)) | the host only |
 | A web page's question cards (the ask flag; the cards read and answered there) | the host, on the agent's machine through the link |
 | Serving secrets to another machine's agents | the machine holding the vault (herdr-secret refuses elsewhere) |
-| Sharing `/shepherdr` on the tailnet | the host only |
+| Sharing `/herdr-orchestrator` on the tailnet | the host only |
 
 Phones subscribed to the old link's alerts subscribe again on the new one (a push subscription belongs to its
 address). The window's machine shows the host's link; the service there answers its own window only.

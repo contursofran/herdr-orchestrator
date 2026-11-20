@@ -12,7 +12,7 @@ export class Hub {
   terminals = new Map<string, CoreTerminal>();
   up = false;
 
-  constructor(private binary = process.env.SHEPHERDR_HC || "hc") {}
+  constructor(private binary = process.env.HERDR_ORCH_HC || "hc") {}
 
   on(fn: Listener) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
 

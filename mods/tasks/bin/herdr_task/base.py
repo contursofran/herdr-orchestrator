@@ -14,7 +14,7 @@ from . import layout
 
 VERSION = "1"
 HOME = os.path.expanduser("~")
-# Shepherdr's own folders (layout.py): ~/.local/share/shepherdr/tasks once this machine's data moved
+# Shepherdr's own folders (layout.py): ~/.local/share/herdr-orchestrator/tasks once this machine's data moved
 # there, else the old ~/.herdr/tasks (the entry moves it first, so a run sees one or the other).
 WHERE = layout.Where()
 # HERDR_TASK_STORE: another task list (a test's own), as HERDR_TASK_SETTINGS for settings.
@@ -42,7 +42,7 @@ class Fail(Exception):
     pass
 
 
-# Shepherdr's installer (bin/shepherdr) puts this file here while it replaces helpers or templates,
+# Shepherdr's installer (bin/herdr-orchestrator) puts this file here while it replaces helpers or templates,
 # and removes it once `shepherdr doctor` finds the install whole. Until then nothing copies a helper
 # to another machine: not the sync, not a command's self-copy (cli.remote, herdr-artifact's,
 # herdr-secret's install --on), so a half-done or wrong copy never reaches every machine.

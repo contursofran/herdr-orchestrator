@@ -206,7 +206,7 @@ function NewSpaceDialog() {
     try {
       const r = await fetch('api/spaces', {
         method: 'POST',
-        headers: { 'content-type': 'application/json', 'x-shepherdr': '1' },
+        headers: { 'content-type': 'application/json', 'x-herdr-orch': '1' },
         body: JSON.stringify({ machine, path: folder, makeRepo: offers && makeRepo, icon: icon || null }),
       })
       const b = (await r.json().catch(() => ({}))) as { place?: string; error?: string }

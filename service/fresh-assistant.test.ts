@@ -39,9 +39,9 @@ if [ "$1" = run ]; then
 fi
 exit 0
 `, { mode: 0o755 });
-const hcWas = process.env.SHEPHERDR_HC;
-process.env.SHEPHERDR_HC = hcFile;
-afterAll(() => { if (hcWas === undefined) delete process.env.SHEPHERDR_HC; else process.env.SHEPHERDR_HC = hcWas; });
+const hcWas = process.env.HERDR_ORCH_HC;
+process.env.HERDR_ORCH_HC = hcFile;
+afterAll(() => { if (hcWas === undefined) delete process.env.HERDR_ORCH_HC; else process.env.HERDR_ORCH_HC = hcWas; });
 
 const hub: any = {
   terminals: new Map(),
@@ -159,7 +159,7 @@ test("a page with the chat open is sent the fresh chat, again only when it chang
 }, 15_000);
 
 test("Settings changed outside the service (the window's Settings) are what the next start runs on", async () => {
-  // the file by the name it really has: the watcher waited for "shepherdr.json", its name before the move
+  // the file by the name it really has: the watcher waited for "herdr-orchestrator.json", its name before the move
   const file = join(mkdtempSync(join(tmpdir(), "shep-fresh-settings-")), "settings.json");
   const write = (fast: unknown) => writeFileSync(file, JSON.stringify({ version: 1, spaces: { sp1: { coordinator: { ...SOL, fast } } } }));
   write(true);

@@ -12,7 +12,7 @@ type Host = { to: string; over: string; ok?: boolean; state?: string; core?: str
 type Got = { hosts: Host[]; last: { at: number; hosts: (Host | null)[]; running?: boolean } | null; wait_ms: number; error?: string }
 
 const call = (go: boolean): Promise<Got> =>
-  fetch('api/machines/find', go ? { method: 'POST', headers: { 'x-shepherdr': '1' } } : undefined)
+  fetch('api/machines/find', go ? { method: 'POST', headers: { 'x-herdr-orch': '1' } } : undefined)
     .then((r) => r.json())
     .catch(() => ({ hosts: [], last: null, wait_ms: 0, error: "Couldn't reach herdr-orchestrator. Try again." }))
 

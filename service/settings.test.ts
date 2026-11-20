@@ -4,8 +4,8 @@ import { mkdtempSync, writeFileSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-// a throwaway settings file, never ~/.herdr/shepherdr.json
-const file = join(mkdtempSync(join(tmpdir(), "shep-settings-")), "shepherdr.json");
+// a throwaway settings file, never ~/.herdr/herdr-orchestrator.json
+const file = join(mkdtempSync(join(tmpdir(), "shep-settings-")), "herdr-orchestrator.json");
 writeFileSync(file, JSON.stringify({ everywhere: { machine: { start_load: 2 } }, spaces: { sp1: { folder: "/x" } } }));
 process.env.HERDR_TASK_SETTINGS = file;
 const { Settings } = await import("./settings.ts");
@@ -14,7 +14,7 @@ const CORE: any = await import("../core/settings.js");
 test("the Tasks rows say the window's words, and a change keeps the rest of the file", () => {
   const s = new Settings();
   s.start();
-  const tasks = s.sections("https://box/shepherdr/").find((x) => x.name === "Tasks" && x.level === "all")!;
+  const tasks = s.sections("https://box/herdr-orchestrator/").find((x) => x.name === "Tasks" && x.level === "all")!;
   expect(tasks.rows.find((r) => r.key === "tasks.merge")).toMatchObject({ value: "On Accept", options: ["On Accept", "After checks pass", "Right away"] });
   s.set("tasks.merge", "After checks pass");
   s.set("tasks.max_running", "40");
@@ -175,7 +175,7 @@ test("Agents and Tasks say the window's words: the model button, Other CLI, Must
   const tasks = s.sections(null).find((x) => x.name === "Tasks" && x.level === "all")!;
   expect(tasks.rows.some((r) => r.key === "tasks.must_fix")).toBe(false);
   expect(tasks.rows.find((r) => r.key === "tasks.max_running")).toMatchObject({ hint: C.ABOUT["tasks.max_running"], steps: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"] });
-  const web = s.sections({ on: true, link: "https://box/shepherdr/", why: null }).find((x) => x.name === "Web")!;
+  const web = s.sections({ on: true, link: "https://box/herdr-orchestrator/", why: null }).find((x) => x.name === "Web")!;
   expect(web.rows.map((r) => r.label)).toEqual(["herdr-orchestrator on the web", "Link"]);
   expect(web.rows[0].hint).toBe("On, private to your tailnet.");
 });

@@ -40,8 +40,8 @@ from .news import news_send, send_or_hold, typing
 
 ROLES = ("assistant", "worker", "reviewer")
 ARTIFACT_HOME = ".local/share/herdr/artifacts"
-# The installed web app's artifact viewer in one file (bin/shepherdr installs web/dist there), synced beside herdr-artifact
-VIEWER_BUILT = os.path.join(".local", "share", "shepherdr", "web", "dist", "artifact-viewer.html")
+# The installed web app's artifact viewer in one file (bin/herdr-orchestrator installs web/dist there), synced beside herdr-artifact
+VIEWER_BUILT = os.path.join(".local", "share", "herdr-orchestrator", "web", "dist", "artifact-viewer.html")
 STAMP = ".herdr/tools.json"
 MACHINES = os.path.join(STORE, ".machines.json")
 SYNC_DEBOUNCE_MS = 30000        # files changed here: wait until they stay put this long
@@ -78,7 +78,7 @@ def _core_dir():
 
 def secrets_main_here():
     """Whether this machine keeps the secrets (bin/herdr-secret remote()): herdr-core's document
-    "shepherdr.secrets" names it, or, none named yet, it has a vault and no remote mark. Only then
+    "herdr-orchestrator.secrets" names it, or, none named yet, it has a vault and no remote mark. Only then
     does a copy of herdr-secret it installs elsewhere get marked as asking another machine: a hub
     that doesn't keep them (the Mac mini) once marked the main machine remote (SHEP-11)."""
     def js(path):
@@ -88,7 +88,7 @@ def secrets_main_here():
         except (OSError, ValueError):
             return None
     docs, core = js(os.path.join(_core_dir(), "docs.json")) or {}, js(os.path.join(_core_dir(), "core.json")) or {}
-    rec = ((docs.get("shepherdr.secrets") if isinstance(docs, dict) else None) or {}).get("value")
+    rec = ((docs.get("herdr-orchestrator.secrets") if isinstance(docs, dict) else None) or {}).get("value")
     if isinstance(rec, dict) and rec.get("id"):
         return isinstance(core, dict) and rec["id"] == core.get("id")
     return os.path.isfile(WHERE.path("vault")) and not os.path.exists(WHERE.path("secret-remote"))
@@ -251,11 +251,11 @@ for l in x["links"]:
             st = "failed: " + str(e)
     out["links"][l["path"]] = st
 def main_here():
-    # the record naming the machine that keeps the secrets ("shepherdr.secrets"), and this one's id
+    # the record naming the machine that keeps the secrets ("herdr-orchestrator.secrets"), and this one's id
     core = os.path.join(os.environ.get("XDG_STATE_HOME") or P(".local/state"), "herdr-core", "default")
     try:
         with open(os.path.join(core, "docs.json")) as f:
-            rec = (json.load(f).get("shepherdr.secrets") or {}).get("value") or {}
+            rec = (json.load(f).get("herdr-orchestrator.secrets") or {}).get("value") or {}
         with open(os.path.join(core, "core.json")) as f:
             me = json.load(f).get("id")
     except Exception:
