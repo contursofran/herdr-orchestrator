@@ -44,6 +44,7 @@ true`;
 //   log page <file> <before> <want>   about <want> messages ending at byte <before> (or the
 //                                     last whole line), going back in growing chunks:
 //                                     "P <start> <end>" (start 0: the very start)
+//   log recent <file>                the last 128 KiB, for model details: "T <size> <from> <end>"
 //   log results <file> <offset>...    the first 64 KB of the lines at those offsets
 export const LOG = String.raw`
 mode="$1"; f="$2"
@@ -124,6 +125,12 @@ BEGIN { pos = base; first = base; msgs = 0 }
 END { if (first > pos) first = pos; print "#\t" first "\t" msgs }'
 range() { tail -c +$(($1 + 1)) "$f" | head -c $(($2 - $1)) | LC_ALL=C awk -v base="$1" -v skip="$3" -v count="$4" "$X"; }
 case "$mode" in
+recent)
+  o=$((s - 131072)); skip=1
+  if [ "$o" -le 0 ]; then o=0; skip=0; fi
+  echo "T $s $o $s"
+  [ "$s" -gt "$o" ] && range "$o" "$s" "$skip" 0
+  ;;
 tail)
   o="$3"; [ "$s" -lt "$o" ] && o=0
   part=0
@@ -1102,4 +1109,3 @@ export function summary(steps) {
   const s = parts.join(", ");
   return s ? s[0].toUpperCase() + s.slice(1) : "Worked";
 }
-

@@ -9,6 +9,18 @@ const activeTask = (task) => task?.state === "running" || task?.state === "ready
 const roleOf = (terminal) => terminal.labels?.["herdr.role"];
 const helper = (terminal) => ["reviewer", "helper"].includes(roleOf(terminal));
 
+function taskTarget(node) {
+  const match = /^([\w.@-]+)#(\d+)$/.exec(node?.taskLabel);
+  if (!match) return null;
+  const [, slug, id] = match;
+  const list = node.knownTask?.list;
+  return {
+    key: { machine: machineOf(node.terminal.address), slug, id: Number(id), folder: list?.folder ?? null },
+    ref: list?.prefix ? `${list.prefix}-${id}` : id,
+    title: node.knownTask?.task.title ?? null,
+  };
+}
+
 // Match the native terminal's task label against the task store on that terminal's machine.
 export function projectTasks(lists, machine) {
   return lists.flatMap((list) => list.tasks
@@ -64,7 +76,7 @@ export function projectTree({ spaces, terminals, panes, agents, assistants, task
     const tab = byPane.get(chatPane(terminal)) ?? pane?.tab ?? agentTab ?? qualified(machine, labels["herdr.tab"]);
     const taggedSpace = qualified(machine, labels["herdr.space"] ?? labels["herdr.coordinator.space"]);
     const space = [assistant, taskSpace, byTab.get(tab), qualified(machine, agent?.space), taggedSpace, byTab.get(ownerTab)].find((id) => ids.has(id));
-    nodes.set(address, { terminal, space, assistant: Boolean(assistant), taskKey, knownTask,
+    nodes.set(address, { terminal, space, assistant: Boolean(assistant), taskKey, taskLabel: task, knownTask,
       parent: qualified(machine, terminal.parent), agentStatus: agent?.status ?? terminal.status });
   }
   // A child agent without its own space uses the closest parent that has one.
@@ -122,7 +134,8 @@ export function projectTree({ spaces, terminals, panes, agents, assistants, task
         visited.add(id);
         const node = nodes.get(id);
         if (!node && id !== assistant) continue;
-        const task = node?.knownTask?.task ?? inherited;
+        const context = node?.taskLabel ? node : inherited;
+        const task = context?.knownTask?.task;
         let taskPlace;
         if (node?.knownTask) {
           const key = node.taskKey;
@@ -134,12 +147,16 @@ export function projectTree({ spaces, terminals, panes, agents, assistants, task
           taskPlace = taskPlaces.get(key);
         }
         const k = node?.terminal;
+        const isAssistant = node?.assistant || !node;
         rows.push({
-          id, depth, role: node?.assistant || !node ? "assistant" : roleOf(k) ?? (node.taskKey ? "worker" : null),
-          title: node?.assistant || !node ? "Assistant" : task?.title || k.name || k.title || k.program?.name || k.template || k.address,
+          id, depth, role: isAssistant ? "assistant" : roleOf(k) ?? (node.taskKey ? "worker" : null),
+          title: isAssistant ? "Assistant" : task?.title || k.name || k.title || k.program?.name || k.template || k.address,
           state: node ? statusOf(node, taskPlace) : "stopped",
+          address: k?.address ?? null, live: k?.state === "live",
+          slot: isAssistant ? assistants.get(space)?.slot ?? null : null,
+          task: !isAssistant ? taskTarget(helper(k) ? inherited ?? node : node) : null,
         });
-        for (const child of (children.get(id) ?? []).slice().reverse()) stack.push({ id: child, depth: depth + 1, inherited: task });
+        for (const child of (children.get(id) ?? []).slice().reverse()) stack.push({ id: child, depth: depth + 1, inherited: context });
       }
     }
     out.set(space, rows);

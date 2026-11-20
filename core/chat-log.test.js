@@ -49,6 +49,23 @@ test("an update on one line with the call it comes before: its signature says so
   expect(said(c)).toEqual(["Claude found a separate bug in the web chat."]);
 });
 
+test("the recent log read includes current model metadata and drops earlier records", () => {
+  const dir = mkdtempSync(join(tmpdir(), "chat-model-"));
+  const file = join(dir, "log.jsonl");
+  try {
+    const context = (model, effort) => JSON.stringify({ type: "turn_context", payload: { model, effort } });
+    writeFileSync(file, `${context("older", "low")}\n${"x".repeat(132000)}\n${context("current", "high")}\n`);
+    const result = Bun.spawnSync(["sh", "-c", LOG, "log", "recent", file]);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.toString()).not.toContain("older");
+    const conversation = new Conversation("codex");
+    conversation.feed(records(result.stdout.toString()).records);
+    expect(conversation.meta).toMatchObject({ model: "current", effort: "high" });
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("thinking stays hidden: empty, or summarized", async () => {
   const c = await read([
     reply("m3", [thinking("")], { thinkingDisplay: "updates" }),

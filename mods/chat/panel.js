@@ -32,12 +32,12 @@ import { artifactCli } from "./artview.js";
 import { GREP, publishedIds, taskArtifacts } from "./core/task-artifacts.js";
 import { SH } from "./core/paths.js";
 import { dirs } from "./dirs.js";
+import { findLayoutNode as find, STACK, LIST, BODY, CHAT, TERM } from "./taskthread.js";
+export { hasTaskThread, openTaskThread, STACK, LIST, THREAD, BODY, CHAT, TERM } from "./taskthread.js";
 
 // The task header's shared left edge, and task ids in the Tasks list's monospace (mods/tasks).
 const EDGE = 12, ID_FONT = "JetBrains Mono";
 
-export const STACK = "tasks", LIST = "tasks-list", THREAD = "tasks-thread";
-export const BODY = "tasks-thread-body", CHAT = "tasks-thread-chat", TERM = "tasks-thread-term";
 export const PR = "tasks-thread-pr";
 export const BROWSER = "tasks-thread-browser";
 // The task's Artifacts (mods/task-artifacts, SHEP-60): what its agent and its helpers made.
@@ -45,34 +45,11 @@ export const ARTIFACTS = "tasks-thread-artifacts";
 // How often its artifacts are looked for again while it shows (a python start and a grep of its logs).
 const ARTS_EVERY = 15000;
 
-function find(node, id) {
-  if (!node || typeof node !== "object") return null;
-  if (node.id === id) return node;
-  for (const c of node.children ?? []) { const hit = find(c, id); if (hit) return hit; }
-  return null;
-}
-
 // The chat shown inside, for its cleanup: a nested view gets no close() of its own.
 export const inner = { chat: null };
 
 // Which task a "tasks.thread" names: its agent's terminal, else its key (one never started).
 const wantId = (w) => (w ? w.terminal ?? (w.key ? `${w.key.machine ?? ""}:${w.key.slug}#${w.key.id}` : null) : null);
-
-// Whether the shown layout has the drill-in view (else callers go to the agent instead).
-export function hasTaskThread(node) {
-  if (!node || typeof node !== "object") return false;
-  if (node.id === THREAD) return true;
-  return (node.children ?? []).some(hasTaskThread);
-}
-
-export function openTaskThread(terminal, task, title) {
-  setShared("tasks.thread", { terminal, task: task ?? null, title: title ?? null, at: Date.now() });
-  run("layout.select", { stack: "panel-body", child: STACK });
-  run("layout.select", { stack: STACK, child: THREAD });
-  // A task opens on its chat; the header's switch shows its terminal.
-  if (find(layout(), BODY)) run("layout.select", { stack: BODY, child: CHAT });
-  run("layout.show", { id: "panel" });
-}
 
 export const backToTasks = () => run("layout.select", { stack: STACK, child: LIST });
 
@@ -129,8 +106,8 @@ export class PanelHost {
   // Reads its task's record again (cheap: one small file; another machine's less often).
   async loadTask(addr, cx) {
     const cur = this.cur;
-    // A terminal gone from the core has no labels left: the task's key, as the list sent it.
-    const k = (addr && this.taskOf(addr)) || cur?.key || null;
+    // The list can send a key for a terminal that has gone. Projects can send a helper's parent task.
+    const k = cur?.key || (addr && this.taskOf(addr)) || null;
     let rec = null;
     if (k) {
       const text = k.machine
@@ -251,20 +228,25 @@ export class PanelHost {
 
   // Chat → Terminal: the body stack shows the worker's terminal block, pointed at it first, and
   // the keyboard goes to it (typing reaches the worker, as in the main chat's Terminal).
-  toTerminal(addr, cx) {
+  toTerminal(addr, cx, openedAt = null) {
     if (this.busy) return;
     this.busy = true;
     cx.notify();
     cx.spawn(async (cx) => {
       try {
         if (find(layout(), TERM)?.content?.terminal !== addr) await pointTerm(addr, cx);
+        if (openedAt !== null) {
+          const want = shared("tasks.thread");
+          if (want?.at !== openedAt || want?.terminal !== addr || !want.openTerminal) return;
+        }
         run("layout.select", { stack: BODY, child: TERM });
         run("pane.focus", { terminal: addr });
       } catch (e) {
         toast({ title: "Terminal didn't open", body: plainError(e), level: "error" });
+      } finally {
+        this.busy = false;
+        cx.notify();
       }
-      this.busy = false;
-      cx.notify();
     });
   }
 
@@ -353,6 +335,15 @@ export class PanelHost {
     const term = terminalShown();
     // The worker ended (or none shows) while its terminal was up: back to its chat, which stays to read.
     if (term && !live && !this.busy) cx.timer.after(0, () => showWorkerChat());
+    // The Projects sidebar can open the panel on a helper's terminal, even when this header is new.
+    const terminalRequest = want?.openTerminal ? `${addr}:${want.at}` : null;
+    if (terminalRequest && live && !this.busy && this.openedTerminal !== terminalRequest && Date.now() - want.at < 5000) {
+      this.openedTerminal = terminalRequest;
+      cx.timer.after(0, (cx) => {
+        const current = shared("tasks.thread");
+        if (current?.at === want.at && current?.terminal === addr && current.openTerminal) this.toTerminal(addr, cx, want.at);
+      });
+    }
     // The chat's own way to the terminal (requestWorkerTerminal()).
     const rq = shared("tasks.thread.termreq");
     if (rq && rq.at !== this.termReqAt && rq.terminal === addr && live && Date.now() - rq.at < 5000) {
@@ -420,11 +411,12 @@ export class PanelHost {
   taskBlock(t, { want, st, addr }) {
     const report = this.reportLine(st, t);
     const title = want?.title ?? this.rec?.title ?? "";
+    const ref = this.rec?.ref ?? want?.task;
     return h_flex().id("thread-task").flex_none().px(EDGE).gap(8).items_start().text_color(t.foreground)
       .child(h_flex().w(16).h(22).flex_none().items_center().justify_center().child(this.dot(st, addr)))
       .child(v_flex().flex_1().min_w(0).gap(2)
         .child(h_flex().h(22).min_w(0).gap(8).items_center()
-          .when(Boolean(want?.task), (el) => el.child(div().flex_none().font_family(ID_FONT).text_size(TEXT.label).text_color(t.dim).child(want.task)))
+          .when(Boolean(ref), (el) => el.child(div().flex_none().font_family(ID_FONT).text_size(TEXT.label).text_color(t.dim).child(ref)))
           .child(div().id("thread-title").flex_1().min_w(0).truncate().text_size(TEXT.title).font_medium().child(title)))
         .child(h_flex().h(16).min_w(0).items_center()
           .child(div().flex_1().min_w(0).when(Boolean(report), (el) => el.child(report)))));

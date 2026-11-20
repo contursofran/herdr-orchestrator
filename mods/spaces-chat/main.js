@@ -15,7 +15,7 @@ import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
 import { machines, run, props, exec, hc, home, theme, shared, setShared, watchFolder, window, layout, nextCommand, readTextFile } from "herdr";
 import { agents, panes, spaces as allSpaces, terminals, inRender } from "./live.js";
-import { countsByTab, readyByTab } from "./inbox.js";
+import { chatOf, countsByTab, readyByTab } from "./inbox.js";
 import { spacesWithChats } from "./parked.js";
 import { sectionsOf, sectionOf, iconOf, placeSpace, foldSection, prune, data, pin, foldPinned, machineLook, restoreSection } from "./sections.js";
 import { Menu, openMenu, rectOf } from "./popups.js";
@@ -33,20 +33,13 @@ import { projectTasks, projectTree, splitProjects } from "./core/projects.js";
 import { READ_LISTS, taskLists } from "./core/tasklists.js";
 import { WORKTREE_RE, SH } from "./core/paths.js";
 import { dirsReady } from "./dirs.js";
+import { projectModel } from "./agent-model.js";
+import { findLayoutNode as find, hasTaskThread, openTaskThread } from "./taskthread.js";
 
 const POPUPS = { add: Menu, space: Menu, section: Menu, icon: IconPicker, rename: Rename, machine: MachinePopup };
 
 // Spaces with agents showing as a chat counted in their status.
 const spaces = spacesWithChats;
-
-function find(node, id) {
-  if (node?.id === id) return node;
-  for (const child of node?.children ?? []) {
-    const found = find(child, id);
-    if (found) return found;
-  }
-  return null;
-}
 
 // The sidebar's rail goes by its width, not a flag: dragging its edge narrows it too.
 const sidebarWidth = () => find(layout(), "sidebar")?.size?.px ?? Infinity;
@@ -146,6 +139,8 @@ export default class Spaces extends View {
     this.machinesRead = false; // hc machine ls answered once: a machine missing from it is offline
     this.moreProjects = new Set();
     this.projectFiles = new Map();
+    this.projectModels = new Map();
+    this.hoveredProjectAgent = null;
     this.readProjectTasks(cx);
     cx.timer.every(5000, (cx) => this.readProjectTasks(cx));
     this.refreshMachines(cx);
@@ -657,16 +652,81 @@ export default class Spaces extends View {
     return v_flex().flex_none().child(header)
       .child(v_flex().flex_none()
         .on_mouse_move((_e, cx) => this.drag(`space:${r.w.id}`, r.pinned ? ANY : r.w.machine, cx))
-        .children(rows.map((row) => this.projectAgent(row, r.tree, t))));
+        .children(rows.map((row) => this.projectAgent(row, r.w, r.tree, t))));
   }
 
-  projectAgent(row, tree, t) {
+  focusProjectAgent(row, space) {
+    const { address } = row;
+    if (row.role === "assistant") {
+      const chat = address && chatOf(address);
+      const pane = chat || row.slot?.pane;
+      const target = panes().find((p) => pane ? p.pane === pane : address && p.terminal === address);
+      if (target) {
+        if (!space.active) run("space.select", { id: space.id });
+        run("tab.select", { id: target.tab });
+        run("pane.focus", { pane: target.pane });
+        if (target.mod !== "chat" && address) run("pane-chat.toggle");
+        return;
+      }
+    }
+    if (!address) return;
+    if (row.task) {
+      const terminal = (row.role === "helper" || row.role === "reviewer") && row.live;
+      if (hasTaskThread(layout())) {
+        openTaskThread(address, row.task.ref, row.task.title, { key: row.task.key, openTerminal: terminal });
+        return;
+      }
+      if (terminal) { run("terminal.peek", { terminal: address }); return; }
+    }
+    run("agent.focus", { terminal: address });
+  }
+
+  hoverProjectAgent(row, on, cx) {
+    if (!on && this.hoveredProjectAgent !== row.id) return;
+    this.hoveredProjectAgent = on ? row.id : null;
+    cx.notify();
+    if (!on || !row.live) return;
+    const old = this.projectModels.get(row.address);
+    const now = Date.now();
+    if (old?.pending || (old && now - old.at < 15000)) return;
+    const entry = { tip: old?.tip ?? "", at: now, pending: true };
+    this.projectModels.delete(row.address);
+    this.projectModels.set(row.address, entry);
+    if (this.projectModels.size > 64) this.projectModels.delete(this.projectModels.keys().next().value);
+    cx.spawn(async (cx) => {
+      try { entry.tip = await projectModel(row.address); }
+      catch { entry.tip = old?.tip ?? ""; }
+      finally { entry.pending = false; }
+      if (this.hoveredProjectAgent === row.id) cx.notify();
+    });
+  }
+
+  projectAgentControl(id, label, icon, command, args, t) {
+    return div().id(id).size(20).flex_none().flex().items_center().justify_center().rounded(RADIUS.control)
+      .text_color(t.muted).cursor_pointer().hover((s) => s.bg(t.raised).text_color(t.foreground))
+      .accessibility_label(label).tooltip(label)
+      .on_click((_e, cx) => { cx.stop_propagation(); run(command, args); this.hoveredProjectAgent = null; cx.notify(); })
+      .child(svg(icon).size(12));
+  }
+
+  projectAgent(row, space, tree, t) {
     const color = { working: t.working, needs: red(), ready: green(), stopped: t.dim, idle: t.dim }[row.state];
+    const controls = row.live && this.hoveredProjectAgent === row.id;
+    const tip = this.projectModels.get(row.address)?.tip;
     return h_flex().id(`project-agent-${row.id}`).h(24).flex_none().pl(30 + (tree ? 18 : 0) + Math.min(row.depth, 4) * 12)
-      .pr(8).items_center().gap(7).text_size(TEXT.label)
+      .pr(8).items_center().gap(7).text_size(TEXT.label).rounded(RADIUS.control)
+      .when(Boolean(row.address || row.slot), (el) => el.cursor_pointer().hover((s) => s.bg(t.hover))
+        .on_click(() => this.focusProjectAgent(row, space)))
+      .when(row.live, (el) => el.on_hover((on, cx) => this.hoverProjectAgent(row, on, cx)))
+      .when(Boolean(tip), (el) => el.tooltip(tip))
       .child(div().size(6).rounded(3).flex_none().bg(color))
       .child(div().flex_1().min_w(0).truncate().text_color(row.role === "assistant" ? t.foreground : t.muted).child(row.title))
-      .when(this.showProjectStates, (el) => el.child(div().flex_none().text_size(TEXT.id).text_color(t.dim).child(PROJECT_STATES[row.state])));
+      .when(this.showProjectStates && !controls, (el) => el.child(div().flex_none().text_size(TEXT.id).text_color(t.dim).child(PROJECT_STATES[row.state])))
+      .when(controls, (el) => el
+        .child(this.projectAgentControl(`project-stop-${row.id}`, "Stop", "mods/workspace-chrome-orchestrator/square.svg",
+          "terminal.kill", { terminal: row.address }, t))
+        .child(this.projectAgentControl(`project-tab-${row.id}`, "Open in a new tab", "mods/spaces-chat/open-tab.svg",
+          "terminal.keep", { terminal: row.address, place: "tab" }, t)));
   }
 
   sectionHead(s, members, t, open) {

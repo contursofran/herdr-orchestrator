@@ -141,9 +141,9 @@ class Repo(unittest.TestCase):
     TITLE_OK = {"Dialog", "CardShell", "TitleWhere", "Line", "iframe"}
 
     def test_no_hover_tooltips(self):
-        """Nothing pops up on hover (SHEP-25): no `title=` tooltip in the web app, no `.tooltip(` in the window's
-        mods. An icon-only control says its words with `aria-label` instead."""
+        """Hover tooltips stay limited to the native Projects sidebar's agent rows and controls (#7)."""
         found = []
+        allowed_window = {"mods/spaces-chat/main.js": {".tooltip(tip)", ".tooltip(label)"}}
         for top in ("web/src", "web/plugins"):
             for d, _, files in os.walk(J(top)):
                 for f in files:
@@ -173,10 +173,14 @@ class Repo(unittest.TestCase):
                 for f in files:
                     if f.endswith(".js"):
                         p = os.path.join(d, f)
+                        rel = os.path.relpath(p, ROOT)
                         with open(p, encoding="utf-8") as fh:
                             for n, line in enumerate(fh, 1):
-                                if ".tooltip(" in line:
-                                    found.append(f"{os.path.relpath(p, ROOT)}:{n}: .tooltip(")
+                                for call in re.findall(r"\.tooltip\((?:tip|label)\)|\.tooltip\(", line):
+                                    if call in allowed_window.get(rel, ()):
+                                        allowed_window[rel].remove(call)
+                                    else:
+                                        found.append(f"{rel}:{n}: {call}")
         self.assertFalse(found, "hover tooltips (use aria-label, or show the words):\n" + "\n".join(found))
 
     def test_no_leftovers(self):

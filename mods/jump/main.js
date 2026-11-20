@@ -22,6 +22,7 @@ import { View } from "gpui-kit";
 import { h_flex, v_flex, InputState, Input, VirtualListScrollHandle, v_virtual_list, Scrollbar } from "gpui-base";
 import { machines, layout, layouts, exec, home, run, theme, props, closeOverlay, shared, setShared } from "herdr";
 import { note } from "./usage.js";
+import { openTaskThread } from "./taskthread.js";
 import { spaces, terminals, agents, inRender } from "./live.js";
 import { taskDot } from "./dot.js";
 import { READ_LISTS, taskLists } from "./core/tasklists.js";
@@ -91,15 +92,6 @@ const find = (node, id) => {
   for (const c of node.children ?? []) { const hit = find(c, id); if (hit) return hit; }
   return null;
 };
-
-// A task's worker chat inside the Tasks panel (mods/chat/panel.js openTaskThread).
-function openTaskThread(terminal, task, title) {
-  setShared("tasks.thread", { terminal, task: task ?? null, title: title ?? null, at: Date.now() });
-  run("layout.select", { stack: "panel-body", child: "tasks" });
-  run("layout.select", { stack: "tasks", child: "tasks-thread" });
-  if (find(layout(), "tasks-thread-body")) run("layout.select", { stack: "tasks-thread-body", child: "tasks-thread-chat" });
-  run("layout.show", { id: "panel" });
-}
 
 // The Tasks list, searched for one task (mods/tasks/main.js reads shared "tasks.searchreq").
 function showInTaskList(q) {

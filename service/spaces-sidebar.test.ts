@@ -8,7 +8,8 @@ import { fakeGpuiBase, fakeGpuiKit } from "./fake-gpui";
 const EL = Symbol("element");
 const ok = (v: unknown) => typeof v === "string" || typeof v === "number" || (v !== null && typeof v === "object" && (v as any)[EL]);
 function el(): any {
-  const self: any = new Proxy({ [EL]: true, parts: [] as unknown[], elementId: "", indent: 0, click: null as Function | null }, {
+  const self: any = new Proxy({ [EL]: true, parts: [] as unknown[], elementId: "", indent: 0, click: null as Function | null,
+    hoverChanged: null as Function | null, tip: "" }, {
     get(target, k) {
       if (k === EL) return true;
       if (k === "child") return (v: unknown) => {
@@ -24,6 +25,8 @@ function el(): any {
       if (k === "id") return (id: string) => { target.elementId = id; return self; };
       if (k === "pl") return (indent: number) => { target.indent = indent; return self; };
       if (k === "on_click") return (click: Function) => { target.click = click; return self; };
+      if (k === "on_hover") return (hover: Function) => { target.hoverChanged = hover; return self; };
+      if (k === "tooltip") return (tip: string) => { target.tip = tip; return self; };
       if (k === "when") return (c: unknown, f: (e: any) => any) => (c ? f(self) : self);
       if (k === "then") return undefined;
       return (target as any)[k] ?? (() => self);
@@ -45,20 +48,34 @@ const space = (id: string, active = false) => ({ id, name: id, active, machine: 
 let liveSpaces = [space("s1", true), space("s2")];
 let liveTerminals: object[] = [], livePanes: object[] = [];
 let readProjects: ((args: string[], on?: string) => string | undefined) | null = null;
+let getTerminal: ((address: string) => object) | null = null;
+let readModel: ((args: string[], on?: string) => string | undefined) | null = null;
+let taskTerminal: string | null = null;
+let taskPanel = true;
+const ran: [string, unknown][] = [];
+const reply = (stdout: string) => ({ code: 0, stdout, stderr: "" });
 const theme = new Proxy({}, { get: () => "#000000" });
 const herdr = {
   agents: () => [], panes: () => livePanes, terminals: () => liveTerminals, spaces: () => liveSpaces,
   appHome: () => "/nonexistent-app", home: () => "/nonexistent-home",
   exec: async (cmd: string, args: string[], opts?: { on?: string }) => {
-    const text = args[2] === "projects" ? readProjects?.(args, opts?.on) : undefined;
-    return text === undefined ? execImpl(cmd, args, opts) : { code: 0, stdout: text, stderr: "" };
-  }, hc: async () => ({ code: 1, stdout: "", stderr: "" }),
-  run: () => {}, openOverlay: () => {}, closeOverlay: () => {}, notify: () => {}, playSound: () => {},
+    const text = args[2] === "projects" ? readProjects?.(args, opts?.on) : readModel?.(args, opts?.on);
+    return text === undefined ? execImpl(cmd, args, opts) : reply(text);
+  }, hc: async (args: string[]) => args[0] === "get" && getTerminal
+    ? reply(JSON.stringify(getTerminal(args[1]))) : { code: 1, stdout: "", stderr: "" },
+  run: (command: string, args: unknown) => { ran.push([command, args]); },
+  openOverlay: () => {}, closeOverlay: () => {}, notify: () => {}, playSound: () => {},
   shared: (k: string) => shared.get(k), setShared: (k: string, v: unknown) => { shared.set(k, v); },
   machines: () => machinesNow, focused: () => null, knownAgents: () => [], settings: () => ({}),
   readTextFile: async (path: string) => (path.endsWith("/.autopilot.json") ? localPilot : null), writeTextFile: async () => {}, watchFolder: () => {},
   props: () => ({}), theme: () => theme, window: () => ({ platform: "linux" }), nextCommand: () => null,
-  layout: () => ({ id: "root", children: [{ id: "sidebar", size: { px: sidebarPx } }] }),
+  layout: () => ({ id: "root", children: [{ id: "sidebar", size: { px: sidebarPx } }, ...(taskPanel ? [
+    { id: "panel", hidden: true, children: [{ id: "panel-body", children: [{ id: "tasks", children: [
+      { id: "tasks-thread", children: [{ id: "tasks-thread-body", active: "tasks-thread-chat", children: [
+        { id: "tasks-thread-chat" }, { id: "tasks-thread-term", content: { terminal: taskTerminal } },
+      ] }] },
+    ] }] }] },
+  ] : [])] }),
 };
 mock.module("herdr", () => fakeHerdr(herdr));
 mock.module("gpui-kit", () => fakeGpuiKit({ View: class {}, div: el, svg: el, image: el }));
@@ -68,6 +85,7 @@ mock.module("gpui-base", () => fakeGpuiBase({
 (globalThis as any).localStorage ??= { getItem: () => null, setItem: () => {}, removeItem: () => {} };
 
 const { default: Spaces, pilotKey } = await import("../mods/spaces-chat/main.js");
+const { PanelHost } = await import("../mods/chat/panel.js");
 const cx: any = new Proxy({ timer: { every: () => {}, after: () => {} } }, { get: (t, k) => (t as any)[k] ?? (() => {}) });
 const sidebar = () => { const s: any = new Spaces(); s.init({}, cx); return s.render(cx); };
 
@@ -170,6 +188,11 @@ describe("Desktop Projects tree", () => {
     livePanes = [{ pane: "chat", tab: "assistant-tab", mod: "chat" }];
     liveTerminals = [];
     readProjects = null;
+    readModel = null;
+    getTerminal = null;
+    taskTerminal = null;
+    taskPanel = true;
+    ran.length = 0;
     shared.set("spaces-chat", {
       pinned: ["pinned"],
       sections: [{ id: "ideas", name: "Ideas", machine: null, spaces: ["s3"], folded: false }],
@@ -226,5 +249,116 @@ describe("Desktop Projects tree", () => {
     expect(byId(tree, "project-agent-t1")).toBeUndefined();
     const replacement = byId(tree, "project-agent-t7"), child = byId(tree, "project-agent-t2");
     expect(replacement.indent).toBeLessThan(child.indent);
+  });
+
+  test("clicking a parked Assistant selects its project and focuses the chat", () => {
+    liveTerminals = [assistant()];
+    liveSpaces[0].active = false;
+    liveSpaces[1].active = true;
+    byId(s.render(cx), "project-agent-t1").click({}, cx);
+    expect(ran.slice(-3)).toEqual([
+      ["space.select", { id: "s1" }], ["tab.select", { id: "assistant-tab" }], ["pane.focus", { pane: "chat" }],
+    ]);
+  });
+
+  test("clicking the stopped Assistant opens its registered chat while a worker remains", () => {
+    livePanes.unshift({ pane: "elsewhere", tab: "assistant-tab", terminal: null });
+    liveTerminals = [worker("t2", null)];
+    shared.set("coordinator.slots", { waiting: { pane: "chat", tab: "assistant-tab", space: "s1" } });
+    byId(s.render(cx), "project-agent-assistant:chat").click({}, cx);
+    expect(ran.slice(-2)).toEqual([["tab.select", { id: "assistant-tab" }], ["pane.focus", { pane: "chat" }]]);
+  });
+
+  test("clicking a worker opens its task's chat and reveals the closed Tasks panel", () => {
+    liveTerminals = [assistant(), worker("t2", null)];
+    byId(s.render(cx), "project-agent-t2").click({}, cx);
+    expect(shared.get("tasks.thread")).toMatchObject({
+      terminal: "t2", task: "1", key: { slug: "shop", id: 1 }, openTerminal: false,
+    });
+    expect(ran.slice(-4)).toEqual([
+      ["layout.select", { stack: "panel-body", child: "tasks" }],
+      ["layout.select", { stack: "tasks", child: "tasks-thread" }],
+      ["layout.select", { stack: "tasks-thread-body", child: "tasks-thread-chat" }],
+      ["layout.show", { id: "panel" }],
+    ]);
+  });
+
+  for (const role of ["reviewer", "helper"]) {
+    test(`clicking a ${role} without its own task opens the parent task on that child's terminal`, async () => {
+      liveTerminals = [assistant(), worker("t2", null),
+        { address: "t3", state: "live", status: "working", parent: "t2", labels: { "herdr.role": role } }];
+      taskTerminal = "t3";
+      byId(s.render(cx), "project-agent-t3").click({}, cx);
+      expect(shared.get("tasks.thread")).toMatchObject({
+        terminal: "t3", key: { slug: "shop", id: 1 }, openTerminal: true,
+      });
+      expect(ran).toContainEqual(["layout.show", { id: "panel" }]);
+      const timers: Function[] = [];
+      const jobs: Promise<unknown>[] = [];
+      const headCx = { notify() {}, timer: { after: (_delay: number, fn: Function) => timers.push(fn), every() {} },
+        spawn: (fn: Function) => jobs.push(fn(headCx)) };
+      // The header can be mounting for the first time as the sidebar opens the Tasks panel.
+      const head = new PanelHost(class {}, true);
+      head.render(headCx);
+      for (const fn of timers) fn(headCx);
+      await Promise.all(jobs);
+      expect(ran.slice(-2)).toEqual([
+        ["layout.select", { stack: "tasks-thread-body", child: "tasks-thread-term" }],
+        ["pane.focus", { terminal: "t3" }],
+      ]);
+    });
+  }
+
+  test("clicking an agent without a task uses agent.focus", () => {
+    liveTerminals = [{ address: "t5", state: "live", program: { agent: true }, labels: { "herdr.tab": "assistant-tab" } }];
+    byId(s.render(cx), "project-agent-t5").click({}, cx);
+    expect(ran.at(-1)).toEqual(["agent.focus", { terminal: "t5" }]);
+  });
+
+  test("a helper in a layout without a Tasks panel opens a terminal peek", () => {
+    taskPanel = false;
+    liveTerminals = [assistant(), worker("t2", null),
+      { ...worker("t3", "t2"), labels: { "herdr.role": "helper" } }];
+    byId(s.render(cx), "project-agent-t3").click({}, cx);
+    expect(ran.at(-1)).toEqual(["terminal.peek", { terminal: "t3" }]);
+    expect(shared.has("tasks.thread")).toBe(false);
+  });
+
+  test("hover shows model and effort and gives both agent controls their own click targets", async () => {
+    liveTerminals = [assistant()];
+    let reads = 0;
+    getTerminal = (addr) => {
+      expect(addr).toBe("t1");
+      reads++;
+      return { foreground: { name: "codex", pid: 123, argv: ["codex", "--model", "old"] } };
+    };
+    readModel = (args) => {
+      if (args[2] === "chat") return "/tmp/rollout-model.jsonl\n";
+      if (args[2] === "defaults") return 'model_reasoning_effort\tlow\n';
+      if (args[2] === "log") {
+        expect(args.slice(3)).toEqual(["recent", "/tmp/rollout-model.jsonl"]);
+        return 'T 1 0 1\n0\tJ\t{"type":"turn_context","payload":{"model":"gpt-6.2-sol","effort":"high"}}\n';
+      }
+    };
+    let model: Promise<unknown> | undefined;
+    let stopped = 0;
+    const mouse = { notify() {}, stop_propagation() { stopped++; }, spawn: (fn: Function) => { model = fn(mouse); } };
+    let tree = s.render(cx);
+    expect(byId(tree, "project-stop-t1")).toBeUndefined();
+    byId(tree, "project-agent-t1").hoverChanged(true, mouse);
+    await model;
+    tree = s.render(cx);
+    expect(byId(tree, "project-agent-t1").tip).toBe("gpt-6.2-sol · High effort");
+    expect(byId(tree, "project-stop-t1").tip).toBe("Stop");
+    byId(tree, "project-stop-t1").click({}, mouse);
+    expect(ran.at(-1)).toEqual(["terminal.kill", { terminal: "t1" }]);
+    byId(s.render(cx), "project-agent-t1").hoverChanged(true, mouse);
+    tree = s.render(cx);
+    expect(byId(tree, "project-tab-t1").tip).toBe("Open in a new tab");
+    byId(tree, "project-tab-t1").click({}, mouse);
+    expect(ran.at(-1)).toEqual(["terminal.keep", { terminal: "t1", place: "tab" }]);
+    expect(stopped).toBe(2);
+    expect(reads).toBe(1);
+    expect(byId(s.render(cx), "project-tab-t1")).toBeUndefined();
   });
 });

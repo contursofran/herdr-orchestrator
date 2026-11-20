@@ -13,6 +13,7 @@ core/asks.js: chat jump spaces-chat tabs-tasks tasks workspace-status-chat toast
 core/needs.js: chat jump spaces-chat tabs-tasks tasks workspace-status-chat toasts
 core/tasks.js: chat jump spaces-chat tasks
 core/projects.js: spaces-chat
+taskthread.js: chat spaces-chat jump
 core/notify.js: chat spaces-chat tabs-tasks tasks orchestrator-settings workspace-status-chat
 parked.js: chat spaces-chat tabs-tasks workspace-status-chat
 keyholder.js: chat tasks newspace
@@ -21,7 +22,7 @@ agent.js: chat newspace orchestrator-settings
 settings.js: chat newspace orchestrator-settings
 dot.js: chat jump tasks
 core/tasklists.js: jump spaces-chat tasks
-core/chat-log.js: chat
+core/chat-log.js: chat spaces-chat
 core/chat-view.js: chat
 core/screens.js: chat
 core/send.js: chat
@@ -39,7 +40,7 @@ core/keys.js: keybinds
 core/machines.js: spaces-chat orchestrator-settings
 core/slash.js: chat
 core/mentions.js: chat
-core/agents.js: chat chat-models newspace orchestrator-settings coordinator
+core/agents.js: chat chat-models newspace orchestrator-settings coordinator spaces-chat
 core/settings.js: chat newspace orchestrator-settings coordinator
 core/host.js: chat newspace orchestrator-settings coordinator
 core/secrets.js: chat orchestrator-settings tabs-tasks
