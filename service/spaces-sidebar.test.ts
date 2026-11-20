@@ -8,17 +8,22 @@ import { fakeGpuiBase, fakeGpuiKit } from "./fake-gpui";
 const EL = Symbol("element");
 const ok = (v: unknown) => typeof v === "string" || typeof v === "number" || (v !== null && typeof v === "object" && (v as any)[EL]);
 function el(): any {
-  const self: any = new Proxy({ [EL]: true }, {
+  const self: any = new Proxy({ [EL]: true, parts: [] as unknown[], elementId: "", indent: 0, click: null as Function | null }, {
     get(target, k) {
       if (k === EL) return true;
       if (k === "child") return (v: unknown) => {
         if (!ok(v)) throw new TypeError(`child(value) expects an element, a string, or an entity from cx.new(Class, props); got ${v}`);
+        target.parts.push(v);
         return self;
       };
       if (k === "children") return (vs: unknown[]) => {
         for (const v of vs) if (!ok(v)) throw new TypeError(`children() got ${v}`);
+        target.parts.push(...vs);
         return self;
       };
+      if (k === "id") return (id: string) => { target.elementId = id; return self; };
+      if (k === "pl") return (indent: number) => { target.indent = indent; return self; };
+      if (k === "on_click") return (click: Function) => { target.click = click; return self; };
       if (k === "when") return (c: unknown, f: (e: any) => any) => (c ? f(self) : self);
       if (k === "then") return undefined;
       return (target as any)[k] ?? (() => self);
@@ -38,11 +43,16 @@ const execImpl = async (_cmd: string, args: string[], opts?: { on?: string }) =>
 let sidebarPx = 260;
 const space = (id: string, active = false) => ({ id, name: id, active, machine: null as string | null, tabs: [] as unknown[], folder: "/tmp/x" });
 let liveSpaces = [space("s1", true), space("s2")];
+let liveTerminals: object[] = [], livePanes: object[] = [];
+let readProjects: ((args: string[], on?: string) => string | undefined) | null = null;
 const theme = new Proxy({}, { get: () => "#000000" });
 const herdr = {
-  agents: () => [], panes: () => [], terminals: () => [], spaces: () => liveSpaces,
+  agents: () => [], panes: () => livePanes, terminals: () => liveTerminals, spaces: () => liveSpaces,
   appHome: () => "/nonexistent-app", home: () => "/nonexistent-home",
-  exec: async (cmd: string, args: string[], opts?: { on?: string }) => execImpl(cmd, args, opts), hc: async () => ({ code: 1, stdout: "", stderr: "" }),
+  exec: async (cmd: string, args: string[], opts?: { on?: string }) => {
+    const text = args[2] === "projects" ? readProjects?.(args, opts?.on) : undefined;
+    return text === undefined ? execImpl(cmd, args, opts) : { code: 0, stdout: text, stderr: "" };
+  }, hc: async () => ({ code: 1, stdout: "", stderr: "" }),
   run: () => {}, openOverlay: () => {}, closeOverlay: () => {}, notify: () => {}, playSound: () => {},
   shared: (k: string) => shared.get(k), setShared: (k: string, v: unknown) => { shared.set(k, v); },
   machines: () => machinesNow, focused: () => null, knownAgents: () => [], settings: () => ({}),
@@ -134,5 +144,87 @@ describe("Autopilot rocket for a linked machine's spaces (GitHub #1010)", () => 
     await read(s); await read(s); await read(s);
     expect(s.pilots.has("vmb/sp1")).toBe(false);
     expect(s.pilotMark(liveSpaces[1], theme)).toBeNull();
+  });
+});
+
+describe("Desktop Projects tree", () => {
+  const byId = (tree: any, id: string): any => tree?.elementId === id ? tree
+    : tree?.parts?.map((child: any) => byId(child, id)).find(Boolean);
+  const words = (tree: any): string[] => typeof tree === "string" ? [tree]
+    : tree?.parts?.flatMap(words) ?? [];
+  const ids = (tree: any): string[] => tree?.parts ? [tree.elementId, ...tree.parts.flatMap(ids)] : [];
+  const assistant = (id = "t1") => ({
+    address: id, state: "live", status: "idle", labels: { "herdr.role": "coordinator", "herdr.chat": "chat" },
+  });
+  const worker = (id: string, parent: string | null, status = "working") => ({
+    address: id, parent, state: "live", status,
+    labels: { "herdr.task": "shop#1", "herdr.task.space": "s1" },
+  });
+  let s: any;
+
+  beforeEach(() => {
+    shared.clear();
+    sidebarPx = 320;
+    machinesNow = [{ name: null, layout: "ready" }];
+    liveSpaces = [{ ...space("s1", true), tabs: [{ id: "assistant-tab" }] }, space("s2"), space("s3"), space("pinned")];
+    livePanes = [{ pane: "chat", tab: "assistant-tab", mod: "chat" }];
+    liveTerminals = [];
+    readProjects = null;
+    shared.set("spaces-chat", {
+      pinned: ["pinned"],
+      sections: [{ id: "ideas", name: "Ideas", machine: null, spaces: ["s3"], folded: false }],
+    });
+    s = new Spaces();
+    s.init({}, cx);
+  });
+
+  test("folds inactive projects into one row and expands them within their sections", () => {
+    const collapsed = s.render(cx);
+    expect(words(collapsed)).toContain("Projects");
+    expect(words(collapsed)).toContain("2 more projects");
+    expect(byId(collapsed, "space-s1")).toBeDefined();
+    expect(byId(collapsed, "space-pinned")).toBeDefined();
+    expect(byId(collapsed, "space-s2")).toBeUndefined();
+    expect(byId(collapsed, "space-s3")).toBeUndefined();
+    byId(collapsed, "more-projects-local").click({}, cx);
+    const expanded = s.render(cx);
+    expect(byId(expanded, "space-s2")).toBeDefined();
+    expect(byId(expanded, "space-s3")).toBeDefined();
+    expect(ids(expanded).indexOf("section-ideas")).toBeLessThan(ids(expanded).indexOf("space-s3"));
+  });
+
+  test("renders a parked Assistant even if it has no workers", () => {
+    liveTerminals = [assistant()];
+    const tree = s.render(cx);
+    expect(words(byId(tree, "project-agent-t1"))).toEqual(["Assistant", "Idle"]);
+    expect(s.projectRows.get("s1")).toHaveLength(1);
+  });
+
+  test("reads only the worker's task list and renders detached and nested workers by task title", async () => {
+    liveTerminals = [assistant(), worker("t2", null), worker("t3", "t2", "blocked")];
+    readProjects = (args) => {
+      expect(args.slice(3)).toEqual(["shop.json"]);
+      return 'shop.json\n{"folder":"/tmp/x","tasks":[{"id":1,"state":"running","title":"Wire up checkout"}]}\n@@herdr-task-list@@\n';
+    };
+    let wait: Promise<unknown> | undefined;
+    const reader = { spawn: (f: (inner: typeof cx) => Promise<unknown>) => { wait = f(cx); } };
+    s.readProjectTasks(reader);
+    await wait;
+    const tree = s.render(cx);
+    const head = byId(tree, "project-agent-t1"), direct = byId(tree, "project-agent-t2"), nested = byId(tree, "project-agent-t3");
+    expect(words(direct)).toEqual(["Wire up checkout", "Working"]);
+    expect(words(nested)).toEqual(["Wire up checkout", "Needs you"]);
+    expect(head.indent).toBeLessThan(direct.indent);
+    expect(direct.indent).toBeLessThan(nested.indent);
+  });
+
+  test("keeps a worker beneath the replacement Assistant after restart", () => {
+    liveTerminals = [assistant(), worker("t2", "t1")];
+    expect(byId(s.render(cx), "project-agent-t1")).toBeDefined();
+    liveTerminals = [{ ...assistant(), state: "finished" }, assistant("t7"), worker("t2", "t1")];
+    const tree = s.render(cx);
+    expect(byId(tree, "project-agent-t1")).toBeUndefined();
+    const replacement = byId(tree, "project-agent-t7"), child = byId(tree, "project-agent-t2");
+    expect(replacement.indent).toBeLessThan(child.indent);
   });
 });

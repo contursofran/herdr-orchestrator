@@ -1,6 +1,6 @@
 // Workspace spaces: stable colored avatars, worktrees under their checkout,
 // grouped by machine when more than one is known. After a space's name, the repo
-// its first terminal is in now, only where unusual: its branch. Agent state lives in the agents list, not here. Click to
+// its first terminal is in now, only where unusual: its branch. Agents and task workers sit below it. Click to
 // switch, right-click for its menu, drag to reorder. Under each machine, its sections
 // (sections.js): the + on its header makes one, spaces drag in and out of them (only by
 // dragging; a folded one opens while a space is dragged over it). Above the machines, Pinned
@@ -14,7 +14,7 @@
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
 import { machines, run, props, exec, hc, home, theme, shared, setShared, watchFolder, window, layout, nextCommand, readTextFile } from "herdr";
-import { panes, spaces as allSpaces, inRender } from "./live.js";
+import { agents, panes, spaces as allSpaces, terminals, inRender } from "./live.js";
 import { countsByTab, readyByTab } from "./inbox.js";
 import { spacesWithChats } from "./parked.js";
 import { sectionsOf, sectionOf, iconOf, placeSpace, foldSection, prune, data, pin, foldPinned, machineLook, restoreSection } from "./sections.js";
@@ -27,8 +27,10 @@ import { MachinePopup, openMachine, openMachineSettings } from "./machine-popup.
 import { startPolling, allStats, healthMeters, bars } from "./machines.js";
 import { countBadge, red, green, H, TEXT, RADIUS, toast } from "./ui.js";
 import { on as addonOn } from "./addons.js";
-import { spaceName, gitTail, tilde, sharedNames, inOrder, withOrder, machinesInOrder, machineOrderOf, withMachineOrder } from "./core/spaces.js";
-import { coordinatorTab } from "./coordinator.js";
+import { assistantOf, machineOf, spaceName, gitTail, tilde, sharedNames, inOrder, withOrder, machinesInOrder, machineOrderOf, withMachineOrder } from "./core/spaces.js";
+import { coordinatorIn, coordinatorTab, slotIn } from "./coordinator.js";
+import { projectTasks, projectTree, splitProjects } from "./core/projects.js";
+import { READ_LISTS, taskLists } from "./core/tasklists.js";
 import { WORKTREE_RE, SH } from "./core/paths.js";
 import { dirsReady } from "./dirs.js";
 
@@ -47,7 +49,8 @@ function find(node, id) {
 }
 
 // The sidebar's rail goes by its width, not a flag: dragging its edge narrows it too.
-const narrow = () => (find(layout(), "sidebar")?.size?.px ?? Infinity) < 160;
+const sidebarWidth = () => find(layout(), "sidebar")?.size?.px ?? Infinity;
+const narrow = () => sidebarWidth() < 160;
 
 // Checkouts made for work (~/.herdr/worktrees/<repo>/<branch>, on any machine): a coordinator's
 // task workers run in them, and a worktree space is made in one.
@@ -73,6 +76,7 @@ const base = (path) => path.replace(/\/+$/, "").split("/").pop();
 // Changes made outside Herdr (an editor's save, a commit in another app): looked
 // for this often, in repos the list shows, while the window is in front.
 const FALLBACK = 60000;
+const PROJECT_STATES = { working: "Working", needs: "Needs you", ready: "Ready", stopped: "Stopped", idle: "Idle" };
 
 // What a stored color name looks like on an avatar (the same in every mod
 // that draws space avatars): one strong color per hue, light and dark alike.
@@ -140,6 +144,10 @@ export default class Spaces extends View {
     this.folded = new Set(JSON.parse(localStorage.getItem("machines.folded") ?? "[]"));
     this.openOffline = new Set(); // offline machines opened anyway (they start folded)
     this.machinesRead = false; // hc machine ls answered once: a machine missing from it is offline
+    this.moreProjects = new Set();
+    this.projectFiles = new Map();
+    this.readProjectTasks(cx);
+    cx.timer.every(5000, (cx) => this.readProjectTasks(cx));
     this.refreshMachines(cx);
     cx.timer.every(15000, cx => this.refreshMachines(cx));
     // Each space on Autopilot, this computer's and linked machines' (herdr-task's ~/.local/share/herdr-orchestrator/tasks/.autopilot.json): "on", or "waking"
@@ -174,6 +182,62 @@ export default class Spaces extends View {
     // `git status` walks the whole tree, on another machine a process there:
     // only when its answer could have changed (see `due`).
     cx.timer.every(250, (cx) => this.checkNew(cx));
+  }
+
+  readProjectTasks(cx) {
+    if (this.readingProjects || narrow()) return;
+    const ready = new Set(machines().filter((m) => m.name && m.layout === "ready").map((m) => m.name));
+    const files = new Map();
+    for (const terminal of terminals()) {
+      const key = terminal.labels?.["herdr.task"];
+      const slug = /^([\w.@-]+)#\d+$/.exec(key)?.[1];
+      if (!slug) continue;
+      const machine = machineOf(terminal.address);
+      if (machine && !ready.has(machine)) continue;
+      if (!files.has(machine)) files.set(machine, new Set());
+      files.get(machine).add(`${slug}.json`);
+    }
+    if (!files.size) return;
+    this.readingProjects = true;
+    cx.spawn(async (cx) => {
+      try {
+        const data = await Promise.all([...files].map(async ([machine, names]) => {
+          try {
+            const reply = await exec("sh", ["-c", READ_LISTS, "projects", ...names], { on: machine ?? undefined });
+            return [machine, reply.code === 0 ? reply.stdout : null];
+          } catch { return [machine, null]; }
+        }));
+        let changed = false;
+        for (const [machine, text] of data) {
+          if (text === null || this.projectFiles.get(machine)?.text === text) continue;
+          this.projectFiles.set(machine, { text, tasks: projectTasks(taskLists(text), machine) });
+          changed = true;
+        }
+        if (changed) cx.notify();
+      } finally {
+        this.readingProjects = false;
+      }
+    });
+  }
+
+  projectTree(sp) {
+    const all = terminals(), ps = panes(), slots = shared("coordinator.slots") ?? {};
+    const assistants = new Map();
+    for (const space of sp) {
+      let terminal = assistantOf(space, all);
+      if (!terminal) {
+        let slot = null;
+        for (const tab of space.tabs ?? []) {
+          terminal = coordinatorIn(tab.id, all, ps);
+          if (terminal) break;
+          slot ??= slotIn(tab.id, slots, ps);
+        }
+        if (slot && !terminal) assistants.set(space.id, { slot });
+      }
+      if (terminal) assistants.set(space.id, { terminal });
+    }
+    return projectTree({ spaces: sp, terminals: all, panes: ps, agents: agents(), assistants,
+      tasks: new Map([...this.projectFiles.values()].flatMap((d) => d.tasks)) });
   }
 
   // This computer's file every read; each linked machine's that has spaces here every third (about every 15 s, as the
@@ -540,7 +604,7 @@ export default class Spaces extends View {
       .child(svg(`mods/workspace-chrome/chevron-${open ? "down" : "right"}.svg`).size(12).flex_none())
       .when(this.pressed !== null && this.over === "pinned" && !open, (el) => el.child(this.line(t, "bottom")));
     const shown = open ? members : members.filter((r) => r.w.active || this.unread.has(r.w.id));
-    return [head, ...shown.map((r, n) => this.row({ ...r, tree: null, pinned: true, tag: many ? machineLook(r.w.machine ?? null).name : null,
+    return [head, ...shown.map((r, n) => this.project({ ...r, tree: null, pinned: true, tag: many ? machineLook(r.w.machine ?? null).name : null,
       end: open && n === shown.length - 1 ? "pinned" : null }, t))];
   }
 
@@ -556,18 +620,53 @@ export default class Spaces extends View {
     const sections = sectionsOf(m);
     const byId = new Map(list.map((r) => [r.w.id, r]));
     const filed = new Set(sections.flatMap((s) => s.spaces));
-    const out = this.ordered(list.filter((r) => !filed.has(r.w.id))).map((r) => this.row(r, t));
+    const more = this.moreProjects.has(m);
+    let hidden = 0;
+    const shownProjects = (ordered) => {
+      const { shown, idle } = splitProjects(ordered, ({ w }) =>
+        w.active || this.unread.has(w.id) || this.pressed === w.id || this.projectRows.has(w.id));
+      hidden += idle.length;
+      return more ? ordered : shown;
+    };
+    const out = shownProjects(this.ordered(list.filter((r) => !filed.has(r.w.id)))).map((r) => this.project(r, t));
     for (const s of sections) {
       const members = s.spaces.map((id) => byId.get(id)).filter(Boolean);
       const open = !s.folded || (this.pressed !== null && this.peek === s.id);
       out.push(this.sectionHead(s, members, t, open));
       // Folded, it still shows the space you're in and its unread ones, as Slack does.
-      const shown = this.ordered(open ? members : members.filter((r) => r.w.active || this.unread.has(r.w.id)));
+      const shown = open ? shownProjects(this.ordered(members))
+        : this.ordered(members.filter((r) => r.w.active || this.unread.has(r.w.id)));
       // Dropped on the header, a space goes to the section's end: the line shows under its last row.
-      shown.forEach((r, n) => out.push(this.row({ ...r, end: open && n === shown.length - 1 ? `section:${s.id}` : null }, t)));
+      shown.forEach((r, n) => out.push(this.project({ ...r, end: open && n === shown.length - 1 ? `section:${s.id}` : null }, t)));
       if (open && !members.length) out.push(this.emptySection(s, t));
     }
+    if (hidden) out.push(this.groupHead(`more-projects-${m ?? "local"}`, t)
+      .on_click((_e, cx) => {
+        if (more) this.moreProjects.delete(m);
+        else this.moreProjects.add(m);
+        cx.notify();
+      })
+      .child(svg(`mods/workspace-chrome/chevron-${more ? "down" : "right"}.svg`).size(12).flex_none())
+      .child(div().truncate().child(`${hidden} more project${hidden === 1 ? "" : "s"}`)));
     return out;
+  }
+
+  project(r, t) {
+    const header = this.row(r, t), rows = this.projectRows.get(r.w.id);
+    if (!rows?.length) return header;
+    return v_flex().flex_none().child(header)
+      .child(v_flex().flex_none()
+        .on_mouse_move((_e, cx) => this.drag(`space:${r.w.id}`, r.pinned ? ANY : r.w.machine, cx))
+        .children(rows.map((row) => this.projectAgent(row, r.tree, t))));
+  }
+
+  projectAgent(row, tree, t) {
+    const color = { working: t.working, needs: red(), ready: green(), stopped: t.dim, idle: t.dim }[row.state];
+    return h_flex().id(`project-agent-${row.id}`).h(24).flex_none().pl(30 + (tree ? 18 : 0) + Math.min(row.depth, 4) * 12)
+      .pr(8).items_center().gap(7).text_size(TEXT.label)
+      .child(div().size(6).rounded(3).flex_none().bg(color))
+      .child(div().flex_1().min_w(0).truncate().text_color(row.role === "assistant" ? t.foreground : t.muted).child(row.title))
+      .when(this.showProjectStates, (el) => el.child(div().flex_none().text_size(TEXT.id).text_color(t.dim).child(PROJECT_STATES[row.state])));
   }
 
   sectionHead(s, members, t, open) {
@@ -821,11 +920,14 @@ export default class Spaces extends View {
   draw(cx) {
     if (this.popup) return this.popup.render(cx);
     const t = theme();
-    const collapsed = narrow();
+    const width = sidebarWidth();
+    const collapsed = width < 160;
+    this.showProjectStates = width >= 240;
     this.stats = collapsed ? null : allStats();
     prune();
     const palette = ["ansi6", "ansi3", "ansi4", "ansi5", "ansi2", "ansi1"];
     const sp = spaces();
+    this.projectRows = collapsed ? new Map() : this.projectTree(sp);
     // Assistants with something new; any on screen is read now.
     readShown();
     // herdr-orchestrator settings' "Bold unread spaces" off (shared "sidebar.unread" false): none.
@@ -845,7 +947,7 @@ export default class Spaces extends View {
     return v_flex().size_full().min_h(0).bg(t.chrome).text_size(13)
       .when(Boolean(voice), (el) => el.child(voice))
       .child(h_flex().h(31).pl(16).pr(10).items_center().justify_between().text_size(TEXT.label).font_medium().text_color(t.dim)
-        .when(!collapsed, el => el.child("Spaces"))
+        .when(!collapsed, el => el.child("Projects"))
         // As a machine's +: New space, New section, on the shown space's machine.
         .child(div().id("space-new").size(H.sm).flex_none().flex().items_center().justify_center().rounded(RADIUS.control).cursor_pointer()
           .hover(s => s.bg(t.hover).text_color(t.foreground))

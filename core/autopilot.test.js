@@ -109,6 +109,9 @@ test("another machine's space: its file read with its lists, its own settings he
   expect(file.spaces.sp9.on).toBe(true);
   expect(fileIn(out, ".nothing.json")).toBe(null);
   expect(taskLists(out).map((l) => l.slug)).toEqual(["repo"]);
+  const named = Bun.spawnSync(["sh", "-c", READ_LISTS, "lists", "repo.json"], { env: { HOME: home, PATH: process.env.PATH } }).stdout.toString();
+  expect(fileIn(named, ".autopilot.json")).toBe(null);
+  expect(taskLists(named).map((l) => l.slug)).toEqual(["repo"]);
   // as the service and the window's header read it: named "vm/sp9" here, so its own settings here apply
   const settings = { spaces: { "vm/sp9": { autopilot: { every: "every 2 hours" } } } };
   const a = pilotFor({ ...file, spaces: { "vm/sp9": file.spaces.sp9 } }, "vm/sp9", settings);
