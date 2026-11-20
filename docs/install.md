@@ -17,6 +17,8 @@ place, never overwrites what you made yourself, and keeps a backup of anything i
 
 ## Install
 
+If the upstream layout is already installed, use [the installation move](upgrading.md#move-an-existing-upstream-layout-install).
+
 ```bash
 git clone https://github.com/contursofran/herdr-orchestrator && cd herdr-orchestrator
 ./install.sh --dry-run      # what it would do; nothing is written

@@ -32,7 +32,7 @@ The work is in the epic [#11](https://github.com/contursofran/herdr-orchestrator
 
 ## Install (for now)
 
-Do not install it on a machine that still runs the upstream layout: both use the same mod folders, links and hooks. Issue #5 solves this.
+If the upstream layout is installed, follow the [move instructions](docs/upgrading.md#move-an-existing-upstream-layout-install) to back it up and switch over.
 
 ```bash
 git clone https://github.com/contursofran/herdr-orchestrator

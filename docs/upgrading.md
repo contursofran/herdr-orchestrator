@@ -1,5 +1,34 @@
 # Upgrading
 
+## Move an existing upstream layout install
+
+Close the Herdr window, pause agents that can write tasks or artifacts, and stop the `herdr-automations` terminal in
+Herdr Core. Do the move on each machine from its own checkout. The backup and restore cover data roots under that
+machine's home directory.
+
+```bash
+./install.sh --migrate-legacy --dry-run
+./install.sh --migrate-legacy
+herdr-orchestrator doctor
+```
+
+The move records a private backup before replacing the old service, mods and helper links. It copies tasks, settings,
+artifacts, the vault and browser profiles into the new data directories. Existing git worktrees keep their absolute paths.
+Customized layouts and keys move to the new layout name, and the installer keeps unrelated Claude Code and Codex hooks.
+The installer removes the old service's tailnet route when it points to that service. Update bookmarks to the link shown
+by `herdr-orchestrator web status`.
+
+Keep the backup path printed by the installer. To go back, close Herdr and pause writers again, then run this from the
+herdr-orchestrator checkout:
+
+```bash
+bin/herdr-orchestrator rollback-install --backup "/path/to/the/printed/backup"
+```
+
+Rollback restores the original installation and restarts its service if it was running. Changes made after the move
+are saved in an `after-*` directory inside that backup. Its `manifest.json` maps the numbered copies to their original
+paths. If the move was interrupted, run rollback with the printed backup path before retrying.
+
 ## Updating herdr-orchestrator
 
 ```bash
@@ -24,7 +53,7 @@ local preferences and pending sends to its new browser storage keys.
 
 `herdr-orchestrator` uses its own data folders ([Install](install.md), Where your data lives). Its installer migrates
 data from the legacy paths under `~/.herdr` once per machine. Use `herdr-orchestrator doctor` or `herdr-orchestrator where`
-to see the paths in use. Moving an existing upstream installation is tracked in [issue #5](https://github.com/contursofran/herdr-orchestrator/issues/5).
+to see the paths in use. For an installed upstream layout, follow the move instructions above.
 
 - **What moves:** tasks, artifacts, settings, the secrets vault and its mark, task browsers (their sign-ins with them),
   the web service's files, the tools stamp, cli-check and machine-hold. On the same disk each is one rename, so nothing
