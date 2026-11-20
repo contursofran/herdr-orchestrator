@@ -62,8 +62,8 @@ dark, the same as the task dots (`dot.js` uses them). `onStatus()` is text on on
 - Labels are capitalized and sentence case; short labels have no period, full sentences do.
 - No emojis in chrome. Icons are line SVGs.
 - Size controls to their words: never truncate a short label.
-- No tooltips: nothing pops up on hover (SHEP-25; `test/test_repo.py` checks). What people need shows as words; an
-  icon-only control on the web keeps an `aria-label`.
+- The native Projects sidebar's agent rows use tooltips for model, effort, and icon labels (#7).
+  Elsewhere, show the words and give icon-only web controls an `aria-label` (SHEP-25; `test/test_repo.py` checks).
 
 Already on these parts: the count badges (`tabs-tasks`, `spaces-chat`), the task dots
 (`dot.js`), the New space dialog's footer (`newspace`). Everything else moves area by area.
