@@ -2,7 +2,7 @@
 
 Made from the window's mods: `mods/newspace` (and its opener and sizes, `lib/coordinator.js` newSpace / NEWSPACE),
 `mods/machine-add-chat`, `mods/spaces-chat/rename.js` and `icon.js`, Herdr's own worktree dialog (`mods/worktree` in the
-Herdr home: Herdr ships it, Shepherdr opens it from `mods/spaces-chat/popups.js:80`), the Assistant's close dialog
+Herdr home: Herdr ships it, herdr-orchestrator opens it from `mods/spaces-chat/popups.js:80`), the Assistant's close dialog
 (`mods/coordinator/main.js` closeDialog) and `mods/prompt-chat` (Rename tab). ✓ matches, ◇ a web-only form on purpose
 (why), ✗ still differs.
 
@@ -44,7 +44,7 @@ a × in its header: ◇ the web has no window frame, and a touch screen has no E
 | Make it a git repo | a checkbox, on by default, `Make it a git repo` + dim `so each task gets its own worktree`, for a folder outside git that isn't home or / (`main.js:284`) | `role="checkbox"`, `W.makeRepo` / `W.makeRepoWhy`, `NS.offersRepo` (`add.tsx:295`) | ✓ |
 | In a repo | branch icon + `A git repo: each task gets its own worktree` (`main.js:289`) | `W.isRepo` (`add.tsx:301`) | ✓ |
 | Footer | an error in red at the left, `Cancel`, `Create space` (`Creating…`), disabled until the folder is known (`main.js:339`) | `add.tsx:305` | ✓ |
-| Create | mkdir -p a missing folder (`Couldn't make ~/x.`), git init on main + `First commit` (`Couldn't make it a git repo: …`), named as Herdr names it (`Home` at home, its repo's, else its folder's), its icon kept, its Assistant (on the space's machine) when Settings says so, lands in it (`main.js:219`, `:225`, `:236`, `lib/coordinator.js` createSpace) | `service/spaces.ts` newSpace with `NS.NEW_REPO`, `NS.placeName`, `NS.WORDS.cantMake` / `cantRepo`; the window's tab bar gives a new space its Assistant, on any machine without a Shepherdr window of its own; the web opens it once it shows (`add.tsx:110`) | ✓ |
+| Create | mkdir -p a missing folder (`Couldn't make ~/x.`), git init on main + `First commit` (`Couldn't make it a git repo: …`), named as Herdr names it (`Home` at home, its repo's, else its folder's), its icon kept, its Assistant (on the space's machine) when Settings says so, lands in it (`main.js:219`, `:225`, `:236`, `lib/coordinator.js` createSpace) | `service/spaces.ts` newSpace with `NS.NEW_REPO`, `NS.placeName`, `NS.WORDS.cantMake` / `cantRepo`; the window's tab bar gives a new space its Assistant, on any machine without a herdr-orchestrator window of its own; the web opens it once it shows (`add.tsx:110`) | ✓ |
 | 2.1's extras | — | the machine picker, the Name field and its rules, `Likely repos`, `Already a space.` and the status sentences: removed | ✓ |
 
 ## Rename (space, section, machine) and New section

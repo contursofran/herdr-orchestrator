@@ -388,7 +388,7 @@ def sync(names=None, op="install", force=False):
 
     def one(name):
         if held:
-            out[name] = {"machine": name, "state": "held", "details": [f"{held} (shepherdr doctor lets it go)"], "version": m["version"]}
+            out[name] = {"machine": name, "state": "held", "details": [f"{held} (herdr-orchestrator doctor lets it go)"], "version": m["version"]}
             return
         out[name] = sync_machine(name, m, op, force) if links[name].get("state") == "connected" else \
             {"machine": name, "state": "unreachable", "details": [f"herdr-core link {links[name].get('state')}"], "version": m["version"]}

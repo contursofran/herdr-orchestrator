@@ -121,7 +121,7 @@ export function freePort(status: any, hp: number): number {
 /** What to say when sharing on hp can't work or failed: tailscale's own words when it gave some, and another port. */
 export function shareProblem(status: any, hp: number, err = ""): string {
   const other = freePort(status, hp);
-  const fix = `Pick another port: \`shepherdr web https-port ${other}\`.`;
+  const fix = `Pick another port: \`herdr-orchestrator web https-port ${other}\`.`;
   const held = heldBy(status, hp);
   if (held) return `Port ${hp} on this machine's tailnet name is taken (${held}). ${fix}`;
   const said = err.trim().split("\n").map((l) => l.trim()).filter(Boolean).slice(0, 2).join(" ");
@@ -136,7 +136,7 @@ export async function share(dns: string, port: number, hp = DEFAULT_HTTPS): Prom
   const status = await serveStatus();
   const now = await served(dns, status);
   const ours = `http://127.0.0.1:${port}`;
-  if (now.funnel || status?.AllowFunnel?.[`${dns}:${hp}`]) return "Funnel is on for this machine's HTTPS port: Shepherdr won't serve there";
+  if (now.funnel || status?.AllowFunnel?.[`${dns}:${hp}`]) return "Funnel is on for this machine's HTTPS port: herdr-orchestrator won't serve there";
   if (now.proxy === ours && now.port === String(hp)) return null;
   if (now.proxy && now.proxy !== ours) return `${MOUNT} is already shared to ${now.proxy}`;
   if (heldBy(status, hp)) return shareProblem(status, hp);

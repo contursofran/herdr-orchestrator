@@ -1,10 +1,10 @@
 {
   "//": [
-    "Shepherdr's features list (3.1.44): every feature the layout ships, on both sides. Each has its shared logic (core/<name>.js,",
+    "herdr-orchestrator's features list (0.1.0): every feature the layout ships, on both sides. Each has its shared logic (core/<name>.js,",
     "or the service's service/<file> where herdr-core itself is the logic), its Herdr side (the mods it lives in, or a Herdr",
     "built-in) and its web side (files under web/: 2.1's screens and plugins, and web/src/screens). test/test_repo.py checks it:",
     "a feature missing a side, a mod that belongs to no feature, or a listed file that isn't there fails CI. \"planned\" says what",
-    "its web side still lacks; none may be left when 3.1.44 is released.",
+    "its web side still lacks; none may be left when 0.1.0 is released.",
     "addon: the add-on in lib/addons.json; off there means off on both sides. view_only: per-device look, no shared logic."
   ],
   "features": [
@@ -195,7 +195,7 @@
       },
       "forms": {
         "herdr": "Toasts with sound, click to go there",
-        "desktop": "Toast in the page; push when no screen shows Shepherdr",
+        "desktop": "Toast in the page; push when no screen shows herdr-orchestrator",
         "tablet": "Same",
         "phone": "Top toast, push, app badge"
       },
@@ -236,7 +236,7 @@
     {
       "id": "settings",
       "addon": "core",
-      "title": "Shepherdr settings",
+      "title": "herdr-orchestrator settings",
       "core": [
         "settings"
       ],
@@ -281,7 +281,7 @@
         ]
       },
       "forms": {
-        "herdr": "Search, sidebar toggle, Settings and Shepherdr buttons, Add machine",
+        "herdr": "Search, sidebar toggle, Settings and herdr-orchestrator buttons, Add machine",
         "desktop": "Header and sidebar footer",
         "tablet": "Header",
         "phone": "Top bar and the More sheet"
@@ -1037,7 +1037,7 @@
         ]
       },
       "forms": {
-        "herdr": "Call Shepherdr itself (ElevenLabs) from the sidebar's Talk to Shepherdr row or a chat's call button: one voice that sends to any Assistant or agent and says their replies and what needs you; the row becomes the call card (Mute, End; a green wave on the narrow rail); the voice agent reads and acts on the window's frame",
+        "herdr": "Call herdr-orchestrator itself (ElevenLabs) from the sidebar's Talk to herdr-orchestrator row or a chat's call button: one voice that sends to any Assistant or agent and says their replies and what needs you; the row becomes the call card (Mute, End; a green wave on the narrow rail); the voice agent reads and acts on the window's frame",
         "desktop": "Same, through the service",
         "tablet": "Same",
         "phone": "A voice button beside Search and a green Mute and End strip above the bar (at the top over a task or Settings); the sidebar's row in the drawer; Opened by voice tags; the voice agent reads and acts on the page"
@@ -1223,7 +1223,7 @@
     {
       "id": "insights",
       "addon": "insights",
-      "title": "Usage insights: a private local log of how the person uses Shepherdr, for their own agents' tips",
+      "title": "Usage insights: a private local log of how the person uses herdr-orchestrator, for their own agents' tips",
       "core": [
         "usage",
         "settings"

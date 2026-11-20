@@ -358,7 +358,7 @@ class _Lock:
             except OSError:
                 if time.time() >= end:
                     self.f.close()
-                    raise Locked("another Shepherdr process is moving the data now")
+                    raise Locked("another herdr-orchestrator process is moving the data now")
                 time.sleep(0.2)
 
     def __exit__(self, *_):
@@ -615,24 +615,24 @@ def _cache_tag(w):
     tag = os.path.join(c, "CACHEDIR.TAG")
     if not os.path.exists(tag):
         with open(tag, "w") as f:
-            f.write("Signature: 8a477f597d28d172789f06886806bc55\n# Shepherdr's cache: safe to delete, skipped by backups.\n")
+            f.write("Signature: 8a477f597d28d172789f06886806bc55\n# herdr-orchestrator's cache: safe to delete, skipped by backups.\n")
 
 
 def migrate(home=None, env=None, mac=None, dry=False, force=False, wait=30, again=False):
     """Moves this home's data to the new layout. Safe to run again (and after a crash: it finishes).
     Returns {state, moved: {kind: how}, notes}. state: done (already), migrated, refused (why in notes),
-    rolled-back (stays on the old paths until `again`: the person's own `shepherdr migrate`), newer (a later
-    layout: update Shepherdr). force: also on a network disk."""
+    rolled-back (stays on the old paths until `again`: the person's own `herdr-orchestrator migrate`), newer (a later
+    layout: update herdr-orchestrator). force: also on a network disk."""
     w = Where(home, env, mac)
     out = {"state": "done", "moved": {}, "notes": [], "roots": w.roots}
     n = w.layout()
     if n > LAYOUT:
         out["state"] = "newer"
-        out["notes"].append(f"this machine's data is on layout {n}, newer than this Shepherdr knows ({LAYOUT}): update Shepherdr")
+        out["notes"].append(f"this machine's data is on layout {n}, newer than this herdr-orchestrator knows ({LAYOUT}): update herdr-orchestrator")
         return out
     if w.rolled_back() and not again:
         out["state"] = "rolled-back"
-        out["notes"].append("rolled back to ~/.herdr: run `shepherdr migrate` to move again")
+        out["notes"].append("rolled back to ~/.herdr: run `herdr-orchestrator migrate` to move again")
         return out
     if n == LAYOUT and not dry:
         heal(w)
@@ -641,7 +641,7 @@ def migrate(home=None, env=None, mac=None, dry=False, force=False, wait=30, agai
     if why and not force:
         out["state"] = "refused"
         out["notes"].append(f"not moved by itself: {why} (a network disk; file locks aren't safe there). "
-                            "`shepherdr migrate --force` moves it when no other machine uses this home.")
+                            "`herdr-orchestrator migrate --force` moves it when no other machine uses this home.")
         return out
     if dry:
         j = _journal(w)
@@ -689,10 +689,10 @@ def summary(res):
     if res["state"] == "migrated":
         moved = [k for k, how in res["moved"].items() if how in ("moved", "copied", "kept")]
         r = res["roots"]
-        return (f"Shepherdr's data moved to its own folders ({_short(r['config'])}, {_short(r['data'])}, {_short(r['state'])}). "
+        return (f"herdr-orchestrator's data moved to its own folders ({_short(r['config'])}, {_short(r['data'])}, {_short(r['state'])}). "
                 f"{'Old paths in ~/.herdr link there; nothing to do.' if moved else 'Nothing to move.'}")
     if res["state"] in ("refused", "newer", "rolled-back"):
-        return "Shepherdr's data stays in ~/.herdr: " + "; ".join(res["notes"])
+        return "herdr-orchestrator's data stays in ~/.herdr: " + "; ".join(res["notes"])
     return ""
 
 
@@ -773,7 +773,7 @@ def rollback(home=None, env=None, mac=None, wait=30):
     with _Lock(w, wait):
         os.makedirs(w.legacy, exist_ok=True)
         with open(os.path.join(w.legacy, ROLLBACK), "w") as f:
-            f.write(f"rolled back at {time.strftime('%Y-%m-%d %H:%M:%S')}: `shepherdr migrate` moves the data again\n")
+            f.write(f"rolled back at {time.strftime('%Y-%m-%d %H:%M:%S')}: `herdr-orchestrator migrate` moves the data again\n")
         _fsync_dir(w.legacy)
         for k in KINDS:
             old, new = w.old(k), w.new(k)

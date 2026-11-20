@@ -111,9 +111,9 @@ export function upgradeReactions(cfg) {
 // only, agents.feedback_repo (the repo it files to; empty: upstream Shepherdr's).
 export const FEEDBACK = {
   title: "Feedback offers",
-  about: "When Shepherdr itself misbehaves, agents offer once to file it as a GitHub issue, only with your yes.",
+  about: "When herdr-orchestrator itself misbehaves, agents offer once to file it as a GitHub issue, only with your yes.",
   repoTitle: "Feedback repo",
-  repoAbout: "Where feedback issues go, as owner/name. Empty: Shepherdr's own repo.",
+  repoAbout: "Where feedback issues go, as owner/name. Empty: herdr-orchestrator's own repo.",
   repo: "eliasstravik/shepherdr",
   bad: "Write it as owner/name, like eliasstravik/shepherdr.",
 };
@@ -334,11 +334,11 @@ export function addonAbout(about, now, stop) {
 }
 
 // ---- Web -------------------------------------------------------------------------------------------------------
-export const WEB = { title: "Shepherdr on the web", link: "Link", copy: "Copy", copied: "Copied", phone: "Open it on your phone" };
+export const WEB = { title: "herdr-orchestrator on the web", link: "Link", copy: "Copy", copied: "Copied", phone: "Open it on your phone" };
 // The Web page's state line: off (the Web add-on), not read yet, no service, or what the service last said (web.json).
 // Served from another machine (Serve from, core/host.js): says which; a move under way says that first.
 export const webState = (off, loaded, w) => (off ? "Off. Turn it on under Window › Add-ons." : !loaded ? "Reading…"
-  : !w ? "Shepherdr's service isn't running here." : w.serve?.moving ? SERVE.moving(w.serve.moving)
+  : !w ? "herdr-orchestrator's service isn't running here." : w.serve?.moving ? SERVE.moving(w.serve.moving)
   : w.serve?.host && !w.serve.reachable ? SERVE.unreachable(w.serve.host) : w.why ? w.why
   : w.serve?.host ? SERVE.elsewhere(w.serve.host) : "On, private to your tailnet.");
 

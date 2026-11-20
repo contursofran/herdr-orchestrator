@@ -19,7 +19,7 @@ schedule, the fields a space can set (`FIELDS`), a level's own (`levelOf`), the 
 
 ## The data
 
-Shepherdr settings (`~/.herdr/shepherdr.json`, which goes to every machine): `"autopilot": { every, events, heartbeat }`
+herdr-orchestrator settings (`~/.herdr/shepherdr.json`, which goes to every machine): `"autopilot": { every, events, heartbeat }`
 in `everywhere` and in `spaces[<id>]`, each field only where it's set (`every` is the schedule's words, `""` for none).
 herdr-task (`~/.herdr/tasks/.autopilot.json`) keeps each space's own `on` and how its wakes go (next_run, pending,
 inflight, last_wake, progress). Its `everywhere` ({every, events}) and the file `~/.config/herdr-core/autopilot/everywhere.md`
@@ -29,7 +29,7 @@ in `.autopilot.json` (version 1) are dropped on the next read.
 | Command | What it does |
 |---|---|
 | `herdr-task autopilot on` / `off` `--space <id>` | a space's switch (the header's); `--everywhere` refuses: "Autopilot is switched on per space, with the switch in its Assistant's header: pass --space." |
-| `herdr-task autopilot set [--space <id> \| --everywhere] --every … --on … --heartbeat …` | writes that level in Shepherdr settings; `default` drops a field there, so it follows Everywhere's again; refused on a copy the window pushed |
+| `herdr-task autopilot set [--space <id> \| --everywhere] --every … --on … --heartbeat …` | writes that level in herdr-orchestrator settings; `default` drops a field there, so it follows Everywhere's again; refused on a copy the window pushed |
 | `herdr-task autopilot check --every …` | a schedule's words checked without saving (the window's and the web's Custom box) |
 | `herdr-task autopilot heartbeat [--space <id>]` | the heartbeat that applies (`heartbeat_text`, `heartbeat_from`: space, everywhere or file), and the old file (made with the starter when missing; an earlier version's starter, never edited, becomes today's on any `autopilot` command) |
 | `herdr-task autopilot show --space <id>` / `--everywhere`, `list [--here] [--json]` | what applies there, `own` (the fields the space sets itself), next and last wake, progress; `list` is `{everywhere, spaces}`, its text first `Everywhere: Every hour`, then every space the window lists by name (never `~`), this machine's then each other machine's (`exedev on vm-stravik`, asked there at once; `can't tell, … didn't answer` when it's away), with "its own schedule" where it has one; `--here`: this machine's only |

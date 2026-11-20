@@ -25,7 +25,7 @@ const args = process.argv.slice(2);
 const json = args.includes("--json"), take = args.includes("--take-link");
 const [cmd, target] = args.filter((a) => !a.startsWith("--"));
 const say = (s: string) => { if (!json) console.log(s); };
-const fail = (s: string): never => { if (json) console.log(JSON.stringify({ ok: false, error: s })); else console.error(`shepherdr: ${s}`); process.exit(1); };
+const fail = (s: string): never => { if (json) console.log(JSON.stringify({ ok: false, error: s })); else console.error(`herdr-orchestrator: ${s}`); process.exit(1); };
 
 const c = await CoreClient.endpoint({ binary: process.env.SHEPHERDR_HC || "hc" }).catch((e) => fail(`herdr-core isn't answering here: ${(e as Error).message}`));
 const call = <T = any>(method: string, params: Record<string, unknown> = {}, timeout = 20_000) => c.call<T>(method, params, timeout);
@@ -85,10 +85,10 @@ if (cmd === "status") {
   const where = from === undefined ? "a machine not linked from here" : from === null ? "this computer" : from;
   const link = from === undefined ? null : await linkOf(from as string | null);
   if (json) console.log(JSON.stringify({ ok: true, host: from ?? null, here: from === null, link }));
-  else say(`Shepherdr's web app is served from ${where}${link ? `: ${link}` : ""}.`);
+  else say(`herdr-orchestrator's web app is served from ${where}${link ? `: ${link}` : ""}.`);
   process.exit(0);
 }
-if (cmd !== "serve-from" || !target) fail("usage: shepherdr web serve-from <machine|here> [--take-link] [--json] | shepherdr web status");
+if (cmd !== "serve-from" || !target) fail("usage: herdr-orchestrator web serve-from <machine|here> [--take-link] [--json] | herdr-orchestrator web status");
 
 const to: string | null = target === "here" || target === me.name ? null : target;
 if (to !== null && !links[to]) fail(`${to} isn't a machine linked from here (hc machine ls).`);
@@ -103,13 +103,13 @@ if (from && !connected.includes(from)) say(`${from} (serving now) is offline: it
 const BUILD = buildId();
 let there = await node(to);
 if (!there || there.version !== VERSION || (there.build && there.build !== BUILD) || (!there.build && to !== null)) {
-  say(`Installing Shepherdr's web service on ${to ?? "this computer"}…`);
-  const cli = process.env.SHEPHERDR_CLI || "shepherdr";
+  say(`Installing herdr-orchestrator's web service on ${to ?? "this computer"}…`);
+  const cli = process.env.SHEPHERDR_CLI || "herdr-orchestrator";
   const p = Bun.spawn([cli, "web", "install-on", to ?? "here"], { stdout: json ? "pipe" : "inherit", stderr: "pipe", stdin: "ignore" });
   const err = await new Response(p.stderr).text();
-  if ((await p.exited) !== 0) fail(err.trim().split("\n").pop()?.replace(/^shepherdr: /, "") || `couldn't install it on ${to}`);
+  if ((await p.exited) !== 0) fail(err.trim().split("\n").pop()?.replace(/^herdr-orchestrator: /, "") || `couldn't install it on ${to}`);
   for (let i = 0; i < 60 && !(there?.build === BUILD); i++) { await Bun.sleep(2000); there = await node(to); }
-  if (there?.build !== BUILD) fail(`Shepherdr's web service on ${to ?? "this computer"} hasn't started again: \`shepherdr doctor\` there says why.`);
+  if (there?.build !== BUILD) fail(`herdr-orchestrator's web service on ${to ?? "this computer"} hasn't started again: \`herdr-orchestrator doctor\` there says why.`);
 }
 
 // ---- 2. the link there --------------------------------------------------------------------------------------------
@@ -137,7 +137,7 @@ if (take) {
 // ---- 3. the shared data, in the new host's words ------------------------------------------------------------------
 if ((record?.id ?? me.id) !== toId && (was === null || connected.includes(was))) {
   const src = await namesOf(was), dst = to === null ? { id: me.id, links } : there;
-  if (!src || !dst) fail("couldn't read both machines' names (is Shepherdr's service running on both?)");
+  if (!src || !dst) fail("couldn't read both machines' names (is herdr-orchestrator's service running on both?)");
   const move = renamer(src, dst);
   const doc = (await getDoc("shepherdr", was)).value;
   if (doc && typeof doc === "object") await setDoc("shepherdr", relocateDoc(doc, move), to);
@@ -168,6 +168,6 @@ for (let i = 0; i < 45 && !link; i++) {
   else await Bun.sleep(2000);
 }
 if (json) console.log(JSON.stringify({ ok: true, host: to, link }));
-else say(link ? `Shepherdr's web app is served from ${to ?? "this computer"}: ${link}` : `Moved to ${to ?? "this computer"}; its link comes once Tailscale shares it there (\`shepherdr web status\`).`);
+else say(link ? `herdr-orchestrator's web app is served from ${to ?? "this computer"}: ${link}` : `Moved to ${to ?? "this computer"}; its link comes once Tailscale shares it there (\`herdr-orchestrator web status\`).`);
 c.close();
 process.exit(0);

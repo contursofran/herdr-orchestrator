@@ -1,11 +1,11 @@
-# Shepherdr
+# herdr-orchestrator
 
 Mission control for your coding agents inside Herdr: your spaces in a sidebar, each with its own Assistant you talk to
 as a chat, and a Tasks panel on the right that shows which task needs you, which is ready and which is still working.
 You tell the Assistant what needs doing; it turns it into tasks, each run by its own agent in its own git worktree,
-and asks you on a card when it needs a decision. Shepherdr 3.1.44, for herdr-app 0.1.12 and herdr-core 0.1.17 or newer.
+and asks you on a card when it needs a decision. herdr-orchestrator 0.1.0, for herdr-app 0.1.12 and herdr-core 0.1.17 or newer.
 
-![Shepherdr](preview.png)
+![herdr-orchestrator](preview.png)
 
 ## What you see
 
@@ -15,7 +15,7 @@ Left to right, on the theme's `canvas` background, no title bar:
   Then Spaces, grouped by machine ("This computer" first, then each connected machine with a load meter), Pinned and
   sections of your own you can drag spaces into; each space is `#` or an emoji, bold when its Assistant has something
   new, with a red count of what needs you and a green count of what's Ready. At the foot (97px): Settings (Herdr's
-  own), Shepherdr (its settings) and Add machine.
+  own), herdr-orchestrator (its settings) and Add machine.
 - **Tab bar** (42px): the space's tabs, then on the right `+`, the side panels' buttons (Files, Changes, Tasks with its
   red/green counts, Artifacts) and the layout switcher.
 - **Main** (the active tab): each pane has a 30px header (`pane-chat`): an Assistant's space name and folder
@@ -31,7 +31,7 @@ Left to right, on the theme's `canvas` background, no title bar:
   screens; one opens in place under a 42px head.
 - **Status bar** (28px): the machine, and Ctrl+Shift+P Commands.
 - Floating: a call's error note at the top center, toasts at the bottom right. A call going on shows as the Talk to
-  Shepherdr card at the top of the sidebar.
+  herdr-orchestrator card at the top of the sidebar.
 
 ## How it behaves
 
@@ -43,16 +43,16 @@ Left to right, on the theme's `canvas` background, no title bar:
   shown.
 - Ctrl+K opens Jump (spaces, tasks, artifacts), Ctrl+Shift+? the keys list, Ctrl+Shift+D dictates, Ctrl+Shift+Space
   calls the Assistant, Ctrl+F finds in the chat. Alt+1…9 pick a tab, Alt+Up/Down a space, Alt+Enter splits.
-- Shepherdr settings (the sidebar foot): Agents, Tasks, Autopilot, Notify, Secrets, Machines, Window and Web. Window
+- herdr-orchestrator settings (the sidebar foot): Agents, Tasks, Autopilot, Notify, Secrets, Machines, Window and Web. Window
   holds the look switches and the add-on switches: Artifacts, Voice and dictation, Reactions, Task browser, Autopilot,
-  Other machines, Web and Usage insights can be turned off; the rest is always on in 3.1.44. Web shows the web app's link and Serve
+  Other machines, Web and Usage insights can be turned off; the rest is always on in 0.1.0. Web shows the web app's link and Serve
   from, the machine that serves it.
 - The web app (`https://<this machine>/shepherdr/`, your tailnet only): the same spaces, Assistants, tasks, cards,
   artifacts and settings on a phone, a tablet or another browser, on the same data.
 
 ## Built from
 
-- `layouts/shepherdr.json`: root row → `sidebar` column (`brand` workspace-chrome, `spaces` spaces-chat,
+- `layouts/herdr-orchestrator.json`: root row → `sidebar` column (`brand` workspace-chrome, `spaces` spaces-chat,
   `sidebar-footer` workspace-chrome-shepherdr `{footer: true}`) and `work` column (`tabs` tabs-tasks, `work-body` row
   of `main` `{tab: "active"}` with the pane-chat header and `panel` column → `panel-body` stack of files, changes,
   `tasks` stack (`tasks-list` tasks; `tasks-thread`: chat `{panel, head}`, then a stack of chat `{panel}`, a terminal
@@ -74,22 +74,22 @@ Left to right, on the theme's `canvas` background, no title bar:
 
 - Install it with `./install.sh` from this repo, not by copying the folders: the helpers in `bin/`, `lib/`, the
   templates and the hooks are outside `mods/`, and the installer links them, merges `keys.json` (asking before it
-  replaces a key you use), backs up what it replaces and records what it put there (`shepherdr uninstall` takes it
+  replaces a key you use), backs up what it replaces and records what it put there (`herdr-orchestrator uninstall` takes it
   back out). `./install.sh --dry-run` shows everything first.
 - Mod names are fixed (`chat`, `tasks`, …): their state in `data/<mod>` and pane names follow them. The installer
-  refuses a folder by the same name that isn't Shepherdr's.
+  refuses a folder by the same name that isn't herdr-orchestrator's.
 - Needs python3 3.8+ and git; bun and Tailscale for the web app; gh for pull requests, node for the task browser
-  (Shepherdr installs agent-browser 0.41.x and Chrome itself), bun and pw-record/pw-play (Linux) or Apple's command line tools (macOS) for voice and dictation,
+  (herdr-orchestrator installs agent-browser 0.41.x and Chrome itself), bun and pw-record/pw-play (Linux) or Apple's command line tools (macOS) for voice and dictation,
   an ElevenLabs key for calls and dictation. Claude Code or Codex as the agents.
 - Two blocks are rewritten while you use it (`tasks-thread-term` points at the shown task's terminal,
   `artifacts-view-body` at the opened artifact): ship them blank.
 
 ## Done when
 
-- `shepherdr doctor` says "whole", and `bin/sync-shared --check` passes.
-- Ctrl+Shift+L shows the Shepherdr layout: the sidebar lists your spaces by machine, the tab bar has Tasks and
+- `herdr-orchestrator doctor` says "whole", and `bin/sync-shared --check` passes.
+- Ctrl+Shift+L shows the herdr-orchestrator layout: the sidebar lists your spaces by machine, the tab bar has Tasks and
   Artifacts, the status bar shows the machine.
 - A new space's Assistant opens as a chat; asking it for a task adds a row under Working in Tasks with a pie dot,
   and the task's Ready row has Accept.
 - An agent's permission prompt shows as a card in its chat.
-- Turning Reactions off in Shepherdr settings › Window hides the smiley on messages; turning it on brings it back.
+- Turning Reactions off in herdr-orchestrator settings › Window hides the smiley on messages; turning it on brings it back.

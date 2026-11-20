@@ -83,8 +83,8 @@ SUBAGENTS_RULE = ("read-only, as your own helper agent that people can watch and
                   "400`, then end it with `hc kill <its name>`. Any other helper agent you want (research, a second opinion) "
                   "goes the same way, labelled herdr.role=helper. The reviewer reports")
 WORKER_MD_BEFORE_FEEDBACK = WORKER_MD_BEFORE_SUBAGENTS.replace(SUBAGENTS_OLD, SUBAGENTS_RULE)
-# Since agents offer feedback for Shepherdr itself through their Assistant (SHEP-78).
-FEEDBACK_RULE = ("- Shepherdr itself misbehaving, not your task's own code (a Shepherdr, herdr-task, web app or window feature that doesn't work as meant, a Herdr command failing like a bug, the person frustrated with Shepherdr, or a \"Shepherdr feedback:\" line in your reviewer's findings): run the `herdr-task feedback` command given at the end of your brief, once per problem, then carry on. It returns at once and your Assistant asks the person whether to file it; never file an issue yourself, and put no secrets, private paths or whole logs in it.\n")
+# Since agents offer feedback for herdr-orchestrator itself through their Assistant (SHEP-78).
+FEEDBACK_RULE = ("- herdr-orchestrator itself misbehaving, not your task's own code (a herdr-orchestrator, herdr-task, web app or window feature that doesn't work as meant, a Herdr command failing like a bug, the person frustrated with herdr-orchestrator, or a \"herdr-orchestrator feedback:\" line in your reviewer's findings): run the `herdr-task feedback` command given at the end of your brief, once per problem, then carry on. It returns at once and your Assistant asks the person whether to file it; never file an issue yourself, and put no secrets, private paths or whole logs in it.\n")
 WORKER_MD_BEFORE_COMMAND = WORKER_MD_BEFORE_FEEDBACK + FEEDBACK_RULE
 # Since the brief's Reviewer line gives the reviewer's whole command: Codex's with --no-daemon (#745).
 COMMAND_OLD = "its command `codex --sandbox read-only --ask-for-approval never` or `claude --permission-mode plan` (never"
@@ -120,13 +120,13 @@ REVIEWER_MD_BEFORE_SUBAGENT = """You review one Herdr task's work before it can 
 REVIEWER_MD_BEFORE_FEEDBACK = REVIEWER_MD_BEFORE_SUBAGENT + ("- You run as the worker's helper agent, in a chat people can watch. Your findings are your last message: "
                                              "the worker reads them there. Write them as a plain message, never as a plan to approve, "
                                              "and start no other agents.\n")
-# Since agents offer feedback for Shepherdr itself (SHEP-78): a reviewer's goes through its worker.
-REVIEWER_FEEDBACK = ("- Shepherdr itself misbehaving while you review (a Herdr command or feature failing like a bug, not the task's code): "
-                     "one line in your findings starting \"Shepherdr feedback:\", what happened and what you expected; your worker passes it on.\n")
+# Since agents offer feedback for herdr-orchestrator itself (SHEP-78): a reviewer's goes through its worker.
+REVIEWER_FEEDBACK = ("- herdr-orchestrator itself misbehaving while you review (a Herdr command or feature failing like a bug, not the task's code): "
+                     "one line in your findings starting \"herdr-orchestrator feedback:\", what happened and what you expected; your worker passes it on.\n")
 REVIEWER_MD_BEFORE_SANDBOX = REVIEWER_MD_BEFORE_FEEDBACK + REVIEWER_FEEDBACK
 # Since a Codex reviewer's read-only sandbox can't run every check (#840): it says which, and its worker runs them.
 REVIEWER_SANDBOX = ("- A check that can't run in a read-only sandbox (Codex's): `herdr-app check` hangs there on the window's "
-                    "services and `shepherdr doctor` can't reach the Shepherdr service, as with anything needing the network, a "
+                    "services and `herdr-orchestrator doctor` can't reach the herdr-orchestrator service, as with anything needing the network, a "
                     "window or writes outside the folder. Don't run or wait on those: list them in your findings under \"Not run "
                     "in my sandbox:\", and your worker runs them and checks the output.\n")
 REVIEWER_MD = REVIEWER_MD_BEFORE_SANDBOX + REVIEWER_SANDBOX

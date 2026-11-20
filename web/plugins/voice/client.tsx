@@ -236,7 +236,7 @@ export function toggleCall(from: string | null = null, resume: string | null = n
     if (why) setUI({ callError: `${ENDED}${why}.` })
   }, {
     // the lock screen and Control Center show the call: hang up and mute from there (SHEP-102)
-    title: 'Shepherdr',
+    title: 'herdr-orchestrator',
     hangUp: () => { if (mine()) endCall() },
     mute: (on) => { if (!mine()) return; muteCall(on); setUI({ callMuted: on }) },
   }, (id) => {
@@ -411,11 +411,11 @@ function CallStrip() {
   const t = useElapsed(useUI((u) => u.callStarted))
   const { word, phase } = usePhase()
   return (
-    <div data-call-strip data-topbar data-phase={phase} role="group" aria-label="Voice call with Shepherdr"
+    <div data-call-strip data-topbar data-phase={phase} role="group" aria-label="Voice call with herdr-orchestrator"
       className={clsx('mx-3 mt-2 flex shrink-0 items-center gap-2 rounded-full py-1 pr-1 pl-3.5 text-[0.8125rem] font-medium text-ready-fg tabular-nums [[data-device=phone]>&:first-child]:mt-[calc(env(safe-area-inset-top)+8px)] phone:text-[0.9375rem]', callTint)}>
       <span className="grid w-4 shrink-0 place-items-center"><CallMark phase={phase} className="h-3" /></span>
       <p className="min-w-0 flex-1 truncate">
-        <span className="text-fg">Shepherdr</span> · <span role="status">{word}</span> · {t}
+        <span className="text-fg">herdr-orchestrator</span> · <span role="status">{word}</span> · {t}
       </p>
       <CallControls size="head" fit />
     </div>
@@ -584,10 +584,10 @@ function FullCall() {
   }, [])
   const look = muted && (phase === 'listening' || phase === 'connecting') ? 'muted' : phase
   return (
-    <div ref={screen} tabIndex={-1} data-call-screen data-theme="dark" data-phase={look} role="dialog" aria-label="Voice call with Shepherdr"
+    <div ref={screen} tabIndex={-1} data-call-screen data-theme="dark" data-phase={look} role="dialog" aria-label="Voice call with herdr-orchestrator"
       className="call-screen-in outline-none fixed inset-0 z-70 flex flex-col bg-[#08090a] pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pb-[max(env(safe-area-inset-bottom),--spacing(8))] pl-[env(safe-area-inset-left)] text-fg antialiased scheme-only-dark short:grid short:grid-cols-2 short:grid-rows-[1fr_auto_auto_1fr] short:pt-[max(env(safe-area-inset-top),--spacing(6))] short:pb-[max(env(safe-area-inset-bottom),--spacing(6))]">
       <header className="flex flex-col items-center gap-0.5 pt-8 short:col-start-2 short:row-start-2 short:pt-0">
-        <h2 className="text-base/6 font-semibold">Shepherdr</h2>
+        <h2 className="text-base/6 font-semibold">herdr-orchestrator</h2>
         <p className="text-sm/5 text-fg2 tabular-nums">{t}</p>
       </header>
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-12 px-6 short:col-start-1 short:row-span-full short:gap-2">
@@ -671,7 +671,7 @@ function CallHanded() {
   const h = handed
   return (
     <div data-topbar data-call-handed role="status" className={clsx(callPill, 'text-ready-fg', callTint)}>
-      <span className="min-w-0 flex-1 text-pretty">Carrying on in your pocket (Shepherdr Wake)</span>
+      <span className="min-w-0 flex-1 text-pretty">Carrying on in your pocket (herdr-orchestrator Wake)</span>
       <button type="button" data-take-back onClick={() => toggleCall(h.from, h.id)}
         className="press-dim h-7 shrink-0 rounded-full bg-bg px-3 text-[0.78125rem] font-medium text-fg shadow-[inset_0_0_0_1px_var(--line2)] phone:h-9 phone:text-[0.875rem]">
         Take it back
@@ -733,7 +733,7 @@ function StartAsk() {
       <div className="absolute top-[calc(env(safe-area-inset-top)+12px)] right-3">
         <IconButton label="Close" className="rounded-full!" onClick={() => setAsking(false)}><XIcon className={ic} /></IconButton>
       </div>
-      <h2 className="text-base/6 font-semibold">Shepherdr</h2>
+      <h2 className="text-base/6 font-semibold">herdr-orchestrator</h2>
       <button type="button" onClick={() => { setAsking(false); toggleCall(null) }}
         className="press-dim flex flex-col items-center gap-4 rounded-[28px] px-10 py-8 text-lg/7 font-medium text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg">
         <span className="grid size-28 place-items-center rounded-full bg-ready text-[#08090a]"><WaveIcon className="size-10" /></span>

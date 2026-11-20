@@ -558,7 +558,7 @@ def closing_line(s, task, parent=None, argv=None):
              f"(a toast and a sound); a question waits in your chat instead.")
     from .feedback import feedback_on
     if feedback_on(task.get("space")):
-        text += (f" A problem in Shepherdr itself, not this task's code: `{ht} feedback \"<one line>\" --details \"<goal, what was "
+        text += (f" A problem in herdr-orchestrator itself, not this task's code: `{ht} feedback \"<one line>\" --details \"<goal, what was "
                  f"tried, what went wrong, expected, suggested fix>\"` returns at once and your Assistant offers the person to file "
                  f"it; carry on.")
     text += (f" Your herdr-task command is {ht}: write that full path each time (never the bare name), as one plain command; "

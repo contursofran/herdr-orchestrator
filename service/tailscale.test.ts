@@ -36,14 +36,14 @@ describe("why sharing can't work (GitHub #754)", () => {
     const why = shareProblem(forward, 443);
     expect(why).toContain("Port 443");
     expect(why).toContain("TCP forward to 127.0.0.1:9000");
-    expect(why).toContain("`shepherdr web https-port 8443`");
+    expect(why).toContain("`herdr-orchestrator web https-port 8443`");
     expect(freePort({ TCP: { "443": {}, "8443": {} } }, 443)).toBe(9443);
     expect(freePort({}, 8443)).toBe(9443);
   });
   test("passes tailscale's own words through", () => {
     expect(shareProblem({}, 443, "error: serve config denied\n\nmore detail\n")).toBe("tailscale serve failed: error: serve config denied more detail");
     expect(shareProblem({}, 443, "")).toBe("tailscale serve failed");
-    expect(shareProblem({}, 443, "port 443 is already in use")).toContain("`shepherdr web https-port 8443`");
+    expect(shareProblem({}, 443, "port 443 is already in use")).toContain("`herdr-orchestrator web https-port 8443`");
   });
 });
 

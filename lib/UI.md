@@ -25,7 +25,7 @@ No other sizes. Use the names, not the numbers, so a change here reaches everyon
 
 ## Colors
 
-`red()` needs you and alerts, `green()` ready, `amber()` working: Shepherdr's own, light and
+`red()` needs you and alerts, `green()` ready, `amber()` working: herdr-orchestrator's own, light and
 dark, the same as the task dots (`dot.js` uses them). `onStatus()` is text on one of them
 (white in light, black in dark). Everything else comes from `theme()`; never write hex in a mod.
 
@@ -49,7 +49,7 @@ dark, the same as the task dots (`dot.js` uses them). `onStatus()` is text on on
 - `clickable(el, onClick, { radius })`: pointer + rounded 8 hover + click for a whole row (`el`
   needs an id).
 - `countBadge(need, ready, line)`: the red / green / split count badge (Tasks, tabs, spaces).
-- `openSettings({ space?, section? })`: Shepherdr's settings window (mods/shepherdr-settings, the foot's Shepherdr); with
+- `openSettings({ space?, section? })`: herdr-orchestrator's settings window (mods/shepherdr-settings, the foot's herdr-orchestrator); with
   `space`, that space's own settings. Never open it with your own size.
 
 ## Rules

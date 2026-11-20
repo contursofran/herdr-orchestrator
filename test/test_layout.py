@@ -21,7 +21,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "mods", "tasks", "bin"))
 from herdr_task import layout as L  # noqa: E402
 
-SHEPHERDR = os.path.join(ROOT, "bin", "shepherdr")
+SHEPHERDR = os.path.join(ROOT, "bin", "herdr-orchestrator")
 BUN = shutil.which("bun")
 
 # What Shepherdr 3.1.26 (before the move) runs on a machine, word for word: the Tasks panel's read of a machine's

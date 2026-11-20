@@ -131,9 +131,9 @@ test("SHEP-104: English first, then whatever language the person speaks, back an
   expect(specTag(before)).not.toBe(SPEC);
 });
 
-test("SHEP-105: one Shepherdr voice for everything, never tied to the chat it started in", () => {
+test("SHEP-105: one herdr-orchestrator voice for everything, never tied to the chat it started in", () => {
   const p = prompt();
-  expect(p).toContain("The person called Shepherdr itself, not one agent");
+  expect(p).toContain("The person called herdr-orchestrator itself, not one agent");
   expect(p).toContain("You never hand the call over to another voice");
   expect(p).not.toMatch(/started in .*'s chat/);
   expect(p).not.toContain("the call's chat");

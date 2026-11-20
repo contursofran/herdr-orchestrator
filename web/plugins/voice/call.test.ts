@@ -137,7 +137,7 @@ test('the lock screen shows the call; its hang up ends it, its mute and pause mu
   hungUp = 0
   mutes.length = 0
   await start()
-  expect((mediaSession.metadata as any).init).toEqual({ title: 'Voice call', artist: 'the Home Assistant', album: 'Shepherdr' })
+  expect((mediaSession.metadata as any).init).toEqual({ title: 'Voice call', artist: 'the Home Assistant', album: 'herdr-orchestrator' })
   expect(mediaSession.playbackState).toBe('playing')
   expect(mediaSession.mic).toBe(true)
   handlers.hangup!()
@@ -306,7 +306,7 @@ test('SHEP-251: handed on to Shepherdr Wake: the page lets go quietly (no end, n
   errors.length = 0
   endedWhy.length = 0
   const handed: string[] = []
-  const p = call.startCall('p:h1', (m) => errors.push(m), undefined, undefined, (why) => endedWhy.push(why), { title: 'Shepherdr', hangUp: () => {}, mute: () => {} }, (id) => handed.push(id))
+  const p = call.startCall('p:h1', (m) => errors.push(m), undefined, undefined, (why) => endedWhy.push(why), { title: 'herdr-orchestrator', hangUp: () => {}, mute: () => {} }, (id) => handed.push(id))
   const ws = FakeSocket.all.at(-1)!
   ws.open()
   ws.say({ type: 'call', id: 'call-9' })

@@ -240,7 +240,7 @@ const cut = (text: string, n: number) => {
 }
 
 export function pushPayload(a: Alert, w: { count: number; tags: string[] }): PushPayload {
-  const title = a.from === 'Shepherdr' ? a.title : `${a.from}: ${a.title}`
+  const title = a.from === 'herdr-orchestrator' ? a.title : `${a.from}: ${a.title}`
   return {
     id: a.id,
     title: clip(title, TITLE_MAX + 20),

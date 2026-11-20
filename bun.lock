@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "shepherdr",
+      "name": "herdr-orchestrator",
       "dependencies": {
         "@heroicons/react": "2.2.0",
         "@xterm/addon-unicode11": "0.9.0",

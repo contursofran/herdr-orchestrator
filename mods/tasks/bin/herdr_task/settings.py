@@ -63,7 +63,7 @@ def write_autopilot(space, values):
     pushed here: the window's machine holds the truth and would put its own back."""
     d = read_settings()
     if d.get("pushed_from"):
-        raise Fail("This machine's Shepherdr settings are a copy from the machine whose window sets them: change Autopilot in Settings there.")
+        raise Fail("This machine's herdr-orchestrator settings are a copy from the machine whose window sets them: change Autopilot in Settings there.")
     if space:
         layer = (d.setdefault("spaces", {})).setdefault(space, {})
     else:

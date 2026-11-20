@@ -56,7 +56,7 @@ def sync_held():
     for p in SYNC_HOLDS:
         try:
             with open(p) as f:
-                return f.readline().strip() or "held by Shepherdr's installer"
+                return f.readline().strip() or "held by herdr-orchestrator's installer"
         except OSError:
             continue
     return None

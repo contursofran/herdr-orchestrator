@@ -177,7 +177,7 @@ def set_base(s, t, base, space=None, new=False):
             try:
                 base_ref(main, own)
             except Fail as e:
-                raise Fail(f"This space's base branch is {own} (Shepherdr settings > Tasks > Base branch), but: {e} "
+                raise Fail(f"This space's base branch is {own} (herdr-orchestrator settings > Tasks > Base branch), but: {e} "
                            "Change the setting, or pass --base.")
             t["base"], t["base_set"], t["base_by"] = own, True, "space"
         return
@@ -941,7 +941,7 @@ def start_again(s, t, space, key=None, argv_json=None, message=None, parent=None
 
 # SHEP-189: what a resumed agent hears first. Its session comes back with no message, so without this
 # it sat idle until someone wrote to it.
-RESUME_NUDGE = ("Shepherdr resumed your session because your agent had stopped. Carry on where you left off: check "
+RESUME_NUDGE = ("herdr-orchestrator resumed your session because your agent had stopped. Carry on where you left off: check "
                 "what is already done with `herdr-task show`, then keep going with the task.")
 
 
@@ -972,7 +972,7 @@ def cmd_resume(args):
 
 # SHEP-211: what a session resumed by switch hears first. Without it the new agent sat idle on the old one's
 # interrupted turn ("Interrupted · What should Claude do instead?") and the task showed a false "needs you".
-SWITCH_NUDGE = ("Shepherdr restarted your session on a new agent (the task's agent, model or settings changed), "
+SWITCH_NUDGE = ("herdr-orchestrator restarted your session on a new agent (the task's agent, model or settings changed), "
                 "which stopped your last turn part-way. Nothing is wrong and nobody is waiting on you: carry on "
                 "where you left off (check what is already done with `herdr-task show` and git), then keep going "
                 "with the task.")

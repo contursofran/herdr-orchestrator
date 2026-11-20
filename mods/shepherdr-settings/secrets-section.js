@@ -61,10 +61,10 @@ function moveTo(s, m, cx) {
   s.moving = m || W.keptHere;
   s.moveErr = "";
   cx.spawn(async (cx) => {
-    const r = await exec("sh", ["-c", 'PATH="$HOME/.local/bin:$PATH"; exec shepherdr secrets move-to "$1" --json', "x", m || "here"]).catch((e) => ({ code: 1, stdout: "", stderr: String(e?.message ?? e) }));
+    const r = await exec("sh", ["-c", 'PATH="$HOME/.local/bin:$PATH"; exec herdr-orchestrator secrets move-to "$1" --json', "x", m || "here"]).catch((e) => ({ code: 1, stdout: "", stderr: String(e?.message ?? e) }));
     let out = null;
     try { out = JSON.parse(r.stdout.trim().split("\n").pop()); } catch {}
-    if (r.code !== 0 || !out?.ok) s.moveErr = out?.error || r.stderr.trim().split("\n").pop()?.replace(/^shepherdr: /, "") || "The move didn't finish.";
+    if (r.code !== 0 || !out?.ok) s.moveErr = out?.error || r.stderr.trim().split("\n").pop()?.replace(/^herdr-orchestrator: /, "") || "The move didn't finish.";
     s.moving = null;
     await vault.whereNow?.();
     s.reload(cx);
