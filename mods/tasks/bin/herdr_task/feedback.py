@@ -1,6 +1,6 @@
-"""Feedback for Shepherdr (SHEP-78): an agent that hits a problem in Shepherdr itself (a Shepherdr,
+"""Feedback for herdr-orchestrator (SHEP-78): an agent that hits a problem in herdr-orchestrator itself (a
 herdr-task, web or window feature that doesn't work as meant, a command failing like our bug, the
-person's frustration with Shepherdr) offers, once, to file it as a GitHub issue, and files it only
+person's frustration with herdr-orchestrator) offers, once, to file it as a GitHub issue, and files it only
 with the person's yes.
 
 - Any agent that isn't an Assistant (a task worker, its reviewer, an automation's run, an agent
@@ -12,7 +12,7 @@ with the person's yes.
   tool. On yes: `--file` searches the repo's open issues for a duplicate first, then files a
   redacted issue with gh (or `--comment <n>` adds to the duplicate). On no: `--no`, remembered.
 - Settings › Agents › Feedback offers (agents.feedback, on unless turned off, per space or
-  Everywhere) and the repo it files to (agents.feedback_repo, Everywhere's; default upstream).
+  Everywhere) and the repo it files to (agents.feedback_repo in Everywhere, defaulting to this project's GitHub repo).
 
 One problem is the words of its one line (key_of); what happened to it is kept in STATE."""
 
@@ -77,7 +77,7 @@ def repo_of(value):
 
 
 def feedback_repo(d=None):
-    """The repo feedback is filed to: Everywhere's agents.feedback_repo, else upstream Shepherdr's."""
+    """Use Everywhere's agents.feedback_repo when set and valid, or this project's GitHub repo."""
     d = read_settings() if d is None else d
     a = (d.get("everywhere") or {}).get("agents") if isinstance(d.get("everywhere"), dict) else None
     return repo_of((a or {}).get("feedback_repo") if isinstance(a, dict) else None) or REPO

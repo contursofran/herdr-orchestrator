@@ -18,7 +18,7 @@ place, never overwrites what you made yourself, and keeps a backup of anything i
 ## Install
 
 ```bash
-git clone https://github.com/eliasstravik/shepherdr && cd shepherdr
+git clone https://github.com/contursofran/herdr-orchestrator && cd herdr-orchestrator
 ./install.sh --dry-run      # what it would do; nothing is written
 ./install.sh                # do it
 herdr-orchestrator doctor   # check it
@@ -88,13 +88,18 @@ herdr-core and the web app alone: no Herdr app, its spaces are the service's own
 (https://herdr.dev) and Tailscale, signed in, then:
 
 ```bash
-git clone https://github.com/eliasstravik/shepherdr && cd shepherdr
+git clone https://github.com/contursofran/herdr-orchestrator && cd herdr-orchestrator
 ./install.sh --web          # the service, the web app, herdr-task and the helpers
 herdr-orchestrator doctor   # check it
 herdr-orchestrator web status  # where it's served: https://<this machine's tailnet name>/shepherdr/
 ```
 
 It shares itself on your tailnet only (`tailscale serve`, never Funnel). `herdr-orchestrator update` keeps it web only.
+
+## Update
+
+Run `git pull` in the checkout you installed from, then run `herdr-orchestrator update`. The update uses the files in
+that local checkout and keeps your install mode (layout or web only).
 
 ## Options
 

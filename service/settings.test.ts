@@ -232,7 +232,7 @@ test("Feedback offers and its repo", () => {
   const sp = { id: "sp7", name: "shop", machine: null, folder: "/shop" };
   const row = (level: string) => s.sections(null, [sp]).find((x) => x.name === "Agents" && x.level === level)!.rows;
   expect(row("all").find((r) => r.key === "agents.feedback")).toMatchObject({ label: "Feedback offers", value: "on", options: ["on", "off"] });
-  expect(row("all").find((r) => r.key === "agents.feedback_repo")).toMatchObject({ label: "Feedback repo", value: "", text: true, placeholder: "eliasstravik/shepherdr" });
+  expect(row("all").find((r) => r.key === "agents.feedback_repo")).toMatchObject({ label: "Feedback repo", value: "", text: true, placeholder: "contursofran/herdr-orchestrator" });
   expect(row("sp7").find((r) => r.key === "agents.feedback_repo")).toBeUndefined();
   s.set("agents.feedback", "off", "sp7", sp);
   s.set("agents.feedback_repo", "https://github.com/acme/shep", "all");

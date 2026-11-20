@@ -4540,7 +4540,7 @@ class AssistantSettings(unittest.TestCase):
         for label, words in [("Review", "off"), ("Merge", "ask the person first"), ("Proof", "on"), ("Task agent", "claude"),
                              ("Base branch", "the folder's checked-out branch"), ("Worktrees", "on"), ("Tasks at once", "10 per folder"),
                              ("Task notes", "none"), ("Autopilot", "off"), ("Reactions", "on"),
-                             ("Feedback offers", "on (offer once to file a herdr-orchestrator problem as an issue on eliasstravik/shepherdr")]:
+                             ("Feedback offers", "on (offer once to file a herdr-orchestrator problem as an issue on contursofran/herdr-orchestrator")]:
             self.assertTrue(self.line(note, label).startswith(f"- {label}: {words}"), self.line(note, label))
         # nothing differs from Herdr's default: no line says who set it
         self.assertNotIn("; set for", note)
@@ -4835,10 +4835,11 @@ class Feedback(unittest.TestCase):
         self.assertIn("#12 Ready refuses reviewed commits", out)
         self.assertIn("--comment", out)
         self.assertEqual([a[1:3] for a in self.gh], [["issue", "list"]])
-        self.assertIn("eliasstravik/shepherdr", self.gh[0])  # the default repo
+        self.assertEqual(self.gh[0][self.gh[0].index("--repo") + 1], "contursofran/herdr-orchestrator")
         self.assertEqual(self.gh[0][self.gh[0].index("--search") + 1], "ready refuses reviewed commit")
         code, out = self.say("Ready refuses a reviewed commit", "--file", "--comment", "12", "--happened", "Again on 3.1.12.")
         self.assertEqual(self.gh[-1][:4], ["gh", "issue", "comment", "12"])
+        self.assertEqual(self.gh[-1][self.gh[-1].index("--repo") + 1], "contursofran/herdr-orchestrator")
         self.assertIn("Commented: https://github.com/acme/shep/issues/42", out)
         self.assertIn("Already filed", self.say("Ready refuses a reviewed commit")[1])
 

@@ -106,16 +106,16 @@ export function upgradeReactions(cfg) {
   }
   return cfg;
 }
-// Feedback offers (herdr-task's feedback.py, SHEP-78): an agent that hits a problem in Shepherdr itself offers once to
+// Feedback offers (herdr-task's feedback.py, SHEP-78): an agent that hits a problem in herdr-orchestrator itself offers once to
 // file it as a GitHub issue, filed only on your yes. Kept as agents.feedback (on unless turned off) and, Everywhere's
-// only, agents.feedback_repo (the repo it files to; empty: upstream Shepherdr's).
+// only, agents.feedback_repo (defaults to this project's GitHub repo).
 export const FEEDBACK = {
   title: "Feedback offers",
   about: "When herdr-orchestrator itself misbehaves, agents offer once to file it as a GitHub issue, only with your yes.",
   repoTitle: "Feedback repo",
   repoAbout: "Where feedback issues go, as owner/name. Empty: herdr-orchestrator's own repo.",
-  repo: "eliasstravik/shepherdr",
-  bad: "Write it as owner/name, like eliasstravik/shepherdr.",
+  repo: "contursofran/herdr-orchestrator",
+  bad: "Use owner/name (for example, contursofran/herdr-orchestrator).",
 };
 // owner/name from what was typed (owner/name or a github.com link), "" for empty, null when it isn't one.
 export function feedbackRepo(v) {
