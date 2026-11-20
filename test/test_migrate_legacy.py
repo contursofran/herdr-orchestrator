@@ -1,9 +1,7 @@
 """Compatibility with mod IDs recorded by the previous installer."""
 import home_guard  # noqa: F401  (first: every test on a throwaway home)
 import copy
-import contextlib
 import fcntl
-import io
 import json
 import runpy
 import shutil
@@ -168,15 +166,20 @@ class InstalledMove(unittest.TestCase):
         self.assertFalse((self.root / ".config/herdr-app/data/herdr-orchestrator/installed.json").exists())
 
     def test_failed_install_restores_old_files_and_data(self):
-        cli = runpy.run_path(str(ROOT / "bin/herdr-orchestrator"))
-        main = cli["main"]
-        output = io.StringIO()
-        def fail_save(*_):
-            raise OSError("test failure before saving install record")
-        with patch.dict(main.__globals__, {"save_record": fail_save}), contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
-            code = main(["install", "--root", str(self.root), "--source", str(ROOT), "--yes", "--no-build", "--migrate-legacy"])
-        self.assertEqual(code, 1, output.getvalue())
-        self.assertIn("test failure before saving install record", output.getvalue())
+        with tempfile.TemporaryDirectory(prefix="orch-inject-failure-") as folder:
+            source = Path(folder) / "source"
+            shutil.copytree(ROOT, source, ignore=shutil.ignore_patterns(".git", "node_modules", "__pycache__", ".last"))
+            installer = source / "bin/herdr-orchestrator"
+            script = installer.read_text()
+            marker = "def save_record(root, rec):\n"
+            self.assertIn(marker, script)
+            installer.write_text(script.replace(marker, marker + '    raise OSError("test failure before saving install record")\n', 1))
+            failed = subprocess.run(
+                [sys.executable, str(installer), "install", "--root", str(self.root), "--yes", "--no-build", "--migrate-legacy"],
+                cwd=source, capture_output=True, text=True,
+            )
+        self.assertEqual(failed.returncode, 1, failed.stdout + failed.stderr)
+        self.assertIn("test failure before saving install record", failed.stderr)
         self.assert_restored()
 
 
