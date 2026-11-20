@@ -56,6 +56,7 @@ import argparse
 import ctypes
 import ctypes.util
 import datetime
+import functools
 import hashlib
 import json
 import os
@@ -711,6 +712,12 @@ class Run:
         return dest
 
 
+@functools.lru_cache(maxsize=1)
+def legacy_api():
+    migration = os.path.join(os.path.dirname(os.path.realpath(__file__)), "migrate_legacy.py")
+    return runpy.run_path(migration)
+
+
 def move_layout_blocks(text, name):
     """Apply layout block moves and mod ID renames, keeping the person's layout."""
     moves = [m for m in LAYOUT_MOVES if m[0] == name]
@@ -720,8 +727,7 @@ def move_layout_blocks(text, name):
         d = json.loads(text)
     except ValueError:
         return None, []
-    migration = os.path.join(os.path.dirname(os.path.realpath(__file__)), "migrate_legacy.py")
-    renames = runpy.run_path(migration)["MOD_RENAMES"]
+    renames = legacy_api()["MOD_RENAMES"]
     said = []
 
     def walk(n):
@@ -1125,10 +1131,10 @@ def check_tools(root_is_home):
     return bad, notes
 
 
-def cmd_install(a, update=False):
+def cmd_install(a, update=False, legacy=None):
     root = os.path.realpath(a.root or real_home())
     home = root == os.path.realpath(real_home())
-    rec = load_record(root)
+    rec = legacy.previous if legacy else load_record(root)
     if update and not rec:
         raise Stop(f"herdr-orchestrator isn't installed under {root}: run install first")
     src = find_source(a.source, rec)
@@ -1147,6 +1153,11 @@ def cmd_install(a, update=False):
         shown = "\n  ".join(clashes[:40]) + (f"\n  ... and {len(clashes) - 40} more" if len(clashes) > 40 else "")
         raise Stop(f"these are someone else's (not installed by herdr-orchestrator, and different):\n  {shown}\n"
                    "Nothing was changed. Rename your own mods, or run with --adopt to back these up and take them over.")
+    if legacy and not a.dry_run:
+        legacy.begin(mods, items)
+        actions, clashes = plan_files(r, rec, items, a.adopt)
+        if clashes:
+            raise Stop("files changed during the installation move: " + ", ".join(clashes))
     old_files = (rec or {}).get("files", {})
 
     def settle(g, rel, how, data, mode):
@@ -1257,6 +1268,14 @@ def cmd_install(a, update=False):
         save_record(r.root, rec)
         shutil.rmtree(r.p(f"{APP}/.herdr-orchestrator-stage"), ignore_errors=True)
     whole_bad = [] if a.dry_run else install_checks(r, rec)[0]
+    if legacy and not a.dry_run:
+        if not where_for(root).migrated:
+            whole_bad.append("the copied data layout did not initialize")
+        if home and not service_answers(root)[0]:
+            whole_bad.append("the new service did not answer")
+        if whole_bad:
+            raise Stop("the installation move was rolled back:\n  " + "\n  ".join(whole_bad))
+        legacy.done()
     for n in r.notes + notes:
         say(f"  - {n}")
     if not a.dry_run:
@@ -1270,6 +1289,36 @@ def cmd_install(a, update=False):
         else:
             say("  done. Next: `herdr-orchestrator doctor`" + ("" if home else f" --root {root}") + ", then pick the herdr-orchestrator layout in Herdr (Ctrl+Shift+L).")
     return 0
+
+
+def upstream_install(root):
+    api = legacy_api()
+    try:
+        return api["detected"](root)
+    except (api["MigrationError"], OSError) as error:
+        raise Stop(str(error)) from error
+
+
+def install_or_move(a, update=False, web=False):
+    root = os.path.realpath(a.root or real_home())
+    if not upstream_install(root):
+        if a.migrate_legacy:
+            raise Stop(f"no upstream layout install was found under {root}")
+        return cmd_install_web(a, update=update) if web else cmd_install(a, update=update)
+    if not a.migrate_legacy or update or web:
+        raise Stop("found an upstream install. Preview its move with ./install.sh --migrate-legacy --dry-run, "
+                   "then run ./install.sh --migrate-legacy for the Herdr layout")
+    home = root == os.path.realpath(real_home())
+    api = legacy_api()
+    try:
+        legacy = api["Move"](root, home, where_for(root), layout_mod().KINDS, fsha, move_layout_blocks)
+        if a.dry_run:
+            say("  would back up the upstream install, copy its data, replace its service and move its layout keys")
+            return cmd_install(a, legacy=legacy)
+        with legacy.transaction():
+            return cmd_install(a, legacy=legacy)
+    except (api["MigrationError"], OSError) as error:
+        raise Stop(str(error)) from error
 
 
 # ---- web only ----------------------------------------------------------------------------------
@@ -2035,6 +2084,7 @@ def main(argv):
         if name in ("install", "update", "uninstall"):
             c.add_argument("--dry-run", action="store_true", help="say what would change, change nothing")
         if name in ("install", "update"):
+            c.add_argument("--migrate-legacy", action="store_true", help="move an installed upstream Herdr layout into this install")
             c.add_argument("--adopt", action="store_true", help="files by these names that aren't herdr-orchestrator's: back them up and take them over")
             c.add_argument("--guard", action="store_true", help="also put the herdr-app guard on the PATH (refuses a window with another home)")
             c.add_argument("--keys", choices=["ask", "keep", "ours"], default="ask", help="a key you already use: ask (default; keep without a terminal), keep yours, or take ours")
@@ -2068,18 +2118,30 @@ def main(argv):
     mg.add_argument("--cleanup-legacy", action="store_true", help="remove the links at the old paths (once every machine is updated)")
     mg.add_argument("--force", action="store_true", help="move even on a network disk (no other machine uses this home)")
     mg.add_argument("--yes", action="store_true")
+    rollback = sub.add_parser("rollback-install", help="restore the upstream install from an installation move's backup")
+    rollback.add_argument("--backup", required=True, help="the backup directory printed by the move")
+    rollback.add_argument("--root", help="the same scratch root used for the move")
     sub.add_parser("version")
     a = ap.parse_args(argv)
     try:
         if a.cmd in ("install", "update"):
             hand_over(a, argv)
         if a.cmd == "install":
-            return cmd_install_web(a) if a.web else cmd_install(a)
+            return install_or_move(a, web=a.web)
         if a.cmd == "update":
             # the kind the install record says: the whole layout, or web only (./install.sh --web)
             root = os.path.realpath(a.root or real_home())
             web = a.web or (not load_record(root) and os.path.isfile(os.path.join(root, WEB_RECORD)))
-            return cmd_install_web(a, update=True) if web else cmd_install(a, update=True)
+            return install_or_move(a, update=True, web=web)
+        if a.cmd == "rollback-install":
+            root = os.path.realpath(a.root or real_home())
+            api = legacy_api()
+            try:
+                backup = api["rollback"](root, a.backup, root == os.path.realpath(real_home()))
+            except (api["MigrationError"], OSError) as error:
+                raise Stop(str(error)) from error
+            say(f"Restored the upstream installation. Backup and any archived changes: {backup}")
+            return 0
         if a.cmd == "uninstall":
             return cmd_uninstall(a)
         if a.cmd == "doctor":
@@ -2091,6 +2153,9 @@ def main(argv):
         if a.cmd == "where":
             return cmd_where(a)
         if a.cmd == "migrate":
+            root = os.path.realpath(a.root or real_home())
+            if upstream_install(root):
+                raise Stop("use ./install.sh --migrate-legacy to move the upstream installation")
             return cmd_migrate(a)
         if a.cmd == "version":
             say(f"herdr-orchestrator {VERSION}")
