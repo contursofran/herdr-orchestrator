@@ -109,7 +109,17 @@ WORKER_MD_BEFORE_ASK = WORKER_MD_BEFORE_OFTEN.replace(OFTEN_OLD, OFTEN_RULE).rep
 ASK_OLD = "Anything else: ask the person in one short message. Then run ready again."
 ASK_RULE = ("Anything else: ask the person with your CLI's question tool, as below (a question in plain text reaches "
             "nobody while the task is Ready). Then run ready again.")
-WORKER_MD = WORKER_MD_BEFORE_ASK.replace(ASK_OLD, ASK_RULE)
+WORKER_MD_BEFORE_VERDICTS = WORKER_MD_BEFORE_ASK.replace(ASK_OLD, ASK_RULE)
+REVIEW_VERDICT_RULE = ("- Review, when the Settings block says Review: on. Commit your changes and run the ready command in your brief. Herdr starts a read-only independent reviewer for that commit and records its verdict. End your turn while it reviews. When Herdr sends you findings, fix those within the brief, run the checks, commit the result, and submit ready again. Send questions about scope or conflicting findings to the Assistant.")
+WORKER_MD = WORKER_MD_BEFORE_VERDICTS.replace(
+    next(line for line in WORKER_MD_BEFORE_VERDICTS.splitlines() if line.startswith("- Review, when ")),
+    REVIEW_VERDICT_RULE,
+).replace(
+    "unless the task says so (the reviewer of your own review is fine).", "unless the task says so.",
+).replace(
+    "That puts the task in Ready for the person, who accepts it.",
+    "That submits the task. When Review is on, an independent approval advances the reviewed commit. Merge and Accept follow the task's Merge setting.",
+)
 
 REVIEWER_MD_BEFORE_SUBAGENT = """You review one Herdr task's work before it can merge. Read only: never edit files, commit or push.
 - Read the task, then the diff of its branch against its base, and run the project's checks.
@@ -142,7 +152,7 @@ OLD_WORKER_READY = """You work on one Herdr task. Stay within the task's scope a
 - When the work is finished, run the `herdr-task ready` command given at the end of your brief, with a short summary. That puts the task in Ready for the person, who accepts it. Never mark a task done yourself.
 """
 OLD_WORKER_MD = OLD_WORKER_READY.split("- When the work is finished")[0]
-OLD_WORKERS = (WORKER_MD_BEFORE_ASK, WORKER_MD_BEFORE_OFTEN, WORKER_MD_BEFORE_SUGGEST, WORKER_MD_BEFORE_COMMAND, WORKER_MD_BEFORE_FEEDBACK, WORKER_MD_BEFORE_SUBAGENTS, WORKER_MD_BEFORE_LEFT, WORKER_MD_BEFORE_DETAILS, WORKER_MD_BEFORE_CUT, WORKER_MD_BEFORE_ESTIMATE, WORKER_MD_BEFORE_SUMMARY, WORKER_MD_BEFORE_GATE, WORKER_MD_BEFORE_TEMPLATES, WORKER_MD_BEFORE_NEWS, OLD_WORKER_READY, OLD_WORKER_MD, OLD_WORKER_MD.replace(OLD_WORKER_MD.split("\n")[0], OLD_WORKER_FIRST), OLD_WORKER_REVIEW)
+OLD_WORKERS = (WORKER_MD_BEFORE_VERDICTS, WORKER_MD_BEFORE_ASK, WORKER_MD_BEFORE_OFTEN, WORKER_MD_BEFORE_SUGGEST, WORKER_MD_BEFORE_COMMAND, WORKER_MD_BEFORE_FEEDBACK, WORKER_MD_BEFORE_SUBAGENTS, WORKER_MD_BEFORE_LEFT, WORKER_MD_BEFORE_DETAILS, WORKER_MD_BEFORE_CUT, WORKER_MD_BEFORE_ESTIMATE, WORKER_MD_BEFORE_SUMMARY, WORKER_MD_BEFORE_GATE, WORKER_MD_BEFORE_TEMPLATES, WORKER_MD_BEFORE_NEWS, OLD_WORKER_READY, OLD_WORKER_MD, OLD_WORKER_MD.replace(OLD_WORKER_MD.split("\n")[0], OLD_WORKER_FIRST), OLD_WORKER_REVIEW)
 
 
 TEMPLATE_HEADS = {

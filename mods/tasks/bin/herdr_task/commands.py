@@ -10,7 +10,7 @@ import subprocess
 import sys
 import time
 
-from . import sandbox
+from . import reviews, sandbox
 from .base import Fail, git, guard, now, run, STORE, stop_note, VERSION
 from .settings import (
     agent_argv, agent_key, bare, merge_policy, review_limits, set_opts, settings_block, settings_for, space_base,
@@ -265,8 +265,9 @@ def cmd_show(args):
 def begin(s, t, argv, space, parent=None):
     """Starts the task's first agent. Returns its record."""
     t["state"], t["started"] = "running", now()
-    # Its brief teaches `reviewed`: ready waits for a review of its final commit (review_refusal).
+    # Ready queues an independent review of the exact commit.
     t["review_gate"] = True
+    t["signed_reviews"] = True
     for k in ("queue", "queued_at", "attention", "held", "scheduled_for"):
         t.pop(k, None)
     if t.get("mode") == "worktree" and not t.get("worktree") and not worktrees_on(s, space):
@@ -373,12 +374,17 @@ def cmd_ready(args):
         if t["state"] == "done":
             raise Fail(f"{s.ref(t)} is already done.")
         wt = t.get("worktree") if t.get("mode") == "worktree" else None
-        if wt and os.path.isdir(wt):
+        signed = reviews.signed(s, t)
+        if signed:
+            folder = wt or (s.loc["folder"] if s.loc["kind"] == "repo" else None)
+            t["head"] = reviews.commit(folder)
+        elif wt and os.path.isdir(wt):
             if git(wt, "status", "--porcelain", "--untracked-files=no")[1]:
                 raise Fail(f"{wt} has uncommitted changes. Commit them, then run ready again.")
             t["head"] = git(wt, "rev-parse", "HEAD")[1]
+        if wt and os.path.isdir(wt):
             own_work(s, t)
-        refused = review_refusal(s, t, wt)
+        refused = None if signed else review_refusal(s, t, wt)
         if refused:
             # Kept (the task's line says why it waits); refused after the store is saved.
             s.dirty = True
@@ -410,33 +416,28 @@ def cmd_ready(args):
             # Its agents' turns now: a later turn of theirs takes it back to work (busy_again()).
             t["ready_turns"] = ready_turns(live_agents(s.key(t)))
             s.dirty = True
+            if signed and not no_review_work(s, t, wt):
+                req = t.get("review_request") or {}
+                if req.get("head") == t["head"] and req.get("status") == "approved":
+                    say(args, view(s, t), f"{s.ref(t)} has its approval. The task engine is advancing it.")
+                    return
+                if not reviews.approval(t, t["head"]):
+                    result = reviews.request(s, t, t["head"], rounds_used(t), review_limits(s, t)[1])
+                    say(args, view(s, t), f"{s.ref(t)}: {result}")
+                    return
     if refused:
         raise Fail(refused)
     with open_store(args) as s:
         t = s.find(args.id)
-        # Its review is the agent's own, as its brief's Settings block says (herdr-task starts no
-        # reviewers). A worktree branch with nothing beyond its base (none of its own, or only its
-        # base caught up with: a research or artifact-only task) still waits in Ready for the
-        # person's Accept, its summary, details and artifacts on the card (SHEP-96); no pull request,
-        # and Accept just marks it done and cleans up its worktree.
-        if wt and t.get("start") and in_base(s, t) and not merged_here(s, t):
-            t["nothing_to_merge"] = True
-        else:
-            t.pop("nothing_to_merge", None)
-        # Its work already in its base (SHEP-59: its pull request squash-merged, or nothing left to
-        # merge): done at once, never a second pull request.
-        gone = already_merged(s, t) if wt and t.get("start") and not t.get("nothing_to_merge") else None
-        if gone is not None:
-            t["merged"] = True
-            if gone:
-                watch_main(s, t, (gone.get("mergeCommit") or {}).get("oid"))
-                update_main(s, t)
-            finish(s, t, even_if_busy=True)
-            v = view(s, t)
-            how = f"pull request #{gone['number']} is merged" if gone else f"its work is already in {t.get('base') or 'main'}"
-            say(args, v, f"{s.ref(t)}: {how}; done.")
+        if reviews.signed(s, t):
+            folder = wt or s.loc["folder"]
+            head = reviews.commit(folder)
+            if head != t["head"] or (not no_review_work(s, t, wt) and not reviews.approval(t, head)):
+                raise Fail("The current commit needs an independent approval. Run ready for the new commit.")
+        msg = finish_ready(s, t, wt)
+        if t["state"] == "done":
+            say(args, view(s, t), msg)
             return
-        msg = finalize(s, t)
         # Its own background work still running (SHEP-148): the task shows Working until it ends.
         log = agent_log(t, me) if me else None
         jobs = background_jobs(log)[0] if log else {}
@@ -454,11 +455,34 @@ def cmd_ready(args):
         sys.exit(1)  # its push or pull request failed: not ready the way it meant (#795)
 
 
-REVIEWED = ("report", "pass", "changes")  # a recorded review round (report: the agent's own reviewed)
+def finish_ready(s, t, wt):
+    """A ready submission, after any review required for it."""
+    if wt and t.get("start") and in_base(s, t) and not merged_here(s, t):
+        t["nothing_to_merge"] = True
+    else:
+        t.pop("nothing_to_merge", None)
+    gone = already_merged(s, t) if wt and t.get("start") and not t.get("nothing_to_merge") else None
+    if gone is None:
+        return finalize(s, t)
+    t["merged"] = True
+    if gone:
+        watch_main(s, t, (gone.get("mergeCommit") or {}).get("oid"))
+        update_main(s, t)
+    finish(s, t, even_if_busy=True)
+    how = f"pull request #{gone['number']} is merged" if gone else f"its work is already in {t.get('base') or 'main'}"
+    return f"{s.ref(t)}: {how}; done."
+
+
+REVIEWED = ("report", "pass", "changes", *reviews.VERDICTS)
 
 
 def rounds_used(t):
     return sum(1 for r in t.get("reviews") or [] if r.get("result") in REVIEWED)
+
+
+def no_review_work(s, t, wt):
+    return (bool(t.get("start")) and in_base(s, t)) if wt else (
+        bool(t.get("folder_start")) and unchanged_folder(s, t))
 
 
 def review_refusal(s, t, wt):
@@ -534,6 +558,8 @@ def cmd_reviewed(args):
     commit. Out of rounds it is refused: only the Assistant adds one (review-more)."""
     with open_store(args) as s:
         t = s.find(args.id)
+        if t.get("signed_reviews"):
+            raise Fail("This task takes its verdict from the registered independent reviewer. Run ready to request review.")
         if t["state"] not in ("running", "ready"):
             raise Fail(f"{s.ref(t)} isn't being worked on ({STATUSES.get(t['state'], t['state'])}).")
         on, rounds = review_limits(s, t)
@@ -590,15 +616,20 @@ def cmd_review_more(args):
             raise Fail(f"{s.ref(t)} has used {used} of {rounds} review rounds; add one only when they are all used.")
         t["review_rounds_added"] = int(t.get("review_rounds_added") or 0) + 1
         t.pop("review_out", None)
+        if t.get("signed_reviews") and (t.get("review_request") or {}).get("status") == "escalated":
+            t.pop("review_request", None)
+            t.pop("attention", None)
         s.dirty = True
         live = workers(s, t)
         told = None
         if live:
             ht, folder = own_path(), shlex.quote(s.loc["folder"])
             from .news import send_or_hold
+            next_step = "Commit the fixes and run ready for independent review." if t.get("signed_reviews") else (
+                f"Have your final commit reviewed, record it with `{ht} reviewed {s.ref(t)} --folder {folder} "
+                f"--report \"<findings, a line>\"`, then run ready again.")
             r = send_or_hold(live[-1]["address"],
-                     f"Your Assistant added one review round to {s.ref(t)}: {rounds + 1} in all. Have your final commit reviewed, "
-                     f"record it with `{ht} reviewed {s.ref(t)} --folder {folder} --report \"<findings, a line>\"`, then run ready again.")
+                            f"Your Assistant added one review round to {s.ref(t)}: {rounds + 1} in all. {next_step}")
             told = live[-1]["address"] if r else None
         v = view(s, t)
     say(args, {**v, "rounds": rounds + 1, "told": told},
@@ -712,6 +743,11 @@ def finalize(s, t):
     local = t.get("mode") != "worktree" or not wt or t.get("nothing_to_merge")
     repo = github(s) if not local and os.path.isdir(wt) else None
     failed = None
+    signed_head = t.get("head") if reviews.signed(s, t) and not local else None
+    if signed_head:
+        problem = reviews.merge_problem(s, t, signed_head)
+        if problem:
+            return f"{s.ref(t)} {READY_BUT} {problem}"
     if repo:
         # Pushed and opened before it shows Ready: the push lets the task list go while its hooks run
         # (#1007), and a Ready task without its pull request yet could be accepted (merged here) meanwhile.
@@ -723,6 +759,12 @@ def finalize(s, t):
         # #988: a GitHub repo gh couldn't reach just now: never on as if it had no GitHub (Accept would
         # merge it here while a pull request, its agent's, stays open there).
         failed = f"Couldn't reach GitHub to open its pull request: {github_unreachable(s)}"
+    if signed_head:
+        ok, current, _ = git(wt, "rev-parse", "--verify", "HEAD")
+        if not ok or signed_head != current or t.get("head") != current:
+            if (t.get("review_request") or {}).get("head") == signed_head:
+                reviews.escalate(s, t, t["review_request"], "The commit changed while opening its pull request. Run ready again.")
+            return f"{s.ref(t)} {READY_BUT} The commit changed while opening its pull request."
     t["state"], t["ready_at"] = "ready", now()
     for k in ("attention", "merge_requested", "review"):
         t.pop(k, None)
@@ -752,6 +794,13 @@ def finalize(s, t):
                 err = merge_now(s, t)
                 return msg + (f" Merging it waits: {err}" if err else " Merged; done.")
             return msg + " It merges by itself once its checks pass."
+        if reviews.signed(s, t):
+            if not ff_merge(s, t):
+                t["attention"] = "The approved commit can't fast-forward its base. Update the branch and request review again."
+                return msg + " " + t["attention"]
+            t["merged"] = True
+            finish(s, t, even_if_busy=True)
+            return msg + " Merged; done."
         try:
             sent, started = tell(s, t, local_merge_msg(s, t), None)
             t["merge_requested"] = now()
@@ -774,6 +823,8 @@ def cmd_review(args):
             text = f.read()
     with open_store(args) as s:
         t = s.find(args.id)
+        if t.get("signed_reviews"):
+            raise Fail("This task takes its verdict from the registered independent reviewer.")
         rv = t.pop("review", None) or {}
         cfg = settings_for(s, t.get("space"))["tasks"]
         of = rv.get("of") or int(cfg.get("review_rounds") or 1)
@@ -934,8 +985,9 @@ def start_again(s, t, space, key=None, argv_json=None, message=None, parent=None
     res = resume_argv(argv, prev["session"], folder_for(s, t)) if same and prev.get("session") else None
     if res:
         return launch(s, t, argv, space, message or nudge, parent=parent, resume=res), True
-    text = handoff(s, t, prev, parent, argv) + (("\n\n" + message) if message else "")
     t["review_gate"] = True
+    t["signed_reviews"] = True
+    text = handoff(s, t, prev, parent, argv) + (("\n\n" + message) if message else "")
     return launch(s, t, argv, space, text, parent=parent), False
 
 
@@ -1079,6 +1131,9 @@ def merge_now(s, t):
         return f"Couldn't reach pull request #{n} on GitHub."
     note_checks(s, t, v)
     if v.get("state") != "MERGED":
+        if review_problem := reviews.merge_problem(s, t, v.get("headRefOid")):
+            t.update(attention=review_problem, attention_at=now())
+            return review_problem
         problem = pr_problem(v)
         if problem:
             t["attention"], t["attention_at"] = problem, now()
@@ -1162,6 +1217,15 @@ def cmd_merge(args):
                 error += " Merge again when they pass."
             elif error == WAITS_APPROVAL:
                 error += " Merge again once it's approved."
+        elif reviews.signed(s, t):
+            how = "local"
+            error = reviews.merge_problem(s, t, branch_tip(s, t))
+            if not error:
+                if ff_merge(s, t):
+                    t["merged"] = True
+                    finish(s, t, even_if_busy=True)
+                else:
+                    error = "The approved commit can't fast-forward its base. Update the branch and request review again."
         else:
             t["merge_requested"] = now()
             s.dirty = True
@@ -1172,8 +1236,9 @@ def cmd_merge(args):
         sys.exit(1)
     text = f"{s.ref(t)}: pull request #{t['pr']['number']} merged; done." if how == "github" else \
         f"{s.ref(t)}: pull request #{t['pr']['number']} is in GitHub's merge queue; done once GitHub merges it." if how == "queue" else \
+        f"{s.ref(t)}: merged locally; done." if how == "local" else \
         f"{s.ref(t)}: merge asked of {sent}" + (" (a new agent)" if started else "")
-    say(args, {**v, "terminal": sent, "new_agent": started, "merged": how == "github", "queued": how == "queue"}, text)
+    say(args, {**v, "terminal": sent, "new_agent": started, "merged": how in ("github", "local"), "queued": how == "queue"}, text)
 
 
 def branch_tip(s, t):
@@ -1196,6 +1261,10 @@ def ff_merge(s, t):
     checked out in the main folder and the branch already holds it: exactly the tested work, no
     new combination). Returns whether it did; git refuses to touch uncommitted files."""
     main, br, base = s.loc["folder"], t.get("branch"), t.get("base") or "main"
+    if reviews.signed(s, t):
+        br = branch_tip(s, t)
+        if not reviews.approval(t, br):
+            return False
     ok, cur, _ = git(main, "symbolic-ref", "--short", "HEAD")
     if not (br and git(main, "merge-base", "--is-ancestor", base, br)[0]):
         return False
@@ -1237,6 +1306,10 @@ def cmd_accept(args):
             raise Fail(f"{s.ref(t)} isn't ready ({t['state']}); only a Ready task can be accepted.")
         t.pop("attention", None)
         wt = t.get("worktree") if t.get("mode") == "worktree" else None
+        if not wt and reviews.signed(s, t) and not no_review_work(s, t, wt):
+            head = reviews.commit(s.loc["folder"] if s.loc["kind"] == "repo" else None)
+            if problem := reviews.merge_problem(s, t, head):
+                raise Fail(problem)
         t["accepted_at"] = now()
         s.dirty = True
         if not wt:
@@ -1260,6 +1333,9 @@ def cmd_accept(args):
             how = "merged"
             t["merged"] = True
             finish(s, t, even_if_busy=True)
+        elif reviews.signed(s, t):
+            error = reviews.merge_problem(s, t, branch_tip(s, t)) or (
+                "The approved commit can't fast-forward its base. Update the branch and request review again.")
         else:
             how = "agent"
             t["merge_requested"] = now()

@@ -2825,13 +2825,10 @@ class ReviewAsAHelperAgent(unittest.TestCase):
         with open(os.path.join(ROOT, "templates", "worker.md")) as f:
             worker = f.read()
         for words in (templates.WORKER_MD, worker):
-            self.assertIn("--label herdr.role=reviewer", words)
-            self.assertIn("herdr.task=$HERDR_BROWSER_TASK", words)
-            self.assertIn("codex --no-daemon --sandbox read-only", words)
-            self.assertIn("claude --permission-mode plan", words)
-            self.assertIn("exactly as the Reviewer line gives it", words)
-            self.assertIn("hc wait <its name>", words)
-            self.assertNotIn("< /dev/null", words)
+            self.assertIn("read-only independent reviewer for that commit", words)
+            self.assertIn("submit ready again", words)
+            self.assertNotIn("hc wait <its name>", words)
+        self.assertIn(templates.WORKER_MD_BEFORE_VERDICTS, templates.OLD_WORKERS)
         self.assertIn(templates.WORKER_MD_BEFORE_SUBAGENTS, templates.OLD_WORKERS)
         self.assertIn(templates.WORKER_MD_BEFORE_COMMAND, templates.OLD_WORKERS)
         with open(os.path.join(ROOT, "templates", "reviewer.md")) as f:
@@ -3750,6 +3747,190 @@ class ReviewedNamesItsCommit(unittest.TestCase):
             with self.assertRaises(Exception):
                 self.reviewed(bad)
         self.assertNotIn("reviews", self.task)
+
+
+class IndependentReview(unittest.TestCase):
+    setUp = ReviewedNamesItsCommit.setUp
+    git = ReviewedNamesItsCommit.git
+    commit = ReviewedNamesItsCommit.commit
+
+    def fixture(self, verdict="approved", escalation="", text="Checked the tests."):
+        from unittest import mock
+        from herdr_task import reviews
+        self.r = reviews
+        self.task.update(signed_reviews=True, space="space")
+        self.req = {"id": "attempt", "head": self.commit("first work"), "name": "task-review", "builder": "t1",
+                    "reviewer": "t2", "status": "reviewing", "launched_at": reviews.now()}
+        self.task["head"] = self.req["head"]
+        self.task["review_request"] = self.req
+        self.terminal = {"address": "t2", "name": "task-review", "state": "live", "foreground": {"pid": 31}, "turn": 1,
+                         "status": {"state": "done"}, "labels": {"herdr.role": "reviewer", "herdr.task": self.store.key(self.task),
+                                                               "herdr.review.attempt": self.req["id"]}}
+        self.log = os.path.join(self.root, "review.jsonl")
+        self.body = {"attempt": self.req["id"], "commit": self.req["head"], "verdict": verdict,
+                     "escalation": escalation, "findings": text}
+        for module, name, value in (
+            (reviews, "review_limits", lambda *_: (True, 2)),
+            (reviews, "hc_json", lambda *_: self.terminal),
+            (reviews, "session_of", lambda *_: ("session", self.log)),
+            (self.commands, "workers", lambda *_: [{"address": "t1", "turn": 2}]),
+            (reviews, "coordinator_in", lambda *_: "t3"),
+        ):
+            p = mock.patch.object(module, name, value)
+            p.start()
+            self.addCleanup(p.stop)
+
+    def write_verdict(self, role="assistant", body=None):
+        payload = self.r.PREFIX + json.dumps(body or self.body)
+        with open(self.log, "w") as f:
+            f.write(json.dumps({"type": role, "message": {"content": [{"type": "text", "text": payload}]}}) + "\n")
+
+    def test_wrong_caller_role_and_sha_and_prompt_echo(self):
+        self.fixture()
+        self.write_verdict(body={**self.body, "commit": self.other})
+        self.assertIsNone(self.r.observe(self.store, self.task, self.req, self.terminal))
+        self.write_verdict("user")
+        self.assertIsNone(self.r.observe(self.store, self.task, self.req, self.terminal))
+        self.write_verdict()
+        for other in ({"address": "t1"}, {"labels": {**self.terminal["labels"], "herdr.role": "worker"}},
+                      {"labels": {**self.terminal["labels"], "herdr.review.attempt": "another"}}):
+            self.assertIsNone(self.r.observe(self.store, self.task, self.req, {**self.terminal, **other}))
+        self.assertEqual(self.r.observe(self.store, self.task, self.req, self.terminal)[0], "approved")
+        with self.assertRaisesRegex(self.commands.Fail, "registered independent reviewer"):
+            ReviewedNamesItsCommit.reviewed(self)
+        args = self.argparse.Namespace(id="SHEP-1", passed=True, changes=None, changes_file=None, notes=None)
+        with self.assertRaisesRegex(self.commands.Fail, "registered independent reviewer"):
+            self.commands.cmd_review(args)
+
+    def test_ready_queues_the_current_commit_only_once(self):
+        from unittest import mock
+        self.fixture()
+        self.task.pop("review_request")
+        args = self.argparse.Namespace(id="SHEP-1", json=True, summary="A short summary", details=None,
+                                       agents_md=None, proof=None)
+        with mock.patch.object(self.commands, "live_agents", return_value=[]), \
+                mock.patch.object(self.commands, "own_work"), mock.patch.object(self.commands, "find_proof"), \
+                mock.patch.object(self.commands, "task_settings", return_value=[]), \
+                mock.patch.object(self.commands, "finish_ready") as finish:
+            self.commands.cmd_ready(args)
+            requested = dict(self.task["review_request"])
+            self.commands.cmd_ready(args)
+        finish.assert_not_called()
+        self.assertEqual(requested["status"], "queued")
+        self.assertEqual(requested["head"], self.git(self.wt, "rev-parse", "HEAD"))
+        self.assertEqual(self.task["review_request"], requested)
+        self.assertEqual(self.task["summary"], "A short summary")
+
+    def test_approval_is_persisted_once_and_advances_after_restart(self):
+        from unittest import mock
+        self.fixture()
+        self.write_verdict()
+        self.r.advance(self.store, self.task)
+        self.assertEqual(self.task["state"], "running")
+        self.assertTrue(self.r.approval(self.task, self.req["head"]))
+        self.assertEqual(self.task["reviews"][0]["by"], "t2")
+        self.r.record(self.store, self.task, self.req, ("approved", "", ""), 1, 2)
+        self.assertEqual(len(self.task["reviews"]), 1)
+        restored = json.loads(json.dumps(self.task))
+        self.store.data["tasks"][0] = restored
+
+        def ready(_s, task, _wt):
+            task["state"] = "ready"
+
+        with mock.patch.object(self.commands, "finish_ready", side_effect=ready) as finish:
+            self.r.advance(self.store, restored)
+            self.r.advance(self.store, restored)
+        finish.assert_called_once()
+        self.assertEqual(restored["ready_turns"], {"t1": 2})
+        self.assertNotIn("review_request", restored)
+        self.assertIsNotNone(self.r.merge_problem(self.store, restored, self.other))
+
+    def test_a_changes_request_reaches_the_builder_and_the_follow_up_needs_its_own_review(self):
+        from unittest import mock
+        self.fixture(verdict="changes-requested", text="Handle the empty case.")
+        self.write_verdict()
+        with mock.patch.object(self.r, "send_or_hold", return_value="sent") as send:
+            self.r.advance(self.store, self.task)
+            self.r.advance(self.store, self.task)
+        send.assert_called_once()
+        self.assertEqual(send.call_args.args[0], "t1")
+        self.assertIn("Handle the empty case.", send.call_args.args[1])
+        self.assertFalse(self.r.approval(self.task, self.req["head"]))
+        next_head = self.commit("fix")
+        self.r.request(self.store, self.task, next_head, 1, 2)
+        self.assertNotEqual(self.req["id"], self.task["review_request"]["id"])
+        self.assertFalse(self.r.approval(self.task, next_head))
+        self.assertEqual(self.task["review_request"]["head"], next_head)
+
+    def test_scope_escalation_reaches_the_assistant(self):
+        from unittest import mock
+        self.fixture("changes-requested", "scope", "An adjacent feature needs a decision.")
+        self.write_verdict()
+        with mock.patch.object(self.r, "send_or_hold", return_value="held") as send:
+            self.r.advance(self.store, self.task)
+            self.r.advance(self.store, self.task)
+        self.assertEqual([c.args[0] for c in send.call_args_list], ["t1", "t3"])
+        self.assertIn("scope decision", self.task["attention"])
+
+    def test_a_reserved_reviewer_is_recovered_without_another_launch(self):
+        from unittest import mock
+        self.fixture()
+        self.req.pop("reviewer")
+        self.req["status"] = "queued"
+        with mock.patch.object(self.r, "launch") as launch:
+            self.r.advance(self.store, self.task)
+        launch.assert_not_called()
+        self.assertEqual(self.req["reviewer"], "t2")
+        self.assertEqual(self.req["status"], "reviewing")
+
+    def test_moved_head_cannot_finalize_or_merge_the_old_approval(self):
+        from unittest import mock
+        self.fixture()
+        self.write_verdict()
+        self.r.advance(self.store, self.task)
+        head = self.commit("unreviewed work")
+        self.task["pr"] = {"number": 1, "repo": "demo/example"}
+        with mock.patch.object(self.commands, "finish_ready") as finish, \
+                mock.patch.object(self.commands, "pr_view", return_value={"state": "OPEN", "headRefOid": head}), \
+                mock.patch.object(self.commands, "note_checks"), mock.patch.object(self.commands, "gh") as gh, \
+                mock.patch.object(self.r, "send_or_hold", return_value="sent"):
+            self.r.advance(self.store, self.task)
+            self.assertIn("needs independent approval", self.commands.merge_now(self.store, self.task))
+        finish.assert_not_called()
+        gh.assert_not_called()
+
+    def test_local_accept_fast_forwards_to_the_reviewed_sha(self):
+        self.fixture()
+        self.write_verdict()
+        self.r.advance(self.store, self.task)
+        # Make the base a proper ancestor so it can fast-forward.
+        main = self.store.loc["folder"]
+        self.git(main, "reset", "--hard", self.task["start"])
+        self.assertTrue(self.commands.ff_merge(self.store, self.task))
+        self.assertEqual(self.git(main, "rev-parse", "HEAD"), self.req["head"])
+        self.commit("unreviewed branch update")
+        self.assertFalse(self.commands.ff_merge(self.store, self.task))
+        self.assertEqual(self.git(main, "rev-parse", "HEAD"), self.req["head"])
+
+    def test_exact_approval_keeps_github_checks_and_the_merge_pin(self):
+        from unittest import mock
+        self.fixture()
+        self.write_verdict()
+        self.r.advance(self.store, self.task)
+        head = self.req["head"]
+        self.task["pr"] = {"number": 1, "repo": "demo/example"}
+        opened = {"state": "OPEN", "headRefOid": head,
+                  "statusCheckRollup": [{"status": "IN_PROGRESS"}]}
+        passed = {**opened, "statusCheckRollup": [{"status": "COMPLETED", "conclusion": "SUCCESS"}]}
+        with mock.patch.object(self.commands, "pr_view", side_effect=[opened, passed, {"state": "MERGED"}]), \
+                mock.patch.object(self.commands, "note_checks"), mock.patch.object(self.commands, "checks_since"), \
+                mock.patch.object(self.commands, "expected_checks"), mock.patch.object(self.commands, "watch_main"), \
+                mock.patch.object(self.commands, "update_main"), mock.patch.object(self.commands, "drop_branch"), \
+                mock.patch.object(self.commands, "finish"), mock.patch.object(self.commands, "gh", return_value=(True, "", "")) as gh:
+            self.assertEqual(self.commands.merge_now(self.store, self.task), self.commands.CHECKS_RUNNING)
+            gh.assert_not_called()
+            self.assertIsNone(self.commands.merge_now(self.store, self.task))
+        gh.assert_called_once_with("pr", "merge", "1", "--repo", "demo/example", "--squash", "--match-head-commit", head)
 
 
 if __name__ == "__main__":
