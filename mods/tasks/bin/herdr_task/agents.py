@@ -26,14 +26,31 @@ def parent_of(k):
 def is_helper(k, mine=()):
     """hc ls gives no labels: a helper is also told by its parent, another terminal of the same task
     (a worker's parent is its Assistant, never the task's)."""
-    return bool(k.get("parent")) and ((k.get("labels") or {}).get("herdr.role") in HELPER_ROLES or parent_of(k) in mine)
+    labels = k.get("labels") or {}
+    role = labels.get("herdr.role")
+    return ((role == "reviewer" and bool(labels.get("herdr.review.attempt")))
+            or (bool(k.get("parent")) and (role in HELPER_ROLES or parent_of(k) in mine)))
 
 
 def _live(key):
-    d = hc_json("ls", "--label", f"herdr.task={key}") or {}
+    task_label = f"herdr.task={key}"
+    d = hc_json("ls", "--label", task_label) or {}
     live = [dict(k, labels=dict(k.get("labels") or {}, **{"herdr.task": key}))
             for k in d.get("terminals", []) if k.get("state") == "live"]
     mine = {k.get("address") for k in live}
+    unknown = {k["address"]: k for k in live if k.get("address")
+               and k["labels"].get("herdr.role") in (None, "reviewer") and not is_helper(k, mine)}
+    if unknown:
+        # A registered reviewer can outlive its builder. Resolve only those summaries
+        # the role filter identifies as reviewers, so ordinary workers need no extra get.
+        candidates = hc_json("ls", "--label", task_label, "--label", "herdr.role=reviewer") or {}
+        for row in candidates.get("terminals") or []:
+            k = unknown.get(row.get("address"))
+            if k is None:
+                continue
+            labels = (hc_json("get", k["address"]) or {}).get("labels") or {}
+            if labels.get("herdr.task") == key and labels.get("herdr.role") == "reviewer":
+                k["labels"].update(labels)
     return [(k, is_helper(k, mine)) for k in live]
 
 

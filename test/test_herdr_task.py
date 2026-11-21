@@ -3763,7 +3763,8 @@ class IndependentReview(unittest.TestCase):
                     "reviewer": "t2", "status": "reviewing", "launched_at": reviews.now()}
         self.task["head"] = self.req["head"]
         self.task["review_request"] = self.req
-        self.terminal = {"address": "t2", "name": "task-review", "state": "live", "foreground": {"pid": 31}, "turn": 1,
+        self.store.save = mock.Mock()
+        self.terminal = {"address": "t2", "name": "task-review", "state": "live", "foreground": {"pid": 31, "name": "codex"}, "turn": 1,
                          "status": {"state": "done"}, "labels": {"herdr.role": "reviewer", "herdr.task": self.store.key(self.task),
                                                                "herdr.review.attempt": self.req["id"]}}
         self.log = os.path.join(self.root, "review.jsonl")
@@ -3784,6 +3785,164 @@ class IndependentReview(unittest.TestCase):
         payload = self.r.PREFIX + json.dumps(body or self.body)
         with open(self.log, "w") as f:
             f.write(json.dumps({"type": role, "message": {"content": [{"type": "text", "text": payload}]}}) + "\n")
+
+    def test_a_reviewer_can_resume_the_registered_session_under_a_new_pid(self):
+        from unittest import mock
+        self.fixture()
+        self.write_verdict()
+        self.terminal["status"] = "working"
+        self.assertIsNone(self.r.observe(self.store, self.task, self.req, self.terminal))
+        self.assertEqual(self.req["pid"], 31)
+        self.terminal.update(status="done", foreground={"pid": 32, "name": "bash"})
+        with mock.patch.object(self.r, "session_of") as session:
+            self.assertIsNone(self.r.observe(self.store, self.task, self.req, self.terminal))
+            session.assert_not_called()
+        self.terminal["foreground"]["name"] = "codex"
+        for session, log in [("other", self.log), ("session", self.log + ".other")]:
+            with mock.patch.object(self.r, "session_of", return_value=(session, log)):
+                self.assertIsNone(self.r.observe(self.store, self.task, self.req, self.terminal))
+        self.assertEqual(self.req["pid"], 31)
+        self.assertEqual(self.r.observe(self.store, self.task, self.req, self.terminal)[0], "approved")
+        self.assertEqual(self.req["pid"], 32)
+
+    def test_a_detached_reviewer_is_not_a_worker_even_in_an_unlabelled_summary(self):
+        from unittest import mock
+        from herdr_task import agents
+        self.fixture()
+        self.task.pop("review_request")
+        record = {k: v for k, v in self.terminal.items() if k != "labels"}
+        def hc(*args):
+            return {"terminals": [record]} if args[0] == "ls" else self.terminal
+
+        with mock.patch.object(agents, "hc_json", side_effect=hc):
+            live = agents.live_agents(self.store.key(self.task))
+            self.assertEqual(live, [])
+            self.assertEqual(agents.task_status(self.task, live)[1], "stopped")
+            self.assertEqual([k["address"] for k in agents.live_helpers(self.store.key(self.task))], ["t2"])
+            self.task["space"] = "space"
+            args = self.argparse.Namespace(id="1", space=None, agent=None, argv=None, parent=None)
+            with mock.patch.object(self.commands, "start_again", return_value=({"address": "t3"}, False)) as start:
+                self.commands.cmd_resume(args)
+            start.assert_called_once()
+
+    def test_terminal_cleanup_persists_the_verdict_and_retries_failed_stops(self):
+        from types import SimpleNamespace
+        from unittest import mock
+        self.fixture()
+        self.write_verdict()
+        def hc(*args):
+            return {"terminals": [self.terminal]} if args[0] == "ls" else self.terminal
+
+        def stop(args):
+            self.assertTrue(self.r.approval(self.task, self.req["head"]))
+            self.store.save.assert_called()
+            self.assertEqual(args, ["hc", "kill", "t2"])
+            return SimpleNamespace(returncode=int(stop_mock.call_count == 1))
+
+        with mock.patch.object(self.r, "hc_json", side_effect=hc), mock.patch.object(self.r, "run", side_effect=stop) as stop_mock:
+            self.r.advance(self.store, self.task)
+            self.assertTrue(self.r.retiring(self.task))
+            self.r.cleanup(self.store, self.task)
+            self.assertFalse(self.r.retiring(self.task))
+            self.r.cleanup(self.store, self.task)
+            self.assertEqual(stop_mock.call_count, 2)
+
+    def test_a_superseded_review_is_retired_without_killing_a_reused_address(self):
+        from unittest import mock
+        self.fixture()
+        head = self.commit("fix before the verdict")
+        reused = {**self.terminal, "labels": {**self.terminal["labels"], "herdr.review.attempt": "different"}}
+        def hc(*args):
+            return {"terminals": [reused]} if args[0] == "ls" else reused
+
+        with mock.patch.object(self.r, "hc_json", side_effect=hc), mock.patch.object(self.r, "run") as kill:
+            self.r.request(self.store, self.task, head, 0, 2)
+        kill.assert_not_called()
+        self.assertFalse(self.r.retiring(self.task))
+        self.assertEqual(self.task["review_request"]["head"], head)
+        current = self.task["review_request"]
+        current.update(name=reused["name"], reviewer=reused["address"], status="reviewing")
+        self.r.remember(self.store, self.task, current)
+        self.task["state"] = "done"
+        self.assertEqual([r["attempt"] for r in self.r.retiring(self.task)], [current["id"]])
+
+    def test_a_timed_out_reviewer_is_stopped(self):
+        from types import SimpleNamespace
+        from unittest import mock
+        self.fixture()
+        self.req["launched_at"] -= self.r.REVIEW_TIMEOUT
+        self.terminal["status"] = "working"
+        def hc(*args):
+            return {"terminals": [self.terminal]} if args[0] == "ls" else self.terminal
+
+        with mock.patch.object(self.r, "hc_json", side_effect=hc), \
+                mock.patch.object(self.r, "run", return_value=SimpleNamespace(returncode=0)) as kill, \
+                mock.patch.object(self.r, "send_or_hold", return_value="sent"):
+            self.r.advance(self.store, self.task)
+        kill.assert_called_once_with(["hc", "kill", "t2"])
+        self.assertEqual(self.req["status"], "escalated")
+        self.assertFalse(self.r.retiring(self.task))
+
+    def test_findings_go_to_a_replacement_builder(self):
+        from unittest import mock
+        self.fixture("changes-requested", text="Handle the empty case.")
+        self.write_verdict()
+        with mock.patch.object(self.commands, "workers", return_value=[{"address": "t4"}, {"address": "t5"}]), \
+                mock.patch.object(self.r, "send_or_hold", return_value="sent") as send:
+            self.r.advance(self.store, self.task)
+        self.assertEqual(send.call_args.args[0], "t5")
+        self.assertTrue(self.req["builder_notified"])
+
+    def test_ready_refusals_keep_exhaustion_and_findings(self):
+        self.fixture()
+        args = self.argparse.Namespace(id="1", summary=None, details=None, agents_md=None, proof=None)
+        self.task["reviews"] = [{"result": "changes-requested"} for _ in range(3)]
+        self.req["head"] = self.other  # A new submission has no rounds left.
+        with self.assertRaisesRegex(self.commands.Fail, "Out of review rounds"):
+            self.commands.cmd_ready(args)
+        stamp = self.task["review_out"]
+        with self.assertRaisesRegex(self.commands.Fail, "Out of review rounds"):
+            self.commands.cmd_ready(args)
+        self.assertEqual(self.task["review_out"], stamp)
+        self.task["review_request"]["status"] = "changes-requested"
+        with self.assertRaisesRegex(self.commands.Fail, "Commit a fix"):
+            self.commands.cmd_ready(args)
+        self.assertEqual(self.task["review_out"], stamp)
+
+    def test_done_reopen_and_finalize_clear_review_request_and_exhaustion(self):
+        from unittest import mock
+        self.fixture()
+        args = self.argparse.Namespace(id="1")
+        with mock.patch.object(self.commands, "unarchive"), mock.patch.object(self.commands.resources, "reserve"):
+            for action in ("done", "reopen", "finalize"):
+                with self.subTest(action=action):
+                    self.task.update(mode="here", worktree=None, started=1, review_request=dict(self.req), review_out=1)
+                    if action == "finalize":
+                        self.commands.finalize(self.store, self.task)
+                    else:
+                        self.commands.cmd_state(args, action)
+                    self.assertNotIn("review_request", self.task)
+                    self.assertNotIn("review_out", self.task)
+
+    def test_cmd_tick_advances_an_independent_review_for_a_here_task(self):
+        from contextlib import ExitStack
+        from unittest import mock
+        from herdr_task import tick
+        self.fixture()
+        self.task.update(mode="here", worktree=None, head=self.other)
+        self.req["head"] = self.body["commit"] = self.other
+        self.write_verdict()
+        with ExitStack() as stack:
+            for name, value in (
+                ("STORE", self.root), ("store_files", lambda _: ["fixture.json"]), ("locate", lambda _: self.store.loc),
+                ("read_list", lambda _: dict(self.store.data, folder=self.store.loc["folder"])), ("Store", lambda _: self.store),
+            ):
+                stack.enter_context(mock.patch.object(tick, name, value))
+            for name in ("revive_pass", "retry_pass", "archive_pass", "news_pass", "end_done_pass",
+                         "memory_guard", "lost_logs_pass", "browser_pass", "say"):
+                stack.enter_context(mock.patch.object(tick, name))
+            tick.cmd_tick(self.argparse.Namespace(folder=None))
+        self.assertTrue(self.r.approval(self.task, self.other))
 
     def test_wrong_caller_role_and_sha_and_prompt_echo(self):
         self.fixture()

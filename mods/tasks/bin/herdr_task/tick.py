@@ -276,6 +276,7 @@ def tick_store(s, report):
     """One folder's turn: Ready tasks back at work are Working again, merged tasks become done,
     auto-merges go when they can, and queued tasks start while there's room."""
     for t in s.data["tasks"]:
+        reviews.cleanup(s, t)
         if t["state"] == "ready":
             back_pass(s, t, report)
         elif t["state"] == "running" and (t.get("back") or {}).get("auto"):
@@ -666,7 +667,9 @@ def cmd_tick(args):
         d = read_list(p)
         tasks = (d or {}).get("tasks") or []
         if not d or not os.path.isdir(d.get("folder") or "") or not (d.get("main_watch") or any(
-                t.get("state") in ("queued", "scheduled", "ready") or (t.get("worktree") and t.get("state") == "running") for t in tasks)):
+                t.get("state") in ("queued", "scheduled", "ready")
+                or (t.get("worktree") or t.get("review_request")) and t.get("state") == "running"
+                or reviews.retiring(t) for t in tasks)):
             continue
         with Store(locate(d["folder"])) as s:
             tick_store(s, report)
