@@ -21,10 +21,9 @@ State: ✓ matches, ◇ web-only form (why), ✗ still differs (why).
 | Voice call (SHEP-135) | main.js:76-77 wave icon button before Search (Voice add-on), asks spaces-chat for a call (shared "voice.startreq"); on a call Mute and End in an outlined capsule, asked of the call's chat (shared "chat.callreq") | A `registry.sideHead`: voice `VoiceButton`, wave icon button before Search, "Voice call"; on a call `CallControls`: Mute and End in an outlined capsule | ✓ |
 | Search | main.js:78 magnifier icon button, opens Jump (Ctrl+K) | A:174 `SearchButton`: magnifier icon button, opens Jump (Search); title "Search · Ctrl+K" | ✓ (2.1's "Search" box under the brand row removed) |
 | Sidebar toggle | main.js:80 sidebar icon: to the rail and back | A:168 `PlacesToggle` (Frame.tsx): hides or shows the sidebar | ◇ the web hides the column (no rail); on a phone or tablet the sidebar is a drawer |
-| Foot: Settings | main.js:44 cog "Settings" (Herdr's app settings, update dot) | none | ◇ Herdr's own app settings belong to the window app, not to herdr-orchestrator's web page |
-| Foot: herdr-orchestrator | main.js:46 crook "herdr-orchestrator": herdr-orchestrator settings | A:196 crook "herdr-orchestrator": Settings | ✓ |
-| Foot: Add machine | main.js:47 plus "Add machine" | AM:12 plus "Add machine" (was a server icon) | ✓ |
-| Foot layout | rows stacked | one row | ◇ 2.1's look |
+| Foot: Settings | `foot.js` opens a menu for Herdr settings and herdr-orchestrator settings, with a dot when a Herdr update is ready | A:196 crook "herdr-orchestrator": Settings | ◇ native Settings menu |
+| Foot: Add machine | Plus beside Settings | AM:12 plus "Add machine" (was a server icon) | ✓ |
+| Foot: Plan usage | A Claude or Codex row for each plan with usage on this machine. Settings › Window › Plan usage in the sidebar hides both rows | Machine details show plan usage | ◇ native footer |
 
 ## Spaces heading
 

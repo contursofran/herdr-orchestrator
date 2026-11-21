@@ -1,8 +1,9 @@
 import { View, div, image, svg } from "gpui-kit";
-import { h_flex, v_flex } from "gpui-base";
-import { theme, run, props, window, shared, setShared, updates, layout } from "herdr";
-import { openSettings, red } from "./ui.js";
+import { h_flex } from "gpui-base";
+import { theme, run, props, window, shared, setShared, layout } from "herdr";
+import { red } from "./ui.js";
 import { on as addonOn } from "./addons.js";
+import { Footer } from "./foot.js";
 
 // SHEP-135: the voice call on (mods/chat's shared "chat.calls", its heartbeat in the last 45 s), as spaces-chat's liveCall
 function liveCall() {
@@ -51,23 +52,12 @@ export default class WorkspaceChrome extends View {
       .child(round("voice-end", red(), "#ffffff", "mods/workspace-chrome-orchestrator/phone-x.svg", "end").hover((s) => s.opacity(0.85)));
   }
 
-  render() {
+  render(cx) {
     const t = theme();
-    const collapsed = narrow();
+    const width = find(layout(), "sidebar")?.size?.px ?? Infinity;
+    if (props()?.footer) return (this.footer ??= new Footer()).render(t, width, cx);
+    const collapsed = width < 160;
     const call = !collapsed && addonOn("voice") ? liveCall() : null;
-    if (props()?.footer) {
-      const row = (id, icon, label, action) => h_flex().id(id).h(28).px(8).gap(9).items_center().rounded(8)
-        .text_color(t.muted).hover(s => s.bg(t.hover).text_color(t.foreground)).cursor_pointer()
-        .on_click(action).child(svg(`mods/workspace-chrome-orchestrator/${icon}.svg`).size(14))
-        .when(!collapsed, el => el.child(label));
-      return v_flex().size_full().bg(t.chrome).border_t(1).border_color(t.border).px(8).pt(4).pb(8).text_size(13)
-        // Herdr's own settings, as shipped (with its update dot), then herdr-orchestrator's
-        // (mods/orchestrator-settings) under herdr-orchestrator's mark, the crook.
-        .child(row("settings", "settings", "Settings", () => run("app.settings"))
-          .when(Boolean(updates().app.ready), el => el.child(div().size(6).rounded_full().bg(t.accent))))
-        .child(row("herdr-orchestrator", "crook", "herdr-orchestrator", () => openSettings()))
-        .child(row("machine", "plus", "Add machine", () => run("mod.open", { name: "machine-add-chat" })));
-    }
     return h_flex().size_full().bg(t.chrome).pl(collapsed ? 6 : 14).pr(10).gap(4).items_center().text_size(13.5)
       .when(window()?.platform === "macos" && !window()?.fullscreen && !collapsed, el => el.pl(76))
       .when(!collapsed, el => el.child(h_flex().flex_1().gap(8).items_center().child(image("frame/welcome/herdr.png").size(20).rounded(5)).child(div().font_semibold().text_color(t.foreground).child("Herdr"))))
