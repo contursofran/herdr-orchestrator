@@ -14,10 +14,18 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 J = lambda *p: os.path.join(ROOT, *p)
 
 
-def text_files():
-    for top in ("mods", "lib", "bin", "templates", "guard", "layouts", "service", "core", "web/src"):
-        for d, dirs, files in os.walk(J(top)):
-            dirs[:] = [x for x in dirs if x != "__pycache__"]
+# Kept in fragments so the guard can look for this account in its own source.
+LEGACY_OWNER = "elias" "stravik"
+
+
+def text_files(root=ROOT):
+    installer = os.path.join(root, "install.sh")
+    if os.path.isfile(installer):
+        yield installer
+    for top in ("mods", "lib", "bin", "templates", "guard", "layouts", "service", "core", "docs", "scripts",
+                "web/src", "web/plugins", "web/shared", "web/public", "web/viewer"):
+        for d, dirs, files in os.walk(os.path.join(root, top)):
+            dirs[:] = [x for x in dirs if x not in ("__pycache__", "node_modules", ".last")]
             for f in files:
                 if not f.endswith((".svg", ".png", ".pyc")):
                     yield os.path.join(d, f)
@@ -130,19 +138,45 @@ class Repo(unittest.TestCase):
                 for n, line in enumerate(f, 1):
                     self.assertIsNone(bad.search(line), f"{os.path.relpath(p, ROOT)}:{n}: {line.strip()[:120]}")
 
-    def test_legacy_product_name_stays_in_credits_and_migration(self):
-        name = runpy.run_path(J("bin", "migrate_legacy.py"))["LEGACY_PRODUCT"]
-        self.assertEqual(list(old_name_hits(Path(ROOT), name)), [])
-
-    def test_legacy_name_guard_catches_a_planted_name(self):
-        name = runpy.run_path(J("bin", "migrate_legacy.py"))["LEGACY_PRODUCT"]
+    def test_personal_scan_covers_docs_web_plugins_and_install_scripts(self):
+        paths = {"docs/example.md", "scripts/sample.py", "install.sh", "web/plugins/chat/sample.tsx",
+                 "web/shared/sample.ts", "web/public/sample.html", "web/viewer/sample.tsx"}
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
-            planted = root / "widget.js"
-            planted.write_text("// ready\n// " + name.upper() + "\n")
-            self.assertEqual(list(old_name_hits(root, name)), ["widget.js:2"])
-            planted.write_text("// ready\n")
-            self.assertEqual(list(old_name_hits(root, name)), [])
+            for rel in paths:
+                target = root / rel
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text("sample\n")
+            self.assertEqual({Path(p).relative_to(root).as_posix() for p in text_files(root)}, paths)
+
+    def test_legacy_names_stay_in_credits_and_migration(self):
+        product = runpy.run_path(J("bin", "migrate_legacy.py"))["LEGACY_PRODUCT"]
+        for name in (product, LEGACY_OWNER):
+            with self.subTest(name=name):
+                self.assertEqual(list(old_name_hits(Path(ROOT), name)), [])
+
+    def test_legacy_name_guard_catches_planted_names_in_git_and_exports(self):
+        product = runpy.run_path(J("bin", "migrate_legacy.py"))["LEGACY_PRODUCT"]
+        for name in (product, LEGACY_OWNER):
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as folder:
+                root = Path(folder)
+                planted = root / "widget.js"
+                planted.write_text("// ready\n// " + name.upper() + "\n")
+                self.assertEqual(list(old_name_hits(root, name)), ["widget.js:2"])
+
+                def git(*args):
+                    subprocess.run(["git", *args], cwd=root, check=True, capture_output=True)
+
+                git("init", "-q")
+                (root / ".gitignore").write_text("ignored.js\n")
+                (root / "ignored.js").write_text(name)
+                (root / "untracked.js").write_text(name)
+                git("add", "widget.js", ".gitignore")
+                self.assertCountEqual(old_name_hits(root, name), ["widget.js:2", "untracked.js:1"])
+
+                planted.write_text("// ready\n")
+                (root / "untracked.js").unlink()
+                self.assertEqual(list(old_name_hits(root, name)), [])
 
     # Elements and components whose `title` is no hover popup: a dialog's or card's heading, a row's words, an
     # iframe's name for screen readers.
