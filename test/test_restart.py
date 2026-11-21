@@ -5,6 +5,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 import unittest
@@ -201,15 +202,36 @@ class Detach(unittest.TestCase):
         m = re.search(r"^export const DETACH = '(.*)';$", src, re.M)
         self.assertIsNotNone(m, "lib/coordinator.js exports DETACH, the shell line script() runs")
         d = tempfile.mkdtemp()
-        os.makedirs(os.path.join(d, "bin"))
-        for tool in ["bash", "nohup", "sleep"] + (["setsid"] if with_setsid else []):
-            os.symlink(shutil.which(tool), os.path.join(d, "bin", tool))
+        self.addCleanup(shutil.rmtree, d)
+        bin_dir = os.path.join(d, "bin")
+        os.makedirs(bin_dir)
+        for tool in ("bash", "nohup", "sleep"):
+            os.symlink(shutil.which(tool), os.path.join(bin_dir, tool))
+        if with_setsid:
+            target = os.path.join(bin_dir, "setsid")
+            if installed := shutil.which("setsid"):
+                os.symlink(installed, target)
+            else:
+                # macOS has setsid(2) but no setsid command. Exercise the same fork and detach here.
+                with open(target, "w") as f:
+                    f.write("""#!/bin/sh
+exec "$SETSID_TEST_PYTHON" -c '
+import os
+import sys
+assert sys.argv[1] == "-f"
+if os.fork() == 0:
+    os.setsid()
+    os.execvp(sys.argv[2], sys.argv[2:])
+' "$@"
+""")
+                os.chmod(target, 0o755)
         sh = os.path.join(d, "helper.sh")
         with open(sh, "w") as f:
             f.write('sleep 0.5; printf "%s\\n" "$@" >"$OUT"\n')
         out = os.path.join(d, "out")
         t = time.time()
-        r = subprocess.run(["bash", "-c", m.group(1), sh, "t2", "a b"], env={"PATH": f"{d}/bin", "HOME": d, "OUT": out},
+        r = subprocess.run(["bash", "-c", m.group(1), sh, "t2", "a b"],
+                           env={"PATH": bin_dir, "HOME": d, "OUT": out, "SETSID_TEST_PYTHON": sys.executable},
                            capture_output=True, text=True, timeout=30)
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertLess(time.time() - t, 0.5, "it returns at once, the script running on")

@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INSTALLER = os.path.join(ROOT, "bin", "herdr-orchestrator")
@@ -41,7 +42,9 @@ def tree(top):
 
 
 # herdr-orchestrator's own data (layout.py): an install makes its folders and the old paths' links; uninstall leaves the data.
-DATA_PLACES = (".config/herdr-orchestrator/", ".local/share/herdr-orchestrator/", ".local/state/herdr-orchestrator/", ".cache/herdr-orchestrator/", ".herdr/")
+CACHE = "Library/Caches" if sys.platform == "darwin" else ".cache"
+DATA_PLACES = (".config/herdr-orchestrator/", ".local/share/herdr-orchestrator/", ".local/state/herdr-orchestrator/",
+               f"{CACHE}/herdr-orchestrator/", ".herdr/")
 
 
 class Install(unittest.TestCase):
@@ -137,6 +140,7 @@ class Install(unittest.TestCase):
         after = tree(self.root)
         left = sorted(set(after) - set(self.before))
         self.assertTrue(all(x.startswith((f"{APP}/mods/toasts/", ".config/herdr-core/templates/worker.md")) or x.startswith(DATA_PLACES) for x in left), left)
+        self.assertIn(f"{CACHE}/herdr-orchestrator/CACHEDIR.TAG", after)
         for k, v in self.before.items():
             if k.endswith(".json"):
                 self.assertEqual(json.loads(after[k]), json.loads(v), k)
@@ -551,7 +555,7 @@ class Install(unittest.TestCase):
         ~/.local/bin); a tool linked into the Nix store goes on by its profile's folder, which outlives an upgrade."""
         from importlib.machinery import SourceFileLoader
         sh = SourceFileLoader("orchestrator_cli", INSTALLER).load_module()
-        tmp = tempfile.mkdtemp(prefix="herdr-orchestrator-path-")
+        tmp = os.path.realpath(tempfile.mkdtemp(prefix="herdr-orchestrator-path-"))
         old = os.environ["PATH"]
         try:
             prof = os.path.join(tmp, "profile", "bin")
@@ -563,7 +567,8 @@ class Install(unittest.TestCase):
             rel, text = sh.unit_text(tmp, "/usr/bin/bun", None)
             path = next(l for l in text.splitlines() if "PATH" in l)
             self.assertIn(prof, path)
-            self.assertEqual(sh.tool_dir("hc", "/home/u/.nix-profile/bin/hc"), "/home/u/.nix-profile/bin")
+            with patch.object(sh.os.path, "realpath", return_value="/nix/store/fixture-hc/bin/hc"):
+                self.assertEqual(sh.tool_dir("hc", os.path.join(prof, "hc")), prof)
         finally:
             os.environ["PATH"] = old
             shutil.rmtree(tmp, ignore_errors=True)
