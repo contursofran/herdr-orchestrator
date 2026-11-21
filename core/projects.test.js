@@ -86,7 +86,17 @@ test("finished tasks leave the Projects tree even if their agent's shell is stil
 
 test("cyclic terminal parents never repeat or hide their rows", () => {
   const a = worker("a", 1, { parent: "b" }), b = worker("b", 3, { parent: "a" });
-  expect(rows(read([assistant, a, b]))?.map(([id]) => id)).toEqual(["t1", "a", "b"]);
+  const positions = (tree) => rows(tree)?.map(([id, depth]) => [id, depth]);
+  expect(positions(read([assistant, a, b]))).toEqual([["t1", 0], ["a", 1], ["b", 2]]);
+  expect(positions(read([a, b], { assistants: new Map() }))).toEqual([["assistant:shop", 0], ["a", 1], ["b", 2]]);
+});
+
+test("a stopped worker's last status does not need attention", () => {
+  const blocked = worker("blocked", 1, { state: "finished", status: "blocked" });
+  const error = worker("error", 2, { state: "finished", status: "error" });
+  expect(rows(read([assistant, blocked, error]))?.map(([id, , state]) => [id, state])).toEqual([
+    ["t1", "idle"], ["blocked", "stopped"], ["error", "stopped"],
+  ]);
 });
 
 test("folds inactive projects with their worktrees while keeping active worktree groups", () => {
