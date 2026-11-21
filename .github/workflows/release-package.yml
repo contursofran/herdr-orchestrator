@@ -1,0 +1,58 @@
+name: Package release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing stable tag with a draft GitHub release
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      RELEASE_TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ inputs.tag }}
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - name: Build and package the tagged files
+        run: |
+          [[ "$RELEASE_TAG" =~ ^v[0-9]{1,8}\.[0-9]{1,8}\.[0-9]{1,8}$ ]]
+          test "$(python3 bin/herdr-orchestrator version)" = "herdr-orchestrator ${RELEASE_TAG#v}"
+          bun install --frozen-lockfile
+          bun run build
+          staging=$(mktemp -d)
+          git archive HEAD | tar -x -C "$staging"
+          cp -R web/dist "$staging/web/dist"
+          tar -czf herdr-orchestrator.tar.gz -C "$staging" .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: herdr-orchestrator-release
+          path: herdr-orchestrator.tar.gz
+          if-no-files-found: error
+
+  attach:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RELEASE_TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: herdr-orchestrator-release
+      - name: Attach the package to the draft
+        run: |
+          test "$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)" = true
+          gh release upload "$RELEASE_TAG" herdr-orchestrator.tar.gz

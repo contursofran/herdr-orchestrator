@@ -1,8 +1,8 @@
 import { div, image, svg } from "gpui-kit";
 import { h_flex, v_flex, Popover } from "gpui-base";
-import { layout, run, shared, updates } from "herdr";
-import { ago, failedWords, liveWindow, planLevelOf, readOld, SIDEBAR_PLAN_USAGE, span } from "./core/machines.js";
-import { openSettings, RADIUS, TEXT } from "./ui.js";
+import { exec, layout, run, shared, updates } from "herdr";
+import { ago, failedWords, leftOf, liveWindow, planLevelOf, readOld, SIDEBAR_PLAN_USAGE, span } from "./core/machines.js";
+import { openSettings, RADIUS, TEXT, toast } from "./ui.js";
 
 const ICON = "mods/workspace-chrome-orchestrator/";
 const BLOCK = "sidebar-footer";
@@ -10,6 +10,11 @@ const ROW = 16, GAP = 10, TOP = 12, BOTTOM = 6;
 const CONTROLS = 30, CONTROLS_TOP = 4, CONTROLS_BOTTOM = 10;
 const ADD_MACHINE = 28, CONTROL_GAP = 4;
 const PLANS = [["claude", "Claude"], ["codex", "Codex"]];
+const RELEASE_INTERVAL = 60 * 60 * 1_000;
+const RELEASE_COMMAND = 'PATH="$HOME/.local/bin:$HOME/.bun/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"; export PATH; '
+  + 'exec "$HOME/.local/bin/herdr-orchestrator" release "$@"';
+const RELEASE_STATUS = { "no-release": "No stable Orchestrator release has been published yet.",
+  "no-package": "The latest release has no verified install package.", current: "Orchestrator is up to date." };
 
 function periodOf(name) {
   const period = name.split(" · ").at(-1);
@@ -26,8 +31,8 @@ export function planUsage(stats, now = Date.now()) {
     const windows = (read.windows ?? []).filter((w) => Number.isFinite(w.used)).map((w) => {
       const name = w.name || "Limit";
       const expired = !liveWindow(w, now);
-      const used = Math.max(0, Math.min(100, Math.round(w.used)));
-      return { name, period: periodOf(name), used, expired,
+      const left = Math.min(100, leftOf(w));
+      return { name, period: periodOf(name), left, expired,
         refill: !stale && !expired && w.resets_at ? span(w.resets_at - now) : null,
         resetWords: expired ? "Reset passed" : !stale && w.resets ? `Resets ${w.resets}` : null };
     });
@@ -55,6 +60,42 @@ export function nodeOf(node, id) {
 }
 
 export class Footer {
+  startReleaseChecks(cx) {
+    if (this.releaseChecksStarted) return;
+    this.releaseChecksStarted = true;
+    cx.timer.after(0, (cx) => this.releaseAction(cx));
+    cx.timer.every(RELEASE_INTERVAL, (cx) => this.releaseAction(cx));
+  }
+
+  releaseAction(cx, { tag, manual = false } = {}) {
+    if (this.releaseBusy) return;
+    this.releaseBusy = tag ? "Installing Orchestrator update…" : "Checking for Orchestrator updates…";
+    cx.notify();
+    cx.spawn(async (cx) => {
+      try {
+        const args = tag ? ["install", tag] : ["check", "--json"];
+        const result = await exec("sh", ["-c", RELEASE_COMMAND, "herdr-orchestrator", ...args], { timeout: tag ? 300_000 : 20_000 });
+        if (result.code !== 0) throw new Error(result.stderr.trim().split("\n").slice(-2).join("\n") || "The update command failed.");
+        if (tag) {
+          this.releaseTag = null;
+          toast({ title: `Orchestrator ${tag} installed` });
+        } else {
+          const data = JSON.parse(result.stdout);
+          this.releaseTag = data.state === "available" && /^v\d+\.\d+\.\d+$/.test(data.tag) ? data.tag : null;
+          if (manual) toast({ title: this.releaseTag ? `Orchestrator ${this.releaseTag} is available`
+            : RELEASE_STATUS[data.state] ?? "No Orchestrator update is available." });
+        }
+      } catch (error) {
+        if (tag) this.releaseTag = null;
+        if (tag || manual) toast({ title: tag ? "Orchestrator update failed" : "Couldn't check for updates",
+          body: String(error?.message ?? error), level: "error" });
+      } finally {
+        this.releaseBusy = null;
+        cx.notify();
+      }
+    });
+  }
+
   resize(height, cx) {
     this.height = height;
     const node = nodeOf(layout(), BLOCK);
@@ -82,32 +123,39 @@ export class Footer {
       .child(svg(`${ICON}settings.svg`).size(16).flex_none())
       .when(narrow, (el) => el.relative().justify_center().tooltip("Settings"))
       .when(!narrow, (el) => el.child(div().flex_1().min_w(0).truncate().child("Settings")))
-      .when(ready, (el) => el.child(div().size(6).flex_none().rounded_full().bg(t.accent)
+      .when(ready || this.releaseTag, (el) => el.child(div().size(6).flex_none().rounded_full().bg(t.accent)
         .when(narrow, (dot) => dot.absolute().top(5).right(4))));
-    const choice = (id, name, action, update = false) => h_flex().id(id).h(32).w_full().px(9).gap(8).items_center().rounded(RADIUS.control)
-      .cursor_pointer().text_size(TEXT.body).text_color(t.foreground).hover((s) => s.bg(t.hover))
+    const choice = (id, name, action, { update = false, keepOpen = false } = {}) => h_flex().id(id).h(32).w_full().px(9).gap(8).items_center().rounded(RADIUS.control)
+      .text_size(TEXT.body).text_color(action ? t.foreground : t.muted)
       .child(div().flex_1().child(name))
       .when(update, (el) => el.accessibility_label("Herdr settings, update available")
         .child(div().id("foot-herdr-update").size(6).flex_none().rounded_full().bg(t.accent)))
-      .on_click((_e, cx) => {
-        this.menu = false;
-        cx.notify();
-        action();
-      });
+      .when(Boolean(action), (el) => el.cursor_pointer().hover((s) => s.bg(t.hover)).on_click((_e, cx) => {
+        if (!keepOpen) {
+          this.menu = false;
+          cx.notify();
+        }
+        action(cx);
+      }));
+    const tag = this.releaseTag;
+    const releaseChoice = this.releaseBusy ? choice("foot-release-busy", this.releaseBusy)
+      : tag ? choice("foot-release-install", `Install Orchestrator ${tag}`, (cx) => this.releaseAction(cx, { tag }), { keepOpen: true })
+        : choice("foot-release-check", "Check for Orchestrator updates", (cx) => this.releaseAction(cx, { manual: true }), { keepOpen: true });
     return Popover.new("foot-settings-menu").anchor("bottom_left").open(Boolean(this.menu))
       .on_open_change((open, cx) => { this.menu = open; cx.notify(); })
       .trigger(button)
       .content(div().pb(6).child(v_flex().w(218).bg(t.popover).shadow_md().border_1().border_color(t.border).rounded(12).p(4)
-        .child(choice("foot-settings-herdr", "Herdr settings", () => run("app.settings"), ready))
-        .child(choice("foot-settings-orchestrator", "herdr-orchestrator settings", () => openSettings()))));
+        .child(choice("foot-settings-herdr", "Herdr settings", () => run("app.settings"), { update: ready }))
+        .child(choice("foot-settings-orchestrator", "herdr-orchestrator settings", () => openSettings()))
+        .child(releaseChoice)));
   }
 
   plan(t, p, tight) {
-    const { period, used, refill, expired } = p.summary;
+    const { period, left, refill, expired } = p.summary;
     const stale = p.freshness || expired;
-    const level = planLevelOf(100 - used);
+    const level = planLevelOf(left);
     const color = stale ? t.dim : level === "over" ? t.blocked : level === "busy" ? t.working : t.muted;
-    const details = p.windows.map((w) => [`${w.name}, ${w.used}% used`, w.refill ? `Resets in ${w.refill}` : w.resetWords]
+    const details = p.windows.map((w) => [`${w.name}, ${w.left}% left`, w.refill ? `Resets in ${w.refill}` : w.resetWords]
       .filter(Boolean).join(" · "));
     const lines = [p.name, ...details, p.freshness, p.failure].filter(Boolean);
     const detail = lines.join("\n");
@@ -119,12 +167,13 @@ export class Footer {
         .child(image(`icons/${p.cli}.svg`).size(14).flex_none()).child(p.name))
       .child(div().w(tight ? 28 : 34).flex_none().truncate().text_size(TEXT.id).text_color(t.muted).child(period))
       .child(div().flex_1().min_w(0).h(4).rounded(2).bg(t.hover)
-        .child(div().h(4).rounded(2).bg(color).w(`${used}%`)))
-      .child(number(tight ? 34 : 30, stale && tight ? "Stale" : `${used}%`, stale && tight ? t.working : t.muted))
+        .child(div().h(4).rounded(2).bg(color).w(`${left}%`)))
+      .child(number(tight ? 34 : 30, stale && tight ? "Stale" : `${left}%`, stale && tight ? t.working : t.muted))
       .when(!tight, (el) => el.child(number(60, stale ? "Stale" : refill ?? "", stale ? t.working : t.muted)));
   }
 
   render(t, width, cx) {
+    this.startReleaseChecks(cx);
     const narrow = width < 160;
     const tight = width < 245;
     const plans = narrow || shared(SIDEBAR_PLAN_USAGE) === false ? [] : planUsage(shared("machines.stats")?.[""]);
