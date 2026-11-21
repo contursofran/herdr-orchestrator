@@ -53,7 +53,7 @@ export function groupOf(section, action) {
   if (/^tab\.|^tabs-tasks\.(close|rename-tab)$/.test(action)) return "Tabs";
   if (/^space\.|^tabs-tasks\.(newspace|rename-space)$/.test(action)) return "Spaces";
   if (/^pane\./.test(action)) return "Panes";
-  if (/^agent\./.test(action)) return "Agents";
+  if (/^agent\.|^spaces-chat\.main-[1-9]$/.test(action)) return "Agents";
   return "App";
 }
 
@@ -97,9 +97,10 @@ export function grouped(list, { layout = "", about = new Map(), mac = false } = 
   const groups = new Map();
   for (const k of live) {
     const group = groupOf(k.section, k.action);
-    const series = /^(tab|space)\.select:([1-9])$/.exec(k.action);
+    const series = /^(tab|space)\.select:[1-9]$/.exec(k.action)?.[1]
+      ?? (/^spaces-chat\.main-[1-9]$/.test(k.action) ? "main agent" : null);
     const lead = /^(.*-)?([1-9])$/.exec(k.keys.trim());
-    const name = series && lead ? `Show ${series[1]} 1–9` : nameOf(k.action, about);
+    const name = series && lead ? `Show ${series} 1–9` : nameOf(k.action, about);
     if (!groups.has(group)) groups.set(group, new Map());
     const rows = groups.get(group);
     if (!rows.has(name)) rows.set(name, []);

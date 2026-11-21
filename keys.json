@@ -34,6 +34,15 @@
     "ctrl-f": "chat.find"
   },
   "layout:herdr-orchestrator": {
+    "ctrl-1": "spaces-chat.main-1",
+    "ctrl-2": "spaces-chat.main-2",
+    "ctrl-3": "spaces-chat.main-3",
+    "ctrl-4": "spaces-chat.main-4",
+    "ctrl-5": "spaces-chat.main-5",
+    "ctrl-6": "spaces-chat.main-6",
+    "ctrl-7": "spaces-chat.main-7",
+    "ctrl-8": "spaces-chat.main-8",
+    "ctrl-9": "spaces-chat.main-9",
     "ctrl-shift-w": "tabs-tasks.close",
     "ctrl-shift-n": "tabs-tasks.newspace",
     "f2": "tabs-tasks.rename-tab",

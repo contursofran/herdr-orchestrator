@@ -107,6 +107,7 @@ State: ✓ matches, ◇ web-only form (why), ✗ still differs (why).
 | Counts | main.js:662 red (needs you), green (Ready), 9+; Red counts / Green counts switches | P:352 `AttentionBadge` | ✓ (were hidden on unreachable spaces) |
 | Worktree nesting | Under its repo's space, branch icon. Worktrees in the sidebar off keeps only the open one | P:209 `nest`, `look.worktrees` | ✓ |
 | Projects and agents | Assistants and workers under their project, with task titles and state dots. Rows open the Assistant chat, task view, or agent. Hover shows the agent's model and effort plus Stop and Open in a new tab. Inactive, unpinned projects fold per machine and expand into their original sections | Space rows | ◇ native Projects tree |
+| Main-agent shortcuts | Ctrl+1 through Ctrl+9 focus numbered Assistants and standalone agents in Projects order. Local projects come first, then linked machines by name | Space rows | ◇ native layout keys |
 | Click | main.js:529 selects | P:538 goes there | ✓ (2.1's ⌘-click split view removed) |
 | Right-click menu | main.js:649 at the pointer, core/menus.js `spaceMenu`; worktree rows too | P:585 at the pointer, a held finger; P:417 the same items; worktree rows too | ✓ (also on spaces of an unreachable machine now) |
 | ⋯ button | none | none: the count stays put on hover | ✓ (the web's hover ⋯ removed) |

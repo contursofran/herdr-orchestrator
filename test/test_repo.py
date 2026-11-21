@@ -114,6 +114,14 @@ class Repo(unittest.TestCase):
                 ctx, key = k.split(" ", 1)
                 self.assertIn(key, keys.get(ctx, {}), k)
 
+    def test_main_agent_number_keys_are_scoped_to_the_layout(self):
+        keys = json.load(open(J("keys.json")))
+        layout = "layout:herdr-orchestrator"
+        for number in range(1, 10):
+            key = f"ctrl-{number}"
+            self.assertEqual(keys[layout][key], f"spaces-chat.main-{number}")
+            self.assertFalse(any(key in bindings for scope, bindings in keys.items() if scope != layout))
+
     def test_nothing_personal(self):
         # Allow the feedback repo's public name in shipped files.
         bad = re.compile(r"/home/\w|/Users/\w|contursofran(?!/herdr-orchestrator(?![\w.-]))|\.ts\.net|prospecterra|thekiln|vm-stravik|skills-me")

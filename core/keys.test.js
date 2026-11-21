@@ -14,10 +14,11 @@ test("keys as people read them, as the window's Keybinds shows them", () => {
 
 test("herdr-orchestrator's keys.json grouped: the layout's own key replaces the global one, Alt+1–9 folds, Chat is its own group", () => {
   const g = grouped(flatKeys(repoKeys), { layout: "herdr-orchestrator" });
-  expect(g.map((x) => x.group)).toEqual(["Tabs", "Spaces", "Panes", "Terminal", "Chat", "App"]);
+  expect(g.map((x) => x.group)).toEqual(["Tabs", "Spaces", "Panes", "Agents", "Terminal", "Chat", "App"]);
   const row = (group, name) => g.find((x) => x.group === group)?.rows.find((r) => r.name === name);
   expect(row("Tabs", "Show tab 1–9").keys).toEqual(["Alt+1–9"]);
   expect(row("Tabs", "Close tab").keys).toEqual(["Ctrl+Shift+W"]);
+  expect(row("Agents", "Show main agent 1–9").keys).toEqual(["Ctrl+1–9"]);
   expect(row("App", "Jump to a space, task or artifact").keys).toEqual(["Ctrl+K", "Ctrl+Shift+K"]);
   expect(row("App", "Keybinds").keys).toEqual(["Ctrl+Shift+/", "Ctrl+Shift+?"]);
   expect(row("Chat", "Find in the chat").keys).toEqual(["Ctrl+F"]);

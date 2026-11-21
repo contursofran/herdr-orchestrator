@@ -219,7 +219,7 @@ describe("Desktop Projects tree", () => {
   test("renders a parked Assistant even if it has no workers", () => {
     liveTerminals = [assistant()];
     const tree = s.render(cx);
-    expect(words(byId(tree, "project-agent-t1"))).toEqual(["Assistant", "Idle"]);
+    expect(words(byId(tree, "project-agent-t1"))).toEqual(["Assistant", "⌃1", "Idle"]);
     expect(s.projectRows.get("s1")).toHaveLength(1);
   });
 
@@ -313,6 +313,28 @@ describe("Desktop Projects tree", () => {
     liveTerminals = [{ address: "t5", state: "live", program: { agent: true }, labels: { "herdr.tab": "assistant-tab" } }];
     byId(s.render(cx), "project-agent-t5").click({}, cx);
     expect(ran.at(-1)).toEqual(["agent.focus", { terminal: "t5" }]);
+  });
+
+  test("shortcut numbers follow Projects order and also work with the sidebar collapsed", () => {
+    liveSpaces[3].tabs = [{ id: "pinned-tab" }];
+    liveSpaces[2].tabs = [{ id: "ideas-tab" }];
+    liveTerminals = [assistant(), worker("t2", null), ...["pinned", "ideas"].map((name) => ({
+      address: name, state: "live", program: { agent: true }, labels: { "herdr.tab": `${name}-tab` },
+    }))];
+    const tree = s.render(cx);
+    expect(words(byId(tree, "project-key-pinned"))).toEqual(["⌃1"]);
+    expect(words(byId(tree, "project-key-t1"))).toEqual(["⌃2"]);
+    expect(words(byId(tree, "project-key-ideas"))).toEqual(["⌃3"]);
+    expect(byId(tree, "project-key-t2")).toBeUndefined();
+    s.focusMainAgent(2);
+    expect(ran.at(-1)).toEqual(["pane.focus", { pane: "chat" }]);
+    sidebarPx = 100;
+    s.render(cx);
+    s.focusMainAgent(1);
+    expect(ran.at(-1)).toEqual(["agent.focus", { terminal: "pinned" }]);
+    ran.length = 0;
+    s.focusMainAgent(9);
+    expect(ran).toEqual([]);
   });
 
   test("a helper in a layout without a Tasks panel opens a terminal peek", () => {
