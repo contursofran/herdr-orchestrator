@@ -23,7 +23,7 @@ State: ✓ matches, ◇ web-only form (why), ✗ still differs (why).
 | Sidebar toggle | main.js:80 sidebar icon: to the rail and back | A:168 `PlacesToggle` (Frame.tsx): hides or shows the sidebar | ◇ the web hides the column (no rail); on a phone or tablet the sidebar is a drawer |
 | Foot: Settings | `foot.js` opens a menu for Herdr settings and herdr-orchestrator settings, with a dot when a Herdr update is ready | A:196 crook "herdr-orchestrator": Settings | ◇ native Settings menu |
 | Foot: Add machine | Plus beside Settings | AM:12 plus "Add machine" (was a server icon) | ✓ |
-| Foot: Plan usage | Each Claude or Codex row shows the weekly quota when reported. Hover for all reported windows and their reset times. Settings › Window › Plan usage in the sidebar hides the rows | Machine details show plan usage | ◇ native footer |
+| Foot: Plan usage | Each Claude or Codex row shows the weekly quota remaining when reported. Hover for the quota remaining and reset time for every reported window. Settings › Window › Plan usage in the sidebar hides the rows | Machine details show plan usage | ◇ native footer |
 
 ## Spaces heading
 

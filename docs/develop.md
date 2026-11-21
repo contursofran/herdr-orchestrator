@@ -78,3 +78,6 @@ Never point `--root` at the real home for a try, and never start Herdr or herdr-
 - The repo root is the listed layout folder: `layouts/herdr-orchestrator.json`, `mods/`, `RECIPE.md`, `preview.png`,
   `keys.json`. herdr.dev reads the recipe's title and first paragraph.
 - Cut releases and tags only after the person says yes; patch bumps by default.
+- For an approved release, create the stable `vX.Y.Z` tag at the checked version commit and a draft GitHub release.
+  Run **Package release** with that tag. It builds the web app from the tag and attaches the install package to the
+  draft. Publish after the package is attached so desktop updates can verify and install it.

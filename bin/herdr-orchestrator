@@ -5,6 +5,8 @@
                                 [--port N]: the service's port on 127.0.0.1 when another app holds 7789 (updates keep it)
                                 [--https-port N]: the tailnet HTTPS port the web app is shared on, when something else holds 443
   herdr-orchestrator update     the same, from the checkout it was installed from (git pull it first); web only too
+  herdr-orchestrator release check [--json]     check for a packaged GitHub release newer than this install
+  herdr-orchestrator release install <tag>      verify and install that release without a Git checkout
   (a fresh clone has no web app built: install and update build it with Bun, installing Bun first when it's missing)
   herdr-orchestrator install --web               web only: herdr-core, herdr-task, the helpers, the service and the web app
                                                  under .local/share/herdr-orchestrator (no herdr-app)
@@ -1549,6 +1551,9 @@ def serve_check(root):
 def update_hint(rec):
     """How this install updates: from the checkout it came from, or (Serve from) from the machine that sent it."""
     src = rec.get("source") or ""
+    if rec.get("release") and os.path.basename(src).startswith(rec["release"] + "-"):
+        button = "Settings → Check for Orchestrator updates, or " if not rec.get("web") else ""
+        return f"to update: {button}`herdr-orchestrator release check`"
     if os.path.basename(src) == "herdr-orchestrator-src":
         return "to update: from the machine that installed it here, `herdr-orchestrator web install-on <this machine>`"
     if not is_source(src):
@@ -2073,6 +2078,180 @@ def hand_over(a, argv):
               dict(os.environ, HERDR_ORCH_HANDED_OVER="1"))
 
 
+# ---- GitHub release updates -------------------------------------------------------------------
+
+RELEASE_REPO = "contursofran/herdr-orchestrator"
+RELEASE_ASSET = "herdr-orchestrator.tar.gz"
+RELEASE_MAX = 100 * 1024 * 1024
+
+
+def release_version(tag):
+    import re
+
+    if not isinstance(tag, str) or not re.fullmatch(r"v[0-9]{1,8}\.[0-9]{1,8}\.[0-9]{1,8}", tag):
+        return None
+    return tuple(map(int, tag[1:].split(".")))
+
+
+def release_open(url, accept):
+    from urllib.request import Request, urlopen
+
+    return urlopen(Request(url, headers={"Accept": accept, "User-Agent": "herdr-orchestrator"}), timeout=15)
+
+
+def latest_release(current):
+    import re
+    from urllib.error import HTTPError
+
+    try:
+        with release_open(f"https://api.github.com/repos/{RELEASE_REPO}/releases/latest", "application/vnd.github+json") as r:
+            release = json.loads(r.read(1024 * 1024))
+    except HTTPError as error:
+        if error.code == 404:
+            return {"state": "no-release"}
+        raise Stop(f"GitHub couldn't check for releases (HTTP {error.code}).") from error
+    except (OSError, ValueError) as error:
+        raise Stop(f"Couldn't check GitHub Releases: {error}") from error
+    tag = release.get("tag_name") if isinstance(release, dict) else None
+    version = release_version(tag)
+    if version is None or release.get("draft") or release.get("prerelease"):
+        return {"state": "no-release"}
+    if version <= (release_version(f"v{current}") or release_version(f"v{VERSION}")):
+        return {"state": "current"}
+    for asset in release.get("assets") or []:
+        if not isinstance(asset, dict) or asset.get("name") != RELEASE_ASSET or asset.get("state") != "uploaded":
+            continue
+        digest, size = asset.get("digest"), asset.get("size")
+        if isinstance(digest, str) and re.fullmatch(r"sha256:[a-f0-9]{64}", digest) and type(size) is int and 0 < size <= RELEASE_MAX:
+            return {"state": "available", "tag": tag, "digest": digest[7:], "size": size}
+    return {"state": "no-package", "tag": tag}
+
+
+def download_release(release, package):
+    digest = hashlib.sha256()
+    size = 0
+    url = f"https://github.com/{RELEASE_REPO}/releases/download/{release['tag']}/{RELEASE_ASSET}"
+    with release_open(url, "application/octet-stream") as source, open(package, "xb") as out:
+        for chunk in iter(lambda: source.read(128 * 1024), b""):
+            size += len(chunk)
+            if size > release["size"]:
+                raise Stop("The release package exceeds its published size.")
+            digest.update(chunk)
+            out.write(chunk)
+    if size != release["size"] or digest.hexdigest() != release["digest"]:
+        raise Stop("The release package failed its SHA-256 verification.")
+
+
+def unpack_release(package, src, tag):
+    import re
+    import tarfile
+    from pathlib import PurePosixPath
+
+    total = 0
+    try:
+        with tarfile.open(package, "r|gz") as archive:
+            for member in archive:
+                path = PurePosixPath(member.name)
+                if path.is_absolute() or ".." in path.parts or not (member.isdir() or member.isfile()):
+                    raise Stop(f"Unexpected entry in the release package: {member.name!r}.")
+                dest = os.path.join(src, *path.parts)
+                if member.isdir():
+                    os.makedirs(dest, exist_ok=True)
+                    continue
+                total += member.size
+                if total > 4 * RELEASE_MAX:
+                    raise Stop("The unpacked release is too large.")
+                os.makedirs(os.path.dirname(dest), exist_ok=True)
+                with archive.extractfile(member) as content, open(dest, "xb") as out:
+                    shutil.copyfileobj(content, out)
+                os.chmod(dest, 0o755 if member.mode & 0o111 else 0o644)
+    except (tarfile.TarError, OSError) as error:
+        raise Stop(f"Couldn't unpack the release: {error}") from error
+    installer = os.path.join(src, "bin", "herdr-orchestrator")
+    version = re.search(rb'^VERSION = "([0-9.]+)"$', read(installer) or b"", re.M)
+    if (not version or version[1].decode() != tag[1:] or not is_source(src)
+            or not os.path.isfile(os.path.join(src, "web", "dist", "index.html"))):
+        raise Stop(f"The package doesn't contain a complete {tag} release.")
+    return installer
+
+
+def release_record(root):
+    try:
+        return load_record(root) or json.loads(read(os.path.join(root, WEB_RECORD)) or b"{}")
+    except (OSError, ValueError) as error:
+        raise Stop(f"Couldn't read the install record: {error}") from error
+
+
+def install_release(root, tag):
+    import fcntl
+
+    releases = os.path.join(where_for(root).roots["data"], "releases")
+    try:
+        os.makedirs(releases, mode=0o700, exist_ok=True)
+        with open(os.path.join(releases, "install.lock"), "a") as lock:
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError as error:
+                raise Stop("An Orchestrator update is already installing.") from error
+            record = release_record(root)
+            if not record:
+                raise Stop("Install herdr-orchestrator before installing an update.")
+            release = latest_release(record.get("version", VERSION))
+            if release["state"] != "available" or release["tag"] != tag:
+                raise Stop(f"{tag} is no longer the available update. Check for updates again.")
+            with tempfile.TemporaryDirectory(prefix="download-", dir=releases) as staging:
+                package = os.path.join(staging, RELEASE_ASSET)
+                download_release(release, package)
+                src = tempfile.mkdtemp(prefix=f"{tag}-", dir=releases)
+                try:
+                    installer = unpack_release(package, src, tag)
+                except Exception:
+                    shutil.rmtree(src)
+                    raise
+            flags = ["--root", root]
+            # Keep the previous install choices for its agent hooks and optional app guard.
+            options = ([] if record.get("hooks") else ["--no-hooks"])
+            if f"{BIN}/herdr-app" in record.get("files", {}):
+                options.append("--guard")
+            if subprocess.run([sys.executable, installer, "update", *flags, "--source", src, "--no-build", "--yes", *options]).returncode:
+                raise Stop("The release's installer failed. See its output above.")
+            if subprocess.run([sys.executable, installer, "doctor", *flags]).returncode:
+                raise Stop("The update needs attention. Run `herdr-orchestrator doctor` for details.")
+            rec = release_record(root)
+            if rec.get("version") != tag[1:] or rec.get("source") != src:
+                raise Stop("The install record doesn't match the selected release.")
+            rec["release"] = tag
+            if rec.get("web"):
+                atomic_write(os.path.join(root, WEB_RECORD), (json.dumps(rec, indent=2) + "\n").encode())
+            else:
+                save_record(root, rec)
+            say(f"Installed herdr-orchestrator {tag}.")
+    except OSError as error:
+        raise Stop(f"Couldn't install {tag}: {error}") from error
+
+
+def cmd_release(a):
+    root = os.path.realpath(a.root or real_home())
+    if a.action == "install":
+        if release_version(a.tag) is None:
+            raise Stop("Select a stable release tag, such as v0.1.1.")
+        if not release_record(root):
+            raise Stop("Install herdr-orchestrator before installing an update.")
+        install_release(root, a.tag)
+        return 0
+    current = release_record(root).get("version", VERSION)
+    release = latest_release(current)
+    state, tag = release["state"], release.get("tag")
+    if a.json:
+        say(json.dumps({"state": state, "tag": tag}))
+    else:
+        say({"available": f"{tag} is available. Run `herdr-orchestrator release install {tag}`.",
+             "current": f"Herdr Orchestrator {current} is up to date.",
+             "no-release": "There is no published stable release yet.",
+             "no-package": f"Release {tag} has no verified install package."}[state])
+    return 0
+
+
 def main(argv):
     ap = argparse.ArgumentParser(prog="herdr-orchestrator", description="Install, update, check or remove herdr-orchestrator in Herdr.")
     sub = ap.add_subparsers(dest="cmd")
@@ -2097,6 +2276,14 @@ def main(argv):
             c.add_argument("--https-port", type=int, help="the tailnet HTTPS port the web app is shared on (default 443; kept "
                                                           "for updates, `herdr-orchestrator web https-port` changes it): when something else here holds 443")
             c.add_argument("--no-build", action="store_true", help="install the web app as it is in the checkout: no build, even when it's missing or old")
+    release = sub.add_parser("release", help="check for and install published releases")
+    release_sub = release.add_subparsers(dest="action", required=True)
+    check = release_sub.add_parser("check")
+    check.add_argument("--json", action="store_true")
+    install = release_sub.add_parser("install")
+    install.add_argument("tag")
+    for command in (check, install):
+        command.add_argument("--root", help=argparse.SUPPRESS)
     w = sub.add_parser("web", help="where the web app is served from (Serve from)")
     w.add_argument("action", choices=["serve-from", "status", "install-on", "https-port"])
     w.add_argument("machine", nargs="?", help="a machine linked over herdr-core (hc machine ls), or here; https-port: the port")
@@ -2146,6 +2333,8 @@ def main(argv):
             return cmd_uninstall(a)
         if a.cmd == "doctor":
             return cmd_doctor(a)
+        if a.cmd == "release":
+            return cmd_release(a)
         if a.cmd == "web":
             return cmd_web(a)
         if a.cmd == "secrets":

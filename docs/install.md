@@ -100,8 +100,13 @@ It shares itself on your tailnet only (`tailscale serve`, never Funnel). `herdr-
 
 ## Update
 
-Run `git pull` in the checkout you installed from, then run `herdr-orchestrator update`. The update uses the files in
-that local checkout and keeps your install mode (layout or web only).
+The desktop sidebar checks GitHub Releases when it opens and every hour while it is open. When a stable release is
+available, open the sidebar's **Settings** menu and choose **Install Orchestrator** with the shown version. The
+updater verifies the package against the SHA-256 digest from GitHub and keeps your existing install mode and settings.
+The same update is available on the command line with `herdr-orchestrator release check` and
+`herdr-orchestrator release install <tag>`. It uses the release's prebuilt web app and can run without a checkout.
+
+To update from a checkout, run `git pull` in the checkout you installed from, then run `herdr-orchestrator update`.
 
 ## Options
 
