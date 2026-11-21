@@ -29,8 +29,12 @@ def approval(task, head):
 
 
 def merge_problem(s, task, head):
-    if signed(s, task) and not approval(task, head):
+    if not signed(s, task):
+        return None
+    if not approval(task, head):
         return f"The current commit ({head[:12] if head else 'unknown'}) needs independent approval. Run ready for that commit."
+    if head != task.get("head"):
+        return "The branch and the latest review submission point to different commits. Run ready to sync them before merging."
     return None
 
 

@@ -1263,7 +1263,7 @@ def ff_merge(s, t):
     main, br, base = s.loc["folder"], t.get("branch"), t.get("base") or "main"
     if reviews.signed(s, t):
         br = branch_tip(s, t)
-        if not reviews.approval(t, br):
+        if reviews.merge_problem(s, t, br):
             return False
     ok, cur, _ = git(main, "symbolic-ref", "--short", "HEAD")
     if not (br and git(main, "merge-base", "--is-ancestor", base, br)[0]):

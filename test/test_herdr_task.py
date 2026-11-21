@@ -3932,6 +3932,19 @@ class IndependentReview(unittest.TestCase):
             self.assertIsNone(self.commands.merge_now(self.store, self.task))
         gh.assert_called_once_with("pr", "merge", "1", "--repo", "demo/example", "--squash", "--match-head-commit", head)
 
+    def test_a_previously_approved_pr_head_cannot_replace_a_later_submission(self):
+        from unittest import mock
+        self.fixture()
+        self.write_verdict()
+        self.r.advance(self.store, self.task)
+        self.task["head"] = self.commit("latest submission")
+        self.task["pr"] = {"number": 1, "repo": "demo/example"}
+        opened = {"state": "OPEN", "headRefOid": self.req["head"]}
+        with mock.patch.object(self.commands, "pr_view", return_value=opened), \
+                mock.patch.object(self.commands, "note_checks"), mock.patch.object(self.commands, "gh") as gh:
+            self.assertIn("point to different commits", self.commands.merge_now(self.store, self.task))
+        gh.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()
