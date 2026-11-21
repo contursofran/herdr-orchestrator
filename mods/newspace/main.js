@@ -28,6 +28,7 @@
 // Create space has the tab bar make the space in the field's folder and its Assistant tab
 // (coordinator.js createSpace), and lands in it; the assistant starts on the first message.
 
+import { loadingText } from "./loader.js";
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input, Popup } from "gpui-base";
 import { props, theme, home, exec, pickFolder, closeOverlay, openOverlay, shared, setShared, focused, machines } from "herdr";
@@ -405,7 +406,7 @@ export default class NewSpace extends View {
     const list = Popup.new("folder-list", input).flex_1().min_w(0).anchor("top_left")
       .when(rows.length > 0 || Boolean(empty), (el) => el.content(v_flex().id("folder-rows").w(LIST_W).h(K.row * shown + 8).overflow_y_scrollbar().mt(4).p(4).rounded(8).border(1).border_color(t.border).bg(t.popover).shadow_lg().text_size(13)
         .children(rows.map((r, i) => this.row(t, `folder-${i}`, i === this.hi, r.path, (cx) => this.pick(r.path, cx), r.up)))
-        .when(Boolean(empty), (el) => el.child(div().h(K.row).flex_none().px(9).flex().items_center().text_color(t.dim).child(empty)))));
+        .when(Boolean(empty), (el) => el.child(div().h(K.row).flex_none().px(9).flex().items_center().text_color(t.dim).child(empty === W.loading ? loadingText(empty) : empty)))));
     const panel = v_flex().id("newspace").w_full().flex_none().p(K.pad).rounded(10).border(1).border_color(t.border).bg(t.popover).shadow_lg().text_size(13)
       .on_key_down((e, cx) => this.key(e, cx))
       .on_mouse_down("left", (_e, cx) => { if (this.listOpen || this.machineOpen) { this.listOpen = false; this.machineOpen = false; this.browse = null; this.hi = -1; cx.notify(); } })

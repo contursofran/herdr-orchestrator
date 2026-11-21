@@ -8,7 +8,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ArrowRightIcon, ChatBubbleLeftEllipsisIcon, CheckIcon as TickIcon, ChevronDownIcon, ChevronRightIcon, PaperClipIcon } from '@heroicons/react/16/solid'
 import { useCopy } from '@client/copy.ts'
 import { act, has, openTask, registry } from '@client/kernel.ts'
-import { AutopilotIcon, CheckIcon, CopyIcon, PageIcon, ReplyIcon, SmileIcon, TermIcon } from '@client/ui.tsx'
+import { AutopilotIcon, CheckIcon, CopyIcon, LoadingText, PageIcon, ReplyIcon, SmileIcon, TermIcon } from '@client/ui.tsx'
 import * as CV from '@core/chat-view.js'
 import type { Chat, Message, ReplyQuote } from '@shared/types.ts'
 import { openAccept, useAccepting } from '@client/screens/Accept.tsx'
@@ -333,7 +333,7 @@ export function HeadRow({ chat }: { chat: Chat }) {
     return () => io.disconnect()
   }, [chat.earlier, chat.key, count])
   if (!chat.top && !chat.earlier) return null
-  return <div ref={ref} data-head={chat.top ? 'top' : 'earlier'} className="w-full py-[7px] text-center text-[0.75rem] text-fg3 phone:text-[0.8125rem]">{chat.top ? WORDS.top : WORDS.loading}</div>
+  return <div ref={ref} data-head={chat.top ? 'top' : 'earlier'} className="w-full py-[7px] text-center text-[0.75rem] text-fg3 phone:text-[0.8125rem]">{chat.top ? WORDS.top : <LoadingText>{WORDS.loading}</LoadingText>}</div>
 }
 
 /* ---------- images under a message ---------- */

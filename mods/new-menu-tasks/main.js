@@ -1,3 +1,4 @@
+import { loadingText } from "./loader.js";
 import { View, div, svg, image } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { theme, knownAgents, run, openOverlay, closeOverlay, props, window, keys } from "herdr";
@@ -76,7 +77,7 @@ export default class NewMenu extends View {
       .child(v_flex().flex_1().min_h(0).overflow_y_scrollbar()
         .children(choices.map((a, i) => this.row(a.key, a.tint ? svg(a.icon).size(14).text_color(t.foreground) : image(a.icon).size(14), a.name,
           () => run("tab.new", { name: a.name, space: space?.id, argv: a.run }), agentHint(a, i), a.installed)))
-        .when(this.agents.length === 0, el => el.child(div().px(8).py(6).text_color(t.dim).child(this.failed ? NEW_MENU.failed : NEW_MENU.loading))))
+        .when(this.agents.length === 0, el => el.child(div().px(8).py(6).text_color(t.dim).child(this.failed ? NEW_MENU.failed : loadingText(NEW_MENU.loading)))))
       .child(div().h(1).mx(8).my(5).bg(t.border))
       .child(this.row("space", svg("mods/workspace-chrome/plus.svg").size(14), NEW_MENU.space, () => run("tabs-tasks.newspace"), shortcut("tabs-tasks.newspace") || shortcut("space.new")))
       .child(this.row("worktree", svg("mods/workspace-chrome/branch.svg").size(14), NEW_MENU.worktreeNew, () => openOverlay({ mod: "worktree", kind: "dialog", width: 460, height: 280, props: { space: space?.id, folder: panes().find(p => p.focused)?.cwd, action: "new" } }), "", Boolean(space)))

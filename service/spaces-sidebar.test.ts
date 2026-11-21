@@ -2,6 +2,7 @@
 // a wide sidebar and with the voice add-on off, and herdr-app's child() throws on null, which blanked the whole sidebar.
 // No window runs here, so gpui and herdr are stand-ins: an element's child()/children() refuse what herdr-app refuses.
 import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { BRAILLE_FRAMES, BRAILLE_MS } from "../core/braille.js";
 import { fakeHerdr } from "./fake-herdr";
 import { fakeGpuiBase, fakeGpuiKit } from "./fake-gpui";
 
@@ -9,7 +10,7 @@ const EL = Symbol("element");
 const ok = (v: unknown) => typeof v === "string" || typeof v === "number" || (v !== null && typeof v === "object" && (v as any)[EL]);
 function el(asset?: string): any {
   const self: any = new Proxy({ [EL]: true, parts: [] as unknown[], elementId: "", indent: 0, click: null as Function | null,
-    hoverChanged: null as Function | null, tip: "", label: "", asset }, {
+    hoverChanged: null as Function | null, tip: "", label: "", asset, animation: null as [string[], number] | null }, {
     get(target, k) {
       if (k === EL) return true;
       if (k === "child") return (v: unknown) => {
@@ -28,6 +29,7 @@ function el(asset?: string): any {
       if (k === "on_hover") return (hover: Function) => { target.hoverChanged = hover; return self; };
       if (k === "tooltip") return (tip: string) => { target.tip = tip; return self; };
       if (k === "accessibility_label") return (label: string) => { target.label = label; return self; };
+      if (k === "frames") return (frames: string[], ms: number) => { target.animation = [frames, ms]; return self; };
       if (k === "when") return (c: unknown, f: (e: any) => any) => (c ? f(self) : self);
       if (k === "then") return undefined;
       return (target as any)[k] ?? (() => self);
@@ -91,7 +93,7 @@ const cx: any = new Proxy({ timer: { every: () => {}, after: () => {} } }, { get
 const sidebar = () => { const s: any = new Spaces(); s.init({}, cx); return s.render(cx); };
 
 describe("Spaces sidebar without a voice row (GitHub #869)", () => {
-  beforeEach(() => { shared.clear(); sidebarPx = 260; liveSpaces = [space("s1", true), space("s2")]; });
+  beforeEach(() => { shared.clear(); sidebarPx = 260; machinesNow = []; liveSpaces = [space("s1", true), space("s2")]; });
 
   test("wide sidebar, voice on: no voice row, still draws", () => {
     expect(sidebar()[EL]).toBe(true);
@@ -102,6 +104,16 @@ describe("Spaces sidebar without a voice row (GitHub #869)", () => {
     expect(sidebar()[EL]).toBe(true);
     sidebarPx = 100;
     expect(sidebar()[EL]).toBe(true);
+  });
+
+  test("a loading machine has a Braille spinner with a label in the collapsed sidebar", () => {
+    machinesNow = [{ name: null, layout: "loading" }];
+    const s: any = new Spaces();
+    s.init({}, cx);
+    const [row] = s.grouped(theme, true, [], { pinned: [], groups: new Map() });
+    expect(row.elementId).toBe("machine-loading-local");
+    expect(row.parts[0].animation).toEqual([BRAILLE_FRAMES, BRAILLE_MS]);
+    expect(row.parts[0].label).toBe("Loading");
   });
 
   test("a newly created space joins the sidebar after its folder lookup grace period", () => {

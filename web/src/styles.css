@@ -656,7 +656,7 @@
   initial-value: 50%;
 }
 
-/* Status marks, drawn in CSS: red needs you, green ready, green turning ring with a gap merging, amber working, grey ring idle, grey clock queued, grey
+/* Status marks, drawn in CSS: red needs you, green ready, green Braille loader merging, amber working, grey ring idle, grey clock queued, grey
    check done, dashed ring a machine herdr-orchestrator can't reach */
 @layer components {
   .dot {
@@ -727,30 +727,12 @@
     top: 3.5px;
     height: 7px;
   }
-  /* merging: on its way into main by itself, nothing for you to do: the ring in green with a gap, turning calmly
-     like a spinner; held still with reduced motion */
   .dot.merging {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ready);
     box-shadow: none;
-  }
-  .dot.merging::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    box-shadow: inset 0 0 0 1.5px var(--ready);
-    mask: conic-gradient(transparent 0 0.25turn, #000 0);
-    animation: turn 1.4s linear infinite;
-  }
-  @keyframes turn {
-    to {
-      transform: rotate(1turn);
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .dot.merging::after {
-      animation: none;
-      transform: rotate(-45deg);
-    }
   }
   /* queued: the grey ring with a clock's two hands, at twelve and three */
   .dot.queued::after {
@@ -842,18 +824,9 @@
     width: 6px;
     height: 6px;
   }
-  /* SHEP-5: a sidebar row's Autopilot mark (a small rocket before the #): it breathes while a wake runs or waits */
+  /* The sidebar's Autopilot mark sits beside the space's icon. */
   .pilot-mark {
     margin-right: -4px;
-  }
-  .pilot-mark[data-waking] {
-    animation: pilot-wake 1.2s ease-in-out infinite;
-  }
-  @keyframes pilot-wake {
-    50% { opacity: 0.35; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .pilot-mark[data-waking] { animation: none; }
   }
   [data-device="phone"] .mode-pill.mark {
     width: 16px;
@@ -896,49 +869,6 @@
       height: 10px;
     }
   }
-  /* the agent's typing dots: they fade in after a beat, so a quick turn doesn't flash them */
-  .typing {
-    animation: typing-in 0.2s ease-out 0.15s both;
-  }
-  .typing i {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: currentColor;
-    animation: typing 1.2s ease-in-out infinite;
-  }
-  .typing i:nth-child(2) {
-    animation-delay: 0.15s;
-  }
-  .typing i:nth-child(3) {
-    animation-delay: 0.3s;
-  }
-  @keyframes typing {
-    0%,
-    60%,
-    100% {
-      opacity: 0.35;
-      transform: none;
-    }
-    30% {
-      opacity: 1;
-      transform: translateY(-2px);
-    }
-  }
-  @keyframes typing-in {
-    from {
-      opacity: 0;
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .typing,
-    .typing i {
-      animation: none;
-    }
-    .typing i {
-      opacity: 0.6;
-    }
-  }
   /* SHEP-126, SHEP-137: held sideways, the Crook sits left of the controls and takes its height from the screen's:
      all of it but the state label under it. Its rings stay inside its own box, so nothing reaches the edges */
   [data-call-screen] {
@@ -964,34 +894,37 @@
       transition: none;
     }
   }
-  /* something runs: a small dot that slowly breathes, never flashes */
-  .live-dot {
-    animation: live-dot 2.4s ease-in-out infinite;
+  .braille-loader {
+    display: inline-block;
+    flex: none;
+    width: 1em;
+    height: 1em;
+    overflow: hidden;
+    font-family: ui-monospace, monospace;
+    font-weight: normal;
+    line-height: 1;
+    text-align: center;
+    vertical-align: -0.125em;
   }
-  @keyframes live-dot {
-    50% {
-      opacity: 0.35;
-    }
+  .braille-loader-track,
+  .braille-loader-track > span {
+    display: block;
   }
-  /* the step on now: a soft light passes over its words */
-  .shimmer {
-    background: linear-gradient(90deg, var(--fg3) 0%, var(--fg3) 40%, var(--fg) 50%, var(--fg3) 60%, var(--fg3) 100%) 0 0 / 300% 100%;
-    background-clip: text;
-    color: transparent;
-    animation: shimmer 3s linear infinite;
+  .braille-loader-track {
+    animation-name: braille-cycle;
+    animation-iteration-count: infinite;
   }
-  @keyframes shimmer {
-    from {
-      background-position: 100% 0;
-    }
+  .braille-loader-track > span {
+    height: 1em;
+  }
+  @keyframes braille-cycle {
     to {
-      background-position: 0% 0;
+      transform: translateY(-100%);
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    .live-dot,
-    .shimmer {
-      animation: none;
+    .braille-loader-track {
+      animation-name: none;
     }
   }
   /* words found by search in a chat */

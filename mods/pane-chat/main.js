@@ -13,6 +13,7 @@
 // Which chat shows which agent is the agent's core label herdr.chat=<chat pane>: every screen
 // sees it, and the agents list, tab bar, spaces and status bar read it (chat/parked.js).
 
+import { brailleLoader } from "./loader.js";
 import { View, div, svg, image } from "gpui-kit";
 import { h_flex } from "gpui-base";
 import { props, run, theme, home, exec, hc, notify, nextCommand, shared, setShared } from "herdr";
@@ -251,7 +252,7 @@ export default class Pane extends View {
       // The status in words, right-aligned with the controls: "Working…" with its spinner, "Needs you", nothing at
       // rest (done is the normal state, no mark).
       .when(st === "working", el => el.child(h_flex().flex_none().gap(6).items_center().text_color(t.muted)
-        .child(svg("mods/workspace-chrome/spinner.svg").size(12).flex_none().text_color(t.working).spin(900))
+        .child(brailleLoader(12, t.working))
         .when((this.width ?? Infinity) >= COMPACT_BELOW, el => el.child(div().whitespace_nowrap().child("Working…")))))
       .when(st === "blocked", el => el.child(div().flex_none().px(6).h(18).flex().items_center().rounded(RADIUS.control).bg(t.blocked + "26").text_size(TEXT.id).font_semibold().text_color(t.blocked).child("Needs you")))
       // Autopilot sits with the other controls on the right, not mid-bar after the folder.

@@ -43,6 +43,7 @@ import {
   ic,
   IconButton,
   List,
+  LoadingText,
   MarkBadge,
   MarkUpIcon,
   PageIcon,
@@ -402,7 +403,7 @@ function RecipeFrame({ art, v, full }: Parameters<typeof PageFrame>[0]) {
     return () => { gone = true }
   }, [art.id, v, on])
   if (error) return <p className="p-4 text-fg3">{error}</p>
-  if (!recipe) return <p className="p-4 text-fg3">Loading…</p>
+  if (!recipe) return <p className="p-4 text-fg3"><LoadingText>Loading…</LoadingText></p>
   return (
     <div className={clsx('overflow-y-auto p-4 phone:p-5', full ? 'h-full' : 'max-h-[70dvh]')}>
       <Recipe recipe={recipe} asset={(src) => `api/artifacts/${encodeURIComponent(art.id)}/file/${src.split('/').map(encodeURIComponent).join('/')}?v=${v}${on}`}

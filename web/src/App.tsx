@@ -49,6 +49,7 @@ import {
   BellIcon,
   ChatIcon,
   CrookIcon,
+  LoadingText,
   CogIcon,
   OpenIcon,
   AttentionBadge,
@@ -131,7 +132,7 @@ function Loading() {
         <span className="grid size-10 place-items-center overflow-hidden rounded-[11px] bg-fg pt-1 text-bg">
           <CrookIcon className="size-8 overflow-visible" />
         </span>
-        {offline ? "Can't reach herdr-orchestrator. Trying again…" : 'Loading…'}
+        <LoadingText>{offline ? "Can't reach herdr-orchestrator. Trying again…" : 'Loading…'}</LoadingText>
       </div>
     </div>
   )

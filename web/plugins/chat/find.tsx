@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { act, getState, setUI, useStore, useUI } from '@client/kernel.ts'
 import { WORDS } from './rows.tsx'
-import { DownIcon, ic, IconButton, roundBtn, SearchIcon, XIcon } from '@client/ui.tsx'
+import { DownIcon, ic, IconButton, LoadingText, roundBtn, SearchIcon, XIcon } from '@client/ui.tsx'
 import { findIn } from './days.ts'
 import { jumpTo } from './reply.ts'
 
@@ -105,7 +105,7 @@ export function FindBar({ chatKey }: { chatKey: string }) {
         {earlier ? (
           <button type="button" disabled={loading} onClick={() => { setLoading(true); void act({ type: 'earlier', chat: chatKey } as never).finally(() => setLoading(false)) }}
             className="h-[26px] shrink-0 rounded-[6px] px-2 text-[0.75rem] text-fg2 hover:bg-hover hover:text-fg phone:h-9 phone:text-[0.8125rem]">
-            {loading ? 'Loading…' : WORDS.searchEarlier}
+            {loading ? <LoadingText>Loading…</LoadingText> : WORDS.searchEarlier}
           </button>
         ) : null}
         <IconButton label="Older match" disabled={found.length < 2} className={roundBtn} onClick={() => step(1)}>

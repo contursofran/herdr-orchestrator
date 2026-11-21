@@ -22,6 +22,8 @@ unread.js: chat spaces-chat
 agent.js: chat newspace orchestrator-settings
 settings.js: chat newspace orchestrator-settings
 dot.js: chat jump tasks
+loader.js: accept-card chat coordinator jump machine-add-chat new-menu-tasks newspace orchestrator-settings pane-chat spaces-chat tabs-tasks tasks
+core/braille.js: accept-card chat coordinator jump machine-add-chat new-menu-tasks newspace orchestrator-settings pane-chat spaces-chat tabs-tasks tasks
 core/tasklists.js: jump spaces-chat tasks
 core/chat-log.js: chat spaces-chat
 core/chat-view.js: chat

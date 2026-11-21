@@ -2,6 +2,7 @@
 // machine blocks (mods/orchestrator-settings/machines-section.js, lib/machines.js machineDetails). The reads and every
 // word are the shared core's (core/machines.js), as the sidebar's machine popup has them.
 import clsx from 'clsx'
+import { LoadingText } from './ui.tsx'
 import { useEffect, useState, type CSSProperties } from 'react'
 import type { Machine, MachineStats } from '@shared/types.ts'
 import * as MC from '@core/machines.js'
@@ -54,7 +55,7 @@ export function MachineDetails({ m }: { m?: Machine }) {
     return () => clearInterval(t)
   }, [])
   const s = m?.stats
-  if (!s) return <p className={clsx(small, 'text-fg3')}>{core.READING_MACHINE}</p>
+  if (!s) return <p className={clsx(small, 'text-fg3')}><LoadingText>{core.READING_MACHINE}</LoadingText></p>
   const meters = core.healthMeters(s)
   const plans = core.planRows(s, now)
   return (

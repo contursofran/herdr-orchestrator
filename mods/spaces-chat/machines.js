@@ -20,6 +20,7 @@ import { div } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
 import { exec, shared, setShared, appHome, home, machines, knownAgents, readTextFile } from "herdr";
 import { heading } from "./ui.js";
+import { loadingText } from "./loader.js";
 import { dirs } from "./dirs.js";
 // The meters, their levels and the start limits: core/machines.js, shared with the web app.
 // What they say (the details' words, plan rows) too: the web's machine popup reads the same.
@@ -162,7 +163,7 @@ export function machineDetails(t, machine, opts = {}) {
   const s = statsOf(machine), now = Date.now();
   const mid = `md-${mkey(machine) || "local"}`;
   const out = v_flex().id(mid).gap(12);
-  if (!s) return out.child(div().text_size(12.5).text_color(t.dim).child(READING_MACHINE));
+  if (!s) return out.child(loadingText(READING_MACHINE).text_size(12.5).text_color(t.dim));
   const hm = healthMeters(s);
   const healthBox = v_flex().gap(10)
     // Sentence-case headings (ui.js heading), never uppercase.

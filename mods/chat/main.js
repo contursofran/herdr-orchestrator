@@ -22,6 +22,7 @@
 // /model opens the model picker instead of reaching the CLI; long replies fold with Show more;
 // a day's line (Today, Yesterday, ...) goes where a new day starts.
 
+import { brailleLoader, loadingText } from "./loader.js";
 import { View, div, svg, image } from "gpui-kit";
 import { v_flex, h_flex, TextareaState, Textarea, Scrollbar, VirtualListScrollHandle, TextView, v_virtual_list, InputState, Input } from "gpui-base";
 import { focused, props, run, theme, home, hc, exec, shared, setShared, watchFolder, window, settings, playSound, notify, appHome, readTextFile, writeTextFile, nextCommand, openOverlay, knownAgents, machines, layout } from "herdr";
@@ -1945,7 +1946,7 @@ export default class Chat extends View {
       .when(Boolean(this.start), (el) => el.child(h_flex().id("find-earlier").h(22).px(8).flex_none().items_center().rounded(6).cursor_pointer()
         .text_size(12).text_color(t.muted).hover((s) => s.bg(t.hover).text_color(t.foreground))
         .on_click((_e, cx) => { cx.stop_propagation(); this.loadEarlier(cx); })
-        .child(this.loadingEarlier ? "Loading…" : WORDS.searchEarlier)))
+        .child(this.loadingEarlier ? loadingText("Loading…") : WORDS.searchEarlier)))
       .child(icon("find-prev", "mods/chat/chevron-up.svg", (cx) => this.findStep(-1, rows, cx)))
       .child(icon("find-next", "mods/chat/chevron-down.svg", (cx) => this.findStep(1, rows, cx)))
       .child(icon("find-x", "mods/chat/x.svg", (cx) => this.closeFind(cx)));
@@ -2431,7 +2432,7 @@ export default class Chat extends View {
     return h_flex().id("chat-rec").w_full().h(44).flex_none().px(8).gap(12).items_center()
       .child(this.round("rec-x", "mods/chat/x.svg", t, "danger", (cx) => this.cancelDictation(cx)))
       .child(h_flex().id("chat-rec-writing").flex_1().min_w(0).gap(8).items_center()
-        .child(svg("mods/workspace-chrome/spinner.svg").size(14).flex_none().text_color(t.dim).spin(900))
+        .child(brailleLoader(14, t.dim))
         .child(div().truncate().text_size(12.5).font_medium().text_color(t.muted).child(slow ? "Taking longer than usual…" : "Writing…")))
       .child(this.round("rec-done", "mods/chat/check.svg", t, "off", null));
   }
@@ -3322,7 +3323,7 @@ export default class Chat extends View {
       case "top":
         return pad(div().w_full().text_center().text_size(12).text_color(t.dim).child(WORDS.top));
       case "loading":
-        return pad(div().w_full().text_center().text_size(12).text_color(t.dim).child(WORDS.loading));
+        return pad(div().w_full().flex().justify_center().text_size(12).text_color(t.dim).child(loadingText(WORDS.loading)));
       case "note":
         return pad(div().w_full().text_center().text_size(12).text_color(t.muted).child(x.text));
       case "user":
@@ -3598,7 +3599,7 @@ export default class Chat extends View {
     // The agent this chat is starting, before it says anything.
     if ((this.phase === "starting" || this.phase === "finding") && this.role && this.pending.length) {
       return h_flex().id("chat-status").flex_none().w_full().max_w(COLUMN + 36).mx_auto().h(30).px(18).gap(8).items_center().text_size(12).text_color(t.muted)
-        .child(svg("mods/workspace-chrome/spinner.svg").size(12).flex_none().text_color(t.working).spin(900))
+        .child(brailleLoader(12, t.working))
         .child(div().flex_1().min_w(0).truncate().child(`Starting the ${this.role === "coordinator" ? "Orchestrator" : this.role}…`));
     }
     if (st === "working") {
@@ -3613,7 +3614,7 @@ export default class Chat extends View {
       const waiting = this.waitingNow() && !this.stopping;
       return h_flex().id("chat-status").flex_none().w_full().max_w(COLUMN + 28).mx_auto().h(30).px(14).gap(8).items_center().text_size(12).text_color(t.muted)
         .when(waiting, (el) => el.child(svg("mods/chat/clock.svg").size(12).flex_none().text_color(t.dim)))
-        .when(!waiting, (el) => el.child(svg("mods/workspace-chrome/spinner.svg").size(12).flex_none().text_color(t.working).spin(900)))
+        .when(!waiting, (el) => el.child(brailleLoader(12, t.working)))
         .child(div().flex_1().min_w(0).truncate().child(doing))
         .child(div().flex_none().font_family(settings().font_family ?? "JetBrains Mono").text_size(11.5).text_color(t.dim)
           .child(elapsed(secs)))
@@ -3734,7 +3735,7 @@ export default class Chat extends View {
     const row = (h, i) => {
       if (h.kind === "child") return this.subagentRow(h, t, age, rcx);
       if (h.kind === "agent") return h_flex().id(`helper-${i}`).w_full().h(24).px(6).gap(8).items_center().text_size(12)
-        .child(svg("mods/workspace-chrome/spinner.svg").size(12).flex_none().text_color(t.working).spin(900))
+        .child(brailleLoader(12, t.working))
         .child(div().flex_1().min_w(0).truncate().font_medium().text_color(t.foreground).child(h.label))
         .child(age(h));
       const on = this.jobOpen === h.id;
@@ -3760,7 +3761,7 @@ export default class Chat extends View {
           .child(div().w_full().font_family(mono).text_size(11.5).text_color(t.muted).child(h.cmd.length > 300 ? h.cmd.slice(0, 299) + "…" : h.cmd))
           .when(Boolean(h.path), (el) => el.child(v_flex().w_full().px(8).py(6).rounded(6).bg(t.surface).border_1().border_color(t.border)
             .font_family(mono).text_size(11.5).text_color(t.dim)
-            .children(lines === null ? [div().child("Loading…")] : lines.length && lines.some(Boolean) ? lines.map((l) => div().w_full().truncate().child(l || " ")) : [div().child("(no output)")])))
+            .children(lines === null ? [loadingText("Loading…")] : lines.length && lines.some(Boolean) ? lines.map((l) => div().w_full().truncate().child(l || " ")) : [div().child("(no output)")])))
           .child(h_flex().child(stopping
             ? h_flex().h(28).px(10).items_center().text_size(12.5).text_color(t.dim).child(WORDS.stopping)
             : this.button(`job-stop-${h.id}`, "Stop", "mods/chat/stop.svg", "secondary", t, (cx) => this.stopJob(h, cx)))));
@@ -3770,7 +3771,7 @@ export default class Chat extends View {
     const group = (g) => {
       const on = Boolean(this.groupOpen[g.kind]);
       const icon = g.kind === "proc" ? svg("mods/workspace-chrome/terminal.svg").size(12).flex_none().text_color(t.working)
-        : g.status === "working" ? svg("mods/workspace-chrome/spinner.svg").size(12).flex_none().text_color(t.working).spin(900)
+        : g.status === "working" ? brailleLoader(12, t.working)
         : g.status === "needs" ? div().size(6).mx(3).flex_none().rounded(3).bg(red(t))
         : svg("mods/chat/check.svg").size(12).flex_none().text_color(t.dim);
       const head = h_flex().id(`bg-group-${g.kind}`).w_full().h(24).px(6).gap(8).items_center().rounded(6).cursor_pointer().text_size(12)
@@ -3797,7 +3798,7 @@ export default class Chat extends View {
     // one that ended keeps its row a while, done, but no longer opens: its log is found by its running process
     const on = this.jobOpen === h.id && !h.ended;
     const word = subagentWord(h.status);
-    const icon = h.status === "working" ? svg("mods/workspace-chrome/spinner.svg").size(12).flex_none().text_color(t.working).spin(900)
+    const icon = h.status === "working" ? brailleLoader(12, t.working)
       : h.status === "needs" ? div().size(6).mx(3).flex_none().rounded(3).bg(red(t))
       : svg("mods/chat/check.svg").size(12).flex_none().text_color(t.dim);
     const head = h_flex().id(`sub-${h.address}`).w_full().h(24).px(6).gap(8).items_center().rounded(6).cursor_pointer().text_size(12)
@@ -3818,7 +3819,7 @@ export default class Chat extends View {
     if (rcx && !this.subPulling?.has(h.address) && Date.now() - (this.subAt?.get(h.address) ?? 0) > 4000) this.subagentWords(h.address, rcx);
     return v_flex().w_full().child(head)
       .child(v_flex().w_full().pl(26).pr(6).pt(4).pb(6).gap(6)
-        .children(said === undefined ? [div().text_size(12).text_color(t.dim).child("Loading…")]
+        .children(said === undefined ? [loadingText("Loading…").text_size(12).text_color(t.dim)]
           : said.map((w) => div().w_full().pl(8).border_l(2).border_color(t.border).text_size(12).text_color(t.muted).child(w.length > 400 ? w.slice(0, 399) + "…" : w)))
         .when(Boolean(now) || (said !== undefined && !said.length), (el) => el.child(div().w_full().truncate().text_size(11.5).text_color(t.dim).child(now || "Nothing said yet.")))
         .child(h_flex().child(this.button(`sub-open-${h.address}`, WORDS.subOpen, "mods/chat/arrow-right.svg", "secondary", t, () =>
@@ -4096,7 +4097,7 @@ export default class Chat extends View {
       .when(fill === "rec", (el) => el.bg(t.blocked + "22").text_color(t.blocked))
       .when(fill === "off", (el) => el.bg(t.raised).text_color(t.dim))
       .when(fill === "ghost", (el) => el.text_color(t.dim).hover((s) => s.bg(t.hover).text_color(t.foreground)))
-      .child(icon === "spinner" ? svg("mods/workspace-chrome/spinner.svg").size(14).spin(900) : svg(icon).size(14));
+      .child(icon === "spinner" ? brailleLoader(14) : svg(icon).size(14));
     if (!fn) return el;
     return el.cursor_pointer().when(fill !== "ghost", (el) => el.hover((s) => s.opacity(0.85)))
       .on_click((_e, cx) => { cx.stop_propagation(); fn(cx); cx.notify(); });
@@ -4121,13 +4122,14 @@ export default class Chat extends View {
 
   // The live row a call and dictation share, 44 px, all on its midline: a round button on each
   // end, the wave across all the room there is, a word and the time.
-  liveRow(t, id, left, word, dot, since, right) {
+  liveRow(t, id, left, word, dot, since, right, busy = false) {
     const secs = Math.max(0, Math.floor((Date.now() - since) / 1000));
     return h_flex().id(id).w_full().h(44).flex_none().px(8).gap(12).items_center()
       .child(left)
       .child(this.wave(t, id))
       .child(h_flex().flex_none().gap(6).items_center()
         .when(dot, (el) => el.child(div().size(8).flex_none().rounded(4).bg(t.blocked)))
+        .when(busy, (el) => el.child(brailleLoader(12, t.working)))
         .child(div().text_size(12.5).font_medium().text_color(t.foreground).child(word))
         // Digits of one width, so the time doesn't jiggle.
         .child(div().font_family(settings().font_family ?? "JetBrains Mono").text_size(12).text_color(t.dim)
@@ -4177,7 +4179,8 @@ export default class Chat extends View {
       .child(this.liveRow(t, "chat-call",
         this.round("call-mute", `mods/chat/${c.muted ? "mic-off" : "mic"}.svg`, t, c.muted ? "on" : "quiet", (cx) => this.callMute(cx)),
         word, false, c.started,
-        this.round("call-x", "mods/chat/phone-x.svg", t, "danger", (cx) => cx.spawn(async (cx) => { await this.hangup(); cx.notify(); })))));
+        this.round("call-x", "mods/chat/phone-x.svg", t, "danger", (cx) => cx.spawn(async (cx) => { await this.hangup(); cx.notify(); })),
+        c.phase === "connecting" || c.phase === "thinking")));
   }
 
   // The model button before the first message (loadChoice): the same menu, choosing what it starts on.

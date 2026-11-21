@@ -17,6 +17,7 @@
 // Tasks and artifacts are read from every machine's ~/.local/share/herdr-orchestrator/tasks and ~/.local/share/herdr-orchestrator/artifacts once
 // as it opens, as the Tasks and Artifacts panels read them.
 
+import { loadingText } from "./loader.js";
 import { div, svg } from "gpui-kit";
 import { View } from "gpui-kit";
 import { h_flex, v_flex, InputState, Input, VirtualListScrollHandle, v_virtual_list, Scrollbar } from "gpui-base";
@@ -333,7 +334,7 @@ export default class Jump extends View {
     const loading = this.loading.size > 0;
     const empty = !rows.length
       ? v_flex().h(120).items_center().justify_center().gap(4).text_size(13).text_color(t.dim)
-        .child(loading ? "Reading tasks and artifacts…" : q ? "Nothing found. Try fewer words." : "Nothing here.")
+        .child(loading ? loadingText("Reading tasks and artifacts…") : q ? "Nothing found. Try fewer words." : "Nothing here.")
       : null;
     const sizes = rows.map((r) => (r.kind === "head" ? HEAD : r.kind === "more" ? MORE : ROW));
     const listH = Math.min(LIST_MAX, sizes.reduce((a, b) => a + b, 0));

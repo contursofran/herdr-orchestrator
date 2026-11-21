@@ -23,6 +23,7 @@ import {
   WrenchIcon,
 } from '@heroicons/react/16/solid'
 import { act, setUI, useStore } from '@client/kernel.ts'
+import { BrailleLoader, LoadingText } from '@client/ui.tsx'
 import { Sheet, SheetClose } from '@client/Stack.tsx'
 import { countJobs, jobsWords, rowsOf, stepText, took } from '@shared/activity.ts'
 import type { ActivityAnswer, Chat, Job, Step, StepKind, StepRow, TurnActivity } from '@shared/types.ts'
@@ -137,13 +138,13 @@ const Lines = ({ added, removed }: { added?: number; removed?: number }) =>
 function Output({ chat, id, job, live, tail }: { chat: string; id: string; job?: boolean; live?: boolean; tail?: boolean }) {
   const g = useActivity(chat, job ? 'job' : 'output', id, live ? 2000 : 0)
   const d = g.data
-  const text = !d ? 'Loading…' : 'error' in d ? d.error : 'output' in d ? d.output || '(no output)' : ''
+  const text = !d ? '' : 'error' in d ? d.error : 'output' in d ? d.output || '(no output)' : ''
   const box = useRef<HTMLPreElement>(null)
   useEffect(() => { if (tail && box.current) box.current.scrollTop = box.current.scrollHeight }, [tail, text])
   return (
     <pre ref={box} data-output className={clsx(tail ? 'max-h-40' : 'max-h-72', 'overflow-auto rounded-row bg-well px-3 py-2 font-mono text-[0.75rem]/5 whitespace-pre-wrap text-fg2')}>
       {/* a diff reads in its colours */}
-      {text.split('\n').map((l, i) => (
+      {!d ? <LoadingText>Loading…</LoadingText> : text.split('\n').map((l, i) => (
         <span key={i} className={clsx('block', /^\+(?!\+\+)/.test(l) && 'text-[var(--ready)]', /^-(?!--)/.test(l) && 'text-[var(--need)]')}>
           {l || ' '}
         </span>
@@ -181,11 +182,11 @@ function StepDetail({ s, chat, alone }: { s: Step; chat: string; alone: boolean 
 function RowSteps({ chat, what, id, ids, live }: { chat: string; what: 'turn' | 'job'; id: string; ids: string[]; live?: boolean }) {
   const g = useActivity(chat, what, id, live ? 2000 : 0)
   const d = g.data
-  if (!d) return <p className={quiet}>Loading…</p>
+  if (!d) return <p className={quiet}><LoadingText>Loading…</LoadingText></p>
   if ('error' in d) return <p className={quiet}>{d.error}</p>
   if (!('steps' in d)) return null
   const steps = d.steps.filter((s) => ids.includes(s.id))
-  if (!steps.length) return <p className={quiet}>{d.catchingUp ? 'Loading the rest of this log…' : d.warning || 'It is no longer in its log.'}</p>
+  if (!steps.length) return <p className={quiet}>{d.catchingUp ? <LoadingText>Loading the rest of this log…</LoadingText> : d.warning || 'It is no longer in its log.'}</p>
   return (
     <ul role="list" className="flex flex-col gap-2">
       {steps.map((s) => (
@@ -239,12 +240,12 @@ function AllRows({ chat, what, id, live, fallback }: { chat: string; what: 'turn
   if (d && 'error' in d) return <p className={clsx(quiet, 'px-1.5 py-0.5')}>{d.error}</p>
   if (d && 'output' in d) return <Output chat={chat} id={id} job live={live} />
   const rows = d && 'steps' in d ? rowsOf(d.steps) : fallback
-  if (!rows) return <p className={clsx(quiet, 'px-1.5 py-0.5')}>Loading…</p>
+  if (!rows) return <p className={clsx(quiet, 'px-1.5 py-0.5')}><LoadingText>Loading…</LoadingText></p>
   const detail = d && 'steps' in d ? d : undefined
   return <>
     {detail?.warning ? <p className={clsx(quiet, 'px-1.5 py-0.5')}>{detail.warning}</p> : null}
     {rows.length ? <Rows rows={rows} chat={chat} what={what} id={id} live={live} /> : detail?.catchingUp ? null : <p className={clsx(quiet, 'px-1.5 py-0.5')}>No steps yet.</p>}
-    {detail?.catchingUp ? <p className={clsx(quiet, 'px-1.5 py-0.5')}>Loading the rest of this log…</p> : null}
+    {detail?.catchingUp ? <p className={clsx(quiet, 'px-1.5 py-0.5')}><LoadingText>Loading the rest of this log…</LoadingText></p> : null}
   </>
 }
 
@@ -375,7 +376,7 @@ export function WorkingLine({ chatKey }: { chatKey: string }) {
   if (starting && !on)
     return (
       <div role="status" data-working className="flex h-[30px] items-center gap-2 text-[0.75rem] text-fg2 coarse:h-10 phone:h-10 phone:text-[0.8125rem]">
-        <span aria-hidden className="live-dot size-1.5 shrink-0 rounded-full bg-[var(--work)]" />
+        <BrailleLoader className="text-work" />
         <span className="min-w-0 flex-1 truncate">{WORDS.startingAssistant}</span>
       </div>
     )
@@ -388,7 +389,7 @@ export function WorkingLine({ chatKey }: { chatKey: string }) {
   }
   return (
     <div role="status" data-working className="flex h-[30px] items-center gap-2 text-[0.75rem] text-fg2 coarse:h-10 phone:h-10 phone:text-[0.8125rem]">
-      {waits ? <ClockIcon aria-hidden className="size-3 shrink-0 fill-[var(--fg3)]" /> : <span aria-hidden className="live-dot size-1.5 shrink-0 rounded-full bg-[var(--work)]" />}
+      {waits ? <ClockIcon aria-hidden className="size-3 shrink-0 fill-[var(--fg3)]" /> : <BrailleLoader className="text-work" />}
       <span className="min-w-0 flex-1 truncate">{stopping ? WORDS.stopping : chat.doing || WORDS.working}</span>
       <span className="shrink-0 font-mono text-[0.71875rem] text-fg3 tabular-nums">{elapsed(secs)}</span>
       <button type="button" onClick={stop} disabled={stopping}
@@ -496,17 +497,17 @@ export const useSubagent = () =>
   )
 
 
-/** its status as the dot the task rows use: amber and pulsing at work, red asking, a quiet check once done */
+/** amber Braille loader at work, red dot when asking, and a quiet check once done */
 function SubDot({ status }: { status?: Job['status'] }) {
   if (status === 'done') return <CheckIcon aria-hidden className="size-3 shrink-0 fill-[var(--fg3)]" />
-  return <span aria-hidden className={clsx('size-1.5 shrink-0 rounded-full', status === 'needs' ? 'bg-[var(--need)]' : 'live-dot bg-[var(--work)]')} />
+  return status === 'needs' ? <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-[var(--need)]" /> : <BrailleLoader className="text-xs text-work" />
 }
 
 /** a subagent's last words, from its own chat (followed while open) */
 function SubWords({ chat }: { chat: string }) {
   const c = useStore((s) => s.chats[chat])
   const said = (c?.messages ?? []).filter((m) => m.who === 'agent' && typeof m.text === 'string' && m.text.trim()).slice(-2)
-  if (!c) return <p className="text-[0.75rem]/5 text-fg3 phone:text-[0.8125rem]/5">Loading…</p>
+  if (!c) return <p className="text-[0.75rem]/5 text-fg3 phone:text-[0.8125rem]/5"><LoadingText>Loading…</LoadingText></p>
   if (!said.length) return <p className="text-[0.75rem]/5 text-fg3 phone:text-[0.8125rem]/5">{c.working ? (c.doing || CV.WORDS.working) : 'Nothing said yet.'}</p>
   return (
     <ul role="list" className="flex w-full flex-col gap-1.5">
@@ -592,7 +593,7 @@ export function JobsTag({ chatKey }: { chatKey: string; cli: string }) {
       <SubagentLine key={j.id} j={j} open={opened === j.id} toggle={() => setOpened(opened === j.id ? null : j.id)} />
     ) : (
       <div key={j.id} className="flex h-6 items-center gap-2 text-[0.75rem] phone:h-8 phone:text-[0.8125rem]">
-        <span aria-hidden className="live-dot size-1.5 shrink-0 rounded-full bg-[var(--work)]" />
+        <BrailleLoader className="text-work" />
         <span className="min-w-0 flex-1 truncate font-medium text-fg">{j.title}</span>
         <span className="shrink-0 font-mono text-[0.71875rem] text-fg3 tabular-nums">{ago(j.at)}</span>
       </div>

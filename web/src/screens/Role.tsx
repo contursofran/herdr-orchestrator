@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import type { AgentPick, ModelMenus, SettingRow } from '@shared/types.ts'
 import { act } from '../kernel.ts'
 import { ModelList } from '../restart.tsx'
-import { CheckIcon, DownIcon, ic, Menu, MenuItem, MenuLabel, MenuSeparator, MenuSwitch, ModeIcon, NextIcon, Primary, SpeedIcon, Tab, Tabs, TextBox } from '../ui.tsx'
+import { CheckIcon, DownIcon, ic, LoadingText, Menu, MenuItem, MenuLabel, MenuSeparator, MenuSwitch, ModeIcon, NextIcon, Primary, SpeedIcon, Tab, Tabs, TextBox } from '../ui.tsx'
 import * as AG from '@core/agents.js'
 import * as ST from '@core/settings.js'
 
@@ -93,7 +93,7 @@ function ModelMenu({ start, up, onClose, save }: { start: AgentPick; up: boolean
   return (
     <Menu label={modelLabel(data?.menus, sel)} tabs onClose={onClose}
       className={clsx('absolute right-0 z-20 w-[340px] max-w-[calc(100vw-2rem)]', up ? 'bottom-full mb-1 origin-bottom-right' : 'top-full mt-1 origin-top-right')}>
-      {!data ? <p className={clsx('px-3 py-2 text-fg3', error && 'text-need-fg')}>{error || ST.LOADING_AGENTS}</p> : (
+      {!data ? <p className={clsx('px-3 py-2 text-fg3', error && 'text-need-fg')}>{error || <LoadingText>{ST.LOADING_AGENTS}</LoadingText>}</p> : (
         <>
           <ModelList menus={data.menus as never} agent={sel.agent} picks={picks} chosen={{ agent: sel.agent, model: sel.model ?? null }} autoFocus={!coarse}
             onPick={(x) => { if (x.agent === sel.agent && x.id === sel.model) return; const menus = withTyped(data.menus, x); if (menus !== data.menus) setData({ ...data, menus }); change(chooseModel(menus, data.permDefault, sel, x.agent, x.id)) }}
@@ -166,7 +166,7 @@ function FileSheet({ o }: { o: Extract<Open, { kind: 'file' }> }) {
           <h2 className="min-w-0 flex-1 truncate font-semibold">{o.title || W.title}</h2>
           <Primary className="h-7! px-3! text-[0.8125rem] phone:h-9!" onClick={done}>{W.done}</Primary>
         </div>
-        {saved === null ? <p className={clsx('px-4 py-3', error ? 'text-need-fg' : 'text-fg3')}>{error ?? 'Reading…'}</p> : (
+        {saved === null ? <p className={clsx('px-4 py-3', error ? 'text-need-fg' : 'text-fg3')}>{error ?? <LoadingText>Reading…</LoadingText>}</p> : (
           <div className="h-[60dvh] min-h-0 overflow-y-auto overscroll-contain">
             <TextBox label={o.title} value={text} spellCheck={false} autoFocus
               onChange={(t) => { setText(t); setStatus(''); clearTimeout(later.current); later.current = setTimeout(() => void save(t), 600) }}

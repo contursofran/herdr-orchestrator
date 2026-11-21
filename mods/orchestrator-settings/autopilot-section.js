@@ -12,6 +12,7 @@
 // here in a small box, saved a moment after typing stops and on leaving it.
 // Words and picks: core/autopilot.js (the web's too).
 
+import { loadingText } from "./loader.js";
 import { div } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input, TextareaState, Textarea } from "gpui-base";
 import { exec, appHome, home, readTextFile } from "herdr";
@@ -106,7 +107,7 @@ function saveBeat(view, cx) {
 // `view`: the settings window (its title, row pieces and the level's values).
 export function autopilotSection(view, t, cx) {
   const ap = view.ap;
-  if (!ap.base) return v_flex().child(view.title(t, AP.TITLE)).child(div().text_size(TEXT.label).text_color(t.dim).child("Loading…"));
+  if (!ap.base) return v_flex().child(view.title(t, AP.TITLE)).child(div().text_size(TEXT.label).text_color(t.dim).child(loadingText("Loading…")));
   const a = now(view);
 
   // The boxes show what applies at this level: when it changes (a save, a Reset, another level, an

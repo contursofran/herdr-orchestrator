@@ -12,7 +12,7 @@ import { act, definePlugin, setUI, useStore, useUI } from '@client/kernel.ts'
 import { AWAY, buzz, moveTo, project, settleMs, SPRING, useMotion } from '@client/motion.ts'
 import { useDialogFocus } from '@client/focus.ts'
 import { follow as followFinger, mayPanDown } from '@client/gestures.ts'
-import { ClockIcon, CopyIcon, ic, MenuItem, PlusIcon, ReplyIcon, SearchIcon } from '@client/ui.tsx'
+import { ClockIcon, CopyIcon, ic, LoadingText, MenuItem, PlusIcon, ReplyIcon, SearchIcon } from '@client/ui.tsx'
 
 /** Fork and Rewind, drawn as the window's (lucide git-fork, rotate-ccw) */
 export const ForkIcon = (p: { className?: string }) => (
@@ -623,7 +623,7 @@ export function EmojiChooser({ onPick, chosen, focus, hint, plain }: { onPick: (
       {/* dragging the emoji puts the keyboard away, like a list on iOS: the sheet grows back to show more */}
       <div ref={grid} onScroll={follow} onTouchMove={() => document.activeElement === input.current && input.current?.blur()} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2">
         {!groups ? (
-          <div className="p-6 text-center text-[0.8125rem] text-fg2 phone:text-[0.9375rem]">Loading emoji…</div>
+          <div className="p-6 text-center text-[0.8125rem] text-fg2 phone:text-[0.9375rem]"><LoadingText>Loading emoji…</LoadingText></div>
         ) : found ? (
           found.length ? (
             <div className={clsx(gridCls, 'pt-1')}>{found.slice(0, 160).map((x) => cell(x, x.e))}</div>

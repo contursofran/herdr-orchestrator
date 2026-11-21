@@ -14,7 +14,7 @@ import clsx from 'clsx'
 import { useEffect, useId, useRef, useState } from 'react'
 import { goPlace, placeOf, setUI, useSnap, useUI } from '@client/kernel.ts'
 import { Sheet, SheetClose } from '@client/Stack.tsx'
-import { CheckIcon, FolderIcon, Ghost, MonitorIcon, Primary, ServerIcon, Who, ic } from '@client/ui.tsx'
+import { CheckIcon, FolderIcon, Ghost, LoadingText, MonitorIcon, Primary, ServerIcon, Who, ic } from '@client/ui.tsx'
 import type { Folders, Machine } from '@shared/types.ts'
 import * as NS from '@core/newspace.js'
 import { IconChoice, IconPicker } from './section.tsx'
@@ -315,7 +315,7 @@ function NewSpaceDialog() {
                 <span className="min-w-0 flex-1 truncate text-[0.75rem] text-fg3 phone:text-[0.8125rem]">{NS.tilde(r.path, home)}</span>
               </li>
             ))}
-            {empty ? <li className="flex min-h-8 items-center px-2 text-fg3 coarse:min-h-11">{empty}</li> : null}
+            {empty ? <li className="flex min-h-8 items-center px-2 text-fg3 coarse:min-h-11">{empty === W.loading ? <LoadingText>{empty}</LoadingText> : empty}</li> : null}
           </ul>
         ) : null}
         {picking ? (

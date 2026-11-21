@@ -15,7 +15,7 @@ import { openWorktree } from '@client/screens/Worktree.tsx'
 import { act, definePlugin, getState, has, registry, removeSpace, setUI, useSnap, useStore, useUI } from '@client/kernel.ts'
 import { Dialog } from '@client/rowmenu.tsx'
 import { sectionOf, Switch } from '@client/Settings.tsx'
-import { AttentionBadge, DiffIcon, Dot, field, FolderIcon, ic, IconButton, KeyboardIcon, Menu, MenuItem, MenuLabel, MenuSeparator, ModelIcon, MoreIcon, PageIcon, PlanIcon, PlusIcon, Primary, RenameIcon, RestartIcon, SplitIcon, TasksIcon, TermIcon, XIcon } from '@client/ui.tsx'
+import { AttentionBadge, BrailleLoader, LoadingText, DiffIcon, Dot, field, FolderIcon, ic, IconButton, KeyboardIcon, Menu, MenuItem, MenuLabel, MenuSeparator, ModelIcon, MoreIcon, PageIcon, PlanIcon, PlusIcon, Primary, RenameIcon, RestartIcon, SplitIcon, TasksIcon, TermIcon, XIcon } from '@client/ui.tsx'
 import { openAddSpace } from '@plugins/places/add.tsx'
 import { toast } from '@plugins/alerts/toasts.tsx'
 import { openKeybinds } from '@plugins/keyboard/client.tsx'
@@ -134,7 +134,7 @@ function AutopilotHeader({ place }: { place: Place }) {
         {/* What it waits for and Run now, left of the switch: they open leftwards, the switch and "Autopilot" never move */}
         <div data-autopilot-status inert={!on} style={{ width: on ? (statusW ?? 'auto') : 0 }} className="shrink-0 overflow-clip transition-[width] duration-200 ease-out [overflow-clip-margin:0.375rem] motion-reduce:transition-none">
           <div ref={measureStatus} className="flex w-max items-center gap-1 pr-1 pl-1.5">
-            <span className={clsx('whitespace-nowrap text-fg3 tabular-nums @max-[32rem]/place:hidden', shown.inflight && 'animate-pulse')}>{words}</span>
+            <span className="whitespace-nowrap text-fg3 tabular-nums @max-[32rem]/place:hidden">{shown.inflight ? <LoadingText>{words}</LoadingText> : words}</span>
             <button
               type="button"
               data-run-now
@@ -183,15 +183,6 @@ function PhoneRunNow({ place }: { place: Place }) {
 }
 
 /** The pane header's status (3.0's): a spinner while its agent works, "Needs you" while it waits on you, a dot once done */
-function Spin({ className }: { className?: string }) {
-  return (
-    <svg role="img" aria-label="Working" viewBox="0 0 16 16" className={clsx('size-3 shrink-0 animate-spin text-work motion-reduce:animate-none', className)}>
-      <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeOpacity="0.25" strokeWidth="2" />
-      <path d="M14 8a6 6 0 0 0-6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  )
-}
-
 /** what the shown tab of a space is: its Assistant's, or another (ui.term t:<address>) */
 function shownTab(place: Place, term: string | null) {
   return term?.startsWith('t:') ? (place.tabs ?? []).find((t) => t.term === term) ?? null : null
@@ -210,7 +201,7 @@ function StatusMark({ place }: { place: Place }) {
   if (state === 'working')
     return (
       <span role="status" className="flex h-8 shrink-0 items-center gap-1.5 text-[0.8125rem] text-fg2">
-        <Spin />
+        <BrailleLoader label="Working" className="text-work" />
         <span className="whitespace-nowrap @max-[34rem]/place:sr-only">Working…</span>
       </span>
     )
@@ -296,7 +287,7 @@ function PlusItems({ place, done }: { place: Place; done: () => void }) {
           {a.name}
         </MenuItem>
       ))}
-      {choices.length ? null : <Quiet>{off ? N.failed : N.loading}</Quiet>}
+      {choices.length ? null : <Quiet>{off ? N.failed : <LoadingText>{N.loading}</LoadingText>}</Quiet>}
       <MenuSeparator />
       <MenuItem icon={<PlusIcon className={ic} />} onClick={() => { done(); openAddSpace(place.machine) }}>{N.space}</MenuItem>
       <MenuItem icon={<SplitIcon className={ic} />} onClick={() => { done(); openWorktree({ place: place.id, name: place.name, op: 'new' }) }}>{N.worktreeNew}</MenuItem>
@@ -405,7 +396,7 @@ function Tab({ place, t, on, i, drag }: { place: Place; t: BarTab; on: boolean; 
     >
       {t.agent ? <ModelIcon className={clsx(ic, 'text-fg3')} /> : t.assistant ? null : <TermIcon className={clsx(ic, 'text-fg3')} />}
       <span className="max-w-[170px] truncate">{t.name}</span>
-      {t.state === 'working' ? <Spin /> : null}
+      {t.state === 'working' ? <BrailleLoader label="Working" className="text-work" /> : null}
       {need || ready ? <AttentionBadge need={need} ready={ready} scope={t.name} /> : t.state === 'blocked' || t.state === 'done' ? <Dot s={t.state === 'blocked' ? 'need' : 'done'} className="shrink-0" /> : null}
       {on ? (
         <>
@@ -558,7 +549,7 @@ export function TabMenuItems({ place, tab, close }: { place: Place; tab: BarTab;
     return (
       <>
         <MenuLabel>{S.title}</MenuLabel>
-        {agents === null ? <Quiet>{S.loading}</Quiet> : installed.map((a, i) => {
+        {agents === null ? <Quiet><LoadingText>{S.loading}</LoadingText></Quiet> : installed.map((a, i) => {
           const on = a.kind === tab.agent
           return (
             <MenuItem key={a.kind} icon={<ModelIcon className={ic} />} disabled={on} hint={on ? S.current : keys && i < 9 ? String(i + 1) : undefined} onClick={() => pick(a)} className="disabled:text-fg3">
@@ -813,7 +804,7 @@ function CloseAssistant() {
     <Dialog title="Close the Orchestrator?" onCancel={() => openClose(null)} safe
       buttons={<Primary disabled={busy || workers === null} onClick={() => void go()}>{busy ? 'Closing…' : 'Close Orchestrator'}</Primary>}>
       <div className="flex flex-col gap-2 text-pretty">
-        <p className="text-fg2">{workers === null ? (error ? '' : 'Reading…') : workers ? `It has ${workers} worker${workers > 1 ? 's' : ''} running. Their branches and worktrees stay either way.` : 'It has no workers running.'}</p>
+        <p className="text-fg2">{workers === null ? (error ? '' : <LoadingText>Reading…</LoadingText>) : workers ? `It has ${workers} worker${workers > 1 ? 's' : ''} running. Their branches and worktrees stay either way.` : 'It has no workers running.'}</p>
         {workers ? (
           <div role="radiogroup" aria-label="Its workers" className="flex flex-col">
             {choice(stop, 'Stop its workers', 'Ends the agents it started and closes their tabs.', () => setStop(true))}

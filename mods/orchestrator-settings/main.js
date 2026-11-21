@@ -14,6 +14,7 @@
 // herdr-task. Agents use the chat's own model button (settings.js and agent.js from lib/).
 // The window draws its own frame (frame: "none"), most of Herdr's height, at most 900.
 
+import { loadingText } from "./loader.js";
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, Scrollbar, TextareaState, Textarea, InputState, Input } from "gpui-base";
 import { props, theme, machines, home, exec, readTextFile, writeTextFile, closeOverlay, openOverlay, shared } from "herdr";
@@ -497,7 +498,7 @@ export default class OrchestratorSettings extends View {
     const c = this.roles[r.id];
     const label = r.id === "reviewer" && c?.unset ? otherCliWords(this.otherCli()) : undefined;
     const control = h_flex().gap(8).items_center()
-      .child(c?.sel ? models.modelButton(t, c, { label }, cx) : div().text_size(TEXT.label).text_color(t.dim).child(LOADING_AGENTS))
+      .child(c?.sel ? models.modelButton(t, c, { label }, cx) : div().text_size(TEXT.label).text_color(t.dim).child(loadingText(LOADING_AGENTS)))
       .when(!this.scope && r.id === "reviewer" && c && !c.unset,
         (el) => el.child(button("reviewer-other", USE_OTHER_CLI, { kind: "plain", onClick: (_e, cx) => this.reset("reviewer", null, cx) })))
       .when(!this.scope, (el) => el.child(button(`edit-${r.id}`, EDIT_INSTRUCTIONS,
