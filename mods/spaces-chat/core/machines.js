@@ -46,6 +46,7 @@ export const meterSub = (m) => m.detail + (m.level === "over" ? " · Over its al
 
 // The CLIs with a usage source; any other installed agent says "No usage info".
 export const READS = { claude: "Claude Code", codex: "Codex", elevenlabs: "ElevenLabs" };
+export const SIDEBAR_PLAN_USAGE = "sidebar.planUsage";
 // A number older than this says how old it is.
 export const OLD = 15 * 60000;
 export const leftOf = (w) => Math.max(0, Math.round(100 - w.used));
