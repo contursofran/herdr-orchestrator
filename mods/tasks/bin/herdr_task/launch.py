@@ -539,14 +539,18 @@ def retag_tabs(s):
 def closing_line(s, task, parent=None, argv=None):
     """How the worker finishes: every task, worktree or in the folder, says ready with a summary.
     It names this herdr-task by its full path: only that form runs without asking (own_argv)."""
-    done = "finished and committed" if task.get("mode") == "worktree" else "finished"
+    on, rounds = review_limits(s, task)
+    done = "finished and committed" if task.get("mode") == "worktree" or (on and task.get("signed_reviews")) else "finished"
     ht = own_path()
     text = (f"When the work is {done}, run `{ht} ready {s.ref(task)} --folder {shlex.quote(s.loc['folder'])} "
             f"--summary \"<what the person now sees or can do, plain words, at most {SUMMARY_MAX} characters>\"` (optionally "
             f"`--details \"<a few short bullets in plain words, one per line: what changed for the person first, then how it was checked>\"`; with `--agents-md \"<one line>\"` when you learned something "
             f"about setting up or testing this repo that its AGENTS.md lacks). The person accepts it from there; never mark it done yourself.")
-    on, rounds = review_limits(s, task)
-    if on:
+    if on and task.get("signed_reviews"):
+        text += (f" Review is on: ready queues an independent reviewer for this exact commit (at most {rounds} rounds). "
+                 "End your turn after submitting. The engine advances an approval and sends you any findings to fix. "
+                 "After a fix, run checks, commit, and submit ready again. The Assistant handles an escalation.")
+    elif on:
         text += (f" Review is on: after each review round, record it on the commit it reviewed with `{ht} reviewed {s.ref(task)} "
                  f"--folder {shlex.quote(s.loc['folder'])} --report \"<its findings in a line>\"` (add `--commit <sha>` if you committed fixes since; at most {rounds} rounds); "
                  f"ready refuses a final commit no round was recorded on.")
@@ -789,7 +793,7 @@ def registered_worktree(main, path):
     return None
 
 
-def launch(s, task, argv, space, message=None, parent=None, resume=None, role=None):
+def launch(s, task, argv, space, message=None, parent=None, resume=None, role=None, name=None, review_attempt=None):
     """Starts one agent for the task with no tab or pane of its own (a space can hold thousands
     of tasks): an hc child of `parent`, which parent_for() makes the space's coordinator, reached
     through the Tasks panel. Labels: herdr.task (its task), herdr.task.space (its space; never
@@ -809,8 +813,10 @@ def launch(s, task, argv, space, message=None, parent=None, resume=None, role=No
         labels += ["--label", f"herdr.coordinator={ctab}"]
     if role:
         labels += ["--label", f"herdr.role={role}"]
+    if review_attempt:
+        labels += ["--label", f"herdr.review.attempt={review_attempt}"]
     rel = ["--parent", parent, "--outlive-parent"] if parent else ["--no-parent"]
-    name = agent_name(s, task, "review" if role else None)
+    name = name or agent_name(s, task, "review" if role else None)
     # HERDR_BROWSER_TASK: which task's browser herdr-browser drives (HERD-57), for it and its children.
     r = run(["hc", "run", "--bg", "--json", "--keep", "--cwd", folder_for(s, task), "--name", name,
              *labels, *rel, "--", *low_priority(clean_env(["env", f"HERDR_BROWSER_TASK={key}", *in_shell(cmd)]), name)])

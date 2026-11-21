@@ -677,7 +677,8 @@ def one_pass(report):
         feeds = feeds_for(lists)
         for d in lists:
             tasks = d.get("tasks") or []
-            busy = any(t.get("state") in ("queued", "scheduled") or (t.get("worktree") and t.get("state") in ("running", "ready")) for t in tasks)
+            busy = any(t.get("state") in ("queued", "scheduled") or
+                       ((t.get("worktree") or t.get("review_request")) and t.get("state") in ("running", "ready")) for t in tasks)
             if not busy and not d.get("automations"):
                 continue
             with Store(locate(d["folder"])) as s:

@@ -511,7 +511,7 @@ def task_settings(s, t, space=None, argv=None, live=False):
             text += " (the other CLI)" if who != agent else " (your own CLI: no other is installed)"
         folder = t.get("worktree") or getattr(s, "loc", {}).get("folder")
         cmd = reviewer_command(who, rv.get("model"), rv.get("effort"), folder)
-        if cmd:
+        if cmd and not t.get("signed_reviews"):
             text += f"; start it as `{cmd}`"
         add("Reviewer", text, {"agent": who, "model": rv.get("model"), "effort": rv.get("effort"), "command": cmd}, rv_by)
         must = sets.get("must_fix") or (k.get("must_fix") if k.get("must_fix") in LEVELS else "major")

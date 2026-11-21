@@ -31,6 +31,7 @@ from .takeover import cant_go_on, takeover
 from .ghnews import main_pass, pr_deliver, pr_news
 from .scheduler import SCHEDULER
 from .revive import revive_pass
+from . import reviews
 
 
 PR_WAIT_EVERY = 20000  # how often a pull request whose checks still run is read again (ms)
@@ -71,7 +72,8 @@ def queue_pass(s, t, v, report):
     t.pop("merge_queued")
     why = (q.get("reason") or "").strip().rstrip(".")
     head = v.get("headRefOid")
-    if "timed_out" in why.lower().replace(" ", "_") and head and t.get("requeued") != head and not pr_problem(v):
+    if ("timed_out" in why.lower().replace(" ", "_") and head and t.get("requeued") != head
+            and not pr_problem(v) and not reviews.merge_problem(s, t, head)):
         ok, err = queue_merge(t, head)
         if ok:
             t["requeued"], t["merge_queued"] = head, now()
@@ -285,6 +287,12 @@ def tick_store(s, report):
                 if not merge_now(s, t):
                     report["done"].append(t["id"])
             t.pop("_pr_fresh", None)
+    # Finalizing an approval can release the store lock and replace the list.
+    pending = {t["id"] for t in s.data["tasks"] if t.get("review_request") and t["state"] == "running"}
+    for id_ in sorted(pending):
+        task = next((t for t in s.data["tasks"] if t["id"] == id_), None)
+        if task:
+            reviews.advance(s, task)
     due_pass(s, report)
     queued = sorted((t for t in s.data["tasks"] if t["state"] == "queued"), key=lambda t: t.get("queued_at") or 0)
     n = running_count(s) if queued else 0

@@ -103,8 +103,10 @@ Assistant's, a task's and an agent tab's, in the window and on the web (`core/ch
   changed settings (below); every other live agent its hook taught gets it alone from herdr-task's news pass
   (`reactions_pass`), once, ending "carry on with what you were doing; if nothing, reply only `<hc no-reply/>`", so a
   worker mid-task keeps working. One started before this isn't told until it starts again.
-- **Reviewers** run as their worker's own helper agents (an hc child, shown as a subagent in its chat): their hook
-  teaches them too, but your messages rarely reach them, so they seldom react.
+- **Reviewers** appear as subagents in the worker's chat. For newly started tasks with Review enabled, `herdr-task ready`
+  starts a read-only reviewer for the submitted commit. The engine records the verdict from the registered reviewer,
+  sends findings to the builder, and applies the task's merge setting after approval. A revised commit takes its own
+  review. The Assistant handles scope conflicts and exhausted rounds.
 - **A reaction only.** A reply of a `<hc react … />` line and `<hc no-reply/>` shows just the reaction on your
   message.
 

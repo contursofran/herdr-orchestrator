@@ -82,12 +82,22 @@ def pr_push(s, task, repo):
     remote = remote_of(s.loc["folder"])
     to = (task.get("pr") or {}).get("branch") or br
     has, tip, _ = git(wt, "rev-parse", "--verify", "--quiet", f"refs/heads/{br}")
+    signed = False
+    if task.get("signed_reviews"):
+        from . import reviews
+        signed = reviews.signed(s, task)
+        if signed and (tip != task.get("head") or not reviews.approval(task, tip)):
+            raise Fail("The branch moved before push. Run ready to review the current commit.")
     seen, there, _ = git(wt, "ls-remote", remote, f"refs/heads/{to}")
     if has and tip and seen and there.split()[:1] == [tip]:
         return
     with released(s):
-        ok, out, err = git(wt, "push", "--force-with-lease", "-u", remote, br) if to == br else \
-            git(wt, "push", remote, f"{br}:refs/heads/{to}")
+        if signed:
+            force = ["--force-with-lease"] if to == br else []
+            ok, out, err = git(wt, "push", *force, remote, f"{tip}:refs/heads/{to}")
+        else:
+            ok, out, err = git(wt, "push", "--force-with-lease", "-u", remote, br) if to == br else \
+                git(wt, "push", remote, f"{br}:refs/heads/{to}")
     if not ok:
         raise Fail(f"Couldn't push {br}" + (f" to {to}" if to != br else "") + f": {push_error(out, err)}")
 

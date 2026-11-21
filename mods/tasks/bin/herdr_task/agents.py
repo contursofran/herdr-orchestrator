@@ -150,6 +150,8 @@ def task_status(task, live):
         return "needs", "asks", REASONS["question"]
     if trust_asked(live):
         return "needs", "asks", REASONS["trust"]
+    if st == "running" and (task.get("review_request") or {}).get("status") in ("queued", "reviewing", "approved"):
+        return "working", None, "Waiting for independent review"
     # Out of review rounds (ready refused, review_out): its agent was told to end its turn and wait for its
     # Assistant's review-more, so once it's quiet that is the Assistant's at once (#784). #1040: a problem it had
     # been on (a conflict it fixed by merging the base) kept it Working while its status line was fresh, and only
