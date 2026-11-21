@@ -72,6 +72,13 @@ class Preview(unittest.TestCase):
         return json.loads(out.stdout)["link"]
 
     def test_serves_the_viewer_and_the_artifact_on_loopback_only(self):
+        # A loopback preview must also start when reverse DNS is unavailable.
+        with open(os.path.join(self.dir, "sitecustomize.py"), "w") as f:
+            f.write("import socket\n"
+                    "def unexpected_lookup(host):\n"
+                    "    raise AssertionError(f'unexpected hostname lookup: {host}')\n"
+                    "socket.getfqdn = unexpected_lookup\n")
+        self.env["PYTHONPATH"] = self.dir
         link = self.preview()
         self.assertRegex(link, r"^http://127\.0\.0\.1:\d+/\?artifact=" + self.aid + "$")
         base = link.split("/?")[0]

@@ -2072,8 +2072,15 @@ def serve_preview(idle=PREVIEW_IDLE):
     to PREVIEW_STATE). Answers only requests addressed to 127.0.0.1 or localhost (no other site's page reaches it
     through a name of its own). Ends after `idle` seconds without a request."""
     import http.server
+    import socketserver
     import threading
     last = [time.time()]
+
+    class PreviewServer(http.server.ThreadingHTTPServer):
+        def server_bind(self):
+            # The numeric loopback address needs no reverse DNS, which can stall startup on macOS.
+            socketserver.TCPServer.server_bind(self)
+            self.server_name, self.server_port = self.server_address
 
     class H(http.server.BaseHTTPRequestHandler):
         server_version = "herdr-artifact-preview"
@@ -2160,7 +2167,7 @@ def serve_preview(idle=PREVIEW_IDLE):
             self.send(206 if part else 200, body, ctype, FILE_CSP, {"accept-ranges": "bytes", "content-range": f"bytes {start}-{end}/{size}"} if part else {"accept-ranges": "bytes"})
             return None
 
-    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), H)
+    srv = PreviewServer(("127.0.0.1", 0), H)
     srv.daemon_threads = True
     os.makedirs(STORE, exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=STORE, prefix=".tmp-")
