@@ -16,8 +16,8 @@ const HARNESSES = new Map([
   ["codex", { name: "Codex", icon: "icons/codex.svg", tint: false }],
 ]);
 
-function workerHarness(terminal, agent) {
-  // A detached worker can have only its launch label until it reports to Herdr.
+function harnessOf(terminal, agent) {
+  // A detached agent can have only its launch label until it reports to Herdr.
   for (const program of [agent?.program, terminal.program]) {
     if (program?.agent && program.key !== "agent" && program.icon) return program;
   }
@@ -170,10 +170,10 @@ export function projectTree({ spaces, terminals, panes, agents, assistants, task
         const role = isAssistant ? "assistant" : roleOf(k) ?? (node.taskKey ? "worker" : null);
         rows.push({
           id, depth, role,
-          title: isAssistant ? "Assistant" : task?.title || k.name || k.title || k.program?.name || k.template || k.address,
+          title: isAssistant ? "Orchestrator" : task?.title || k.name || k.title || k.program?.name || k.template || k.address,
           state: node ? statusOf(node, taskPlace) : "stopped",
           address: k?.address ?? null, live: k?.state === "live",
-          harness: role === "worker" ? workerHarness(k, node.agent) : null,
+          harness: k && (isAssistant || role === "worker") ? harnessOf(k, node.agent) : null,
           slot: isAssistant ? assistants.get(space)?.slot ?? null : null,
           task: !isAssistant ? taskTarget(helper(k) ? inherited ?? node : node) : null,
         });

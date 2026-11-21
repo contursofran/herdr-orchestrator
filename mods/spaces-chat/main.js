@@ -743,7 +743,6 @@ export default class Spaces extends View {
   }
 
   projectAgent(row, space, tree, t) {
-    const color = { working: t.working, needs: red(), ready: green(), stopped: t.dim, idle: t.dim }[row.state];
     const controls = row.live && this.hoveredProjectAgent === row.id;
     const tip = this.projectModels.get(row.address)?.tip;
     const number = this.mainKeys.get(row.id);
@@ -754,7 +753,6 @@ export default class Spaces extends View {
         .on_click(() => this.focusProjectAgent(row, space)))
       .when(row.live, (el) => el.on_hover((on, cx) => this.hoverProjectAgent(row, on, cx)))
       .when(Boolean(tip), (el) => el.tooltip(tip))
-      .child(div().size(6).rounded(3).flex_none().bg(color))
       .when(Boolean(harness), (el) => el.child(div().id(`project-harness-${row.id}`).size(14).flex_none()
         .accessibility_label(harness.name)
         .child(harness.tint ? svg(harness.icon).size(14).text_color(t.muted) : image(harness.icon).w(14).h(14))))
