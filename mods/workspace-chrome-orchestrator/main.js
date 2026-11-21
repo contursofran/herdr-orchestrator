@@ -3,7 +3,7 @@ import { h_flex } from "gpui-base";
 import { theme, run, props, window, shared, setShared, layout } from "herdr";
 import { red } from "./ui.js";
 import { on as addonOn } from "./addons.js";
-import { Footer } from "./foot.js";
+import { Footer, nodeOf } from "./foot.js";
 
 // SHEP-135: the voice call on (mods/chat's shared "chat.calls", its heartbeat in the last 45 s), as spaces-chat's liveCall
 function liveCall() {
@@ -11,21 +11,12 @@ function liveCall() {
   return null;
 }
 
-function find(node, id) {
-  if (node?.id === id) return node;
-  for (const child of node?.children ?? []) {
-    const found = find(child, id);
-    if (found) return found;
-  }
-  return null;
-}
-
 // The sidebar's rail goes by its width, not a flag: dragging its edge narrows it too.
-const narrow = () => (find(layout(), "sidebar")?.size?.px ?? Infinity) < 160;
+const narrow = () => (nodeOf(layout(), "sidebar")?.size?.px ?? Infinity) < 160;
 
 // To the rail (on macOS wide enough for the traffic lights), or back to the width it had.
 function toggleSidebar() {
-  const width = find(layout(), "sidebar")?.size?.px;
+  const width = nodeOf(layout(), "sidebar")?.size?.px;
   if (!narrow()) setShared("sidebar.width", width);
   // Mods edited before the rail went by width still read the flag.
   setShared("sidebar.collapsed", !narrow());
@@ -54,7 +45,7 @@ export default class WorkspaceChrome extends View {
 
   render(cx) {
     const t = theme();
-    const width = find(layout(), "sidebar")?.size?.px ?? Infinity;
+    const width = nodeOf(layout(), "sidebar")?.size?.px ?? Infinity;
     if (props()?.footer) return (this.footer ??= new Footer()).render(t, width, cx);
     const collapsed = width < 160;
     const call = !collapsed && addonOn("voice") ? liveCall() : null;

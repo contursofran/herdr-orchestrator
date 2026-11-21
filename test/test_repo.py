@@ -149,9 +149,12 @@ class Repo(unittest.TestCase):
     TITLE_OK = {"Dialog", "CardShell", "TitleWhere", "Line", "iframe"}
 
     def test_no_hover_tooltips(self):
-        """Hover tooltips stay limited to the native Projects sidebar's agent rows and controls (#7)."""
+        """Only the native sidebar's agent rows and compact footer controls have hover tooltips."""
         found = []
-        allowed_window = {"mods/spaces-chat/main.js": {".tooltip(tip)", ".tooltip(label)"}}
+        allowed_window = {
+            "mods/spaces-chat/main.js": {".tooltip(tip)", ".tooltip(label)"},
+            "mods/workspace-chrome-orchestrator/foot.js": {'.tooltip("Settings")', '.tooltip("Add machine")', ".tooltip(detail)"},
+        }
         for top in ("web/src", "web/plugins"):
             for d, _, files in os.walk(J(top)):
                 for f in files:
@@ -184,7 +187,7 @@ class Repo(unittest.TestCase):
                         rel = os.path.relpath(p, ROOT)
                         with open(p, encoding="utf-8") as fh:
                             for n, line in enumerate(fh, 1):
-                                for call in re.findall(r"\.tooltip\((?:tip|label)\)|\.tooltip\(", line):
+                                for call in re.findall(r'\.tooltip\((?:\w+|"[^"\n]*")\)|\.tooltip\(', line):
                                     if call in allowed_window.get(rel, ()):
                                         allowed_window[rel].remove(call)
                                     else:

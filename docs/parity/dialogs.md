@@ -97,7 +97,7 @@ The window's is Herdr's own `mods/worktree/main.js` (in the Herdr home; cited as
 
 | Element | Window (file:line, exact words/control) | Web (file:line) | State |
 |---|---|---|---|
-| Opens from | the sidebar foot's `Add machine` (a plus) (`mods/workspace-chrome-orchestrator/main.js:47`) | `AddMachineButton` (`AddMachine.tsx:24`) | ✓ |
+| Opens from | the sidebar footer's `Add machine` (a plus) (`mods/workspace-chrome-orchestrator/foot.js`) | `AddMachineButton` (`AddMachine.tsx:24`) | ✓ |
 | Title | `Add machine` (`mods/machine-add-chat/main.js:248`) | `AddMachine.tsx:160` | ✓ |
 | About | `A VPS, a Mac mini, a box at home: Herdr reaches it over ssh, and agents there keep running while your laptop sleeps.` (`main.js:255`) | `W.about` (`AddMachine.tsx:164`) | ✓ |
 | Hosts label | `From your ssh config` / `Your ssh config lists no hosts` (`main.js:257`) | `AddMachine.tsx:165` | ✓ |
