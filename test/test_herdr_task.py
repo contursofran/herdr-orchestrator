@@ -4157,6 +4157,214 @@ class TaskResourceLocks(unittest.TestCase):
             return dict(store.find(ref))
 
 
+class QuietWorkerRecovery(unittest.TestCase):
+    run_cmd = Scheduled.run_cmd
+    add = Scheduled.add
+    task = Scheduled.task
+
+    def setUp(self):
+        from unittest import mock
+        Scheduled.setUp(self)
+        from herdr_task import agents, news, output, quiet
+        self.agents, self.news, self.quiet = agents, news, quiet
+        self.clock = 1_800_000_000_000
+        self.log = os.path.join(self.tmp, "worker.jsonl")
+        self.sent = []
+        self.request = self.draft = self.fresh = None
+        self.created = self.add("Finish the change")
+        self.live = {"address": "t1", "state": "live", "foreground": {"name": "claude", "pid": 101},
+                     "turn": 4, "status": {"state": "idle"}, "status_ms": self.clock - 60_000,
+                     "labels": {"herdr.task": self.created["key"]}}
+        self.change(state="running", space="space1", started=self.clock - 300_000,
+                    agents=[{"address": "t1", "log": self.log}])
+
+        def send(argv):
+            self.sent.append(argv)
+            with open(self.store_mod.store_files()[0]) as f:
+                row = json.load(f)["tasks"][0]["quiet_recovery"]
+            self.assertEqual(row["attempted_at"], self.clock)
+            return subprocess.CompletedProcess(argv, 0, "", "")
+
+        for mod, name, replacement in (
+            (quiet, "now", lambda: self.clock),
+            (agents, "now", lambda: self.clock),
+            (news, "now", lambda: self.clock),
+            (agents, "held_ask", lambda *_: self.request),
+            (agents, "live_helpers", lambda *_: []),
+            (output, "live_helpers", lambda *_: []),
+            (quiet, "hc_json", lambda *_: self.live if self.fresh is None else self.fresh),
+            (quiet, "run", send),
+            (news, "typing", lambda *_: self.draft),
+        ):
+            patch = mock.patch.object(mod, name, replacement)
+            patch.start()
+            self.addCleanup(patch.stop)
+
+    def change(self, **fields):
+        with self.store_mod.Store(self.store_mod.locate(self.folder)) as s:
+            s.find("1").update(fields)
+            s.dirty = True
+
+    def step(self):
+        # Re-read the real task list each time, as a new scheduler process would.
+        with self.store_mod.Store(self.store_mod.locate(self.folder)) as s:
+            t = s.find("1")
+            self.quiet.advance(s, t, [self.live])
+            return t.get("quiet_recovery")
+
+    def log_line(self, kind, text):
+        import datetime
+        at = datetime.datetime.fromtimestamp(self.clock / 1000, datetime.timezone.utc).isoformat()
+        with open(self.log, "a") as f:
+            message = {"content": [{"type": "text", "text": text}]}
+            f.write(json.dumps({"type": kind, "timestamp": at, "message": message}) + "\n")
+
+    def nudge(self):
+        self.step()
+        self.clock += self.quiet.NUDGE_AFTER_MS
+        return self.step()
+
+    def test_concurrent_and_restarted_ticks_send_one_message(self):
+        from concurrent.futures import ThreadPoolExecutor
+        self.step()
+        self.clock += self.quiet.NUDGE_AFTER_MS
+        with ThreadPoolExecutor(4) as pool:
+            rows = list(pool.map(lambda _: self.step(), range(4)))
+        self.assertEqual(len(self.sent), 1)
+        self.assertEqual(self.sent[0], ["hc", "send", "t1", self.quiet.NUDGE])
+        self.assertTrue(all(row["attempted_at"] == self.clock for row in rows))
+        self.assertEqual(self.step()["attempted_at"], self.clock)
+        self.assertEqual(len(self.sent), 1)
+
+    def test_interruption_after_send_claim_is_not_retried(self):
+        from unittest import mock
+        self.step()
+        self.clock += self.quiet.NUDGE_AFTER_MS
+        with mock.patch.object(self.quiet, "run", side_effect=KeyboardInterrupt) as sending:
+            with self.assertRaises(KeyboardInterrupt):
+                self.step()
+        sending.assert_called_once()
+        self.assertEqual(self.task("1")["quiet_recovery"]["attempted_at"], self.clock)
+        self.clock += self.quiet.ESCALATE_AFTER_MS
+        self.assertIn("still quiet", self.step()["reason"])
+        self.assertEqual(self.sent, [])
+
+    def test_nudge_reply_without_progress_escalates_with_task_context(self):
+        self.nudge()
+        self.log_line("user", self.quiet.NUDGE)
+        self.log_line("assistant", "I'll carry on.")
+        self.live["turn"] += 1
+        self.clock += self.quiet.ESCALATE_AFTER_MS
+        row = self.step()
+        self.assertIn("after one automatic nudge", row["reason"])
+        self.assertEqual(len(self.sent), 1)
+        with self.store_mod.Store(self.store_mod.locate(self.folder)) as s:
+            t = s.find("1")
+            v, event, stall = self.news.news_state(s, t, [self.live])
+            line = self.news.news_line(s, t, v, event)
+        self.assertEqual(event, "needs-you")
+        self.assertIsNone(stall)
+        for word in (self.created["ref"], "Finish the change", "t1", "automatic nudge"):
+            self.assertIn(word, line)
+
+    def test_scheduler_news_delivers_one_escalation_to_the_space_assistant(self):
+        from contextlib import ExitStack
+        from unittest import mock
+        from herdr_task import assistant_settings, home, reactions
+        sent = []
+        with ExitStack() as stack:
+            for module, name, replacement in (
+                (self.news, "NEWS", os.path.join(self.tmp, "news.json")),
+                (self.news, "live_agents", lambda *_: [self.live]),
+                (self.news, "detail", lambda k: k),
+                (self.news, "coordinator_in", lambda space: "assistant" if space == "space1" else None),
+                (self.news, "hc_json", lambda *_: {"state": "live", "turn": 9}),
+                (self.news, "news_send", lambda to, text: sent.append((to, text)) or True),
+                (self.news, "held_pass", lambda *_: None),
+                (assistant_settings, "settings_pass", lambda *_: None),
+                (reactions, "reactions_pass", lambda *_: None),
+                (home, "log_news", lambda *_: None),
+            ):
+                stack.enter_context(mock.patch.object(module, name, replacement))
+            self.news.news_pass({})
+            self.clock += self.quiet.NUDGE_AFTER_MS
+            self.news.news_pass({})
+            self.clock += self.quiet.ESCALATE_AFTER_MS
+            self.news.news_pass({})
+            self.assertEqual(sent, [])
+            self.clock += self.news.NEWS_SETTLE_MS
+            self.news.news_pass({})
+            self.news.news_pass({})
+        self.assertEqual(len(self.sent), 1)
+        self.assertEqual(len(sent), 1)
+        self.assertEqual(sent[0][0], "assistant")
+        self.assertIn("after one automatic nudge", sent[0][1])
+
+    def test_new_request_and_meaningful_progress_start_another_episode(self):
+        self.change(progress={"text": "Started work", "done": 10, "set": self.clock})
+        self.nudge()
+        self.clock += 1000
+        self.log_line("user", "Please check the changed file too.")
+        self.log_line("assistant", "Understood.")
+        self.live["turn"] += 1
+        self.assertNotIn("attempted_at", self.step())
+        self.clock += self.quiet.NUDGE_AFTER_MS
+        self.step()
+        self.change(progress={"text": "Started work", "done": 10, "set": self.clock + 500, "left": 10})
+        self.assertIn("attempted_at", self.step())
+        self.change(progress={"text": "Checked the changed file", "done": 60, "set": self.clock + 1000})
+        self.assertNotIn("attempted_at", self.step())
+        self.clock += self.quiet.NUDGE_AFTER_MS
+        self.step()
+        self.assertEqual(len(self.sent), 3)
+
+    def test_known_waits_leave_their_existing_status_and_never_nudge(self):
+        situations = [
+            {"state": "ready", "pr": {"wait": "Checks running"}},
+            {"review_request": {"status": "reviewing"}},
+            {"review_out": self.clock},
+            {"retry": {"address": "t1", "reason": "Provider busy"}},
+            {"progress": {"text": "Waiting for CI", "set": self.clock, "at": self.clock}},
+        ]
+        for fields in situations:
+            with self.subTest(fields=fields):
+                old = dict(state="running", pr=None, review_request=None, review_out=None, retry=None, progress=None)
+                self.change(**{**old, **fields})
+                self.assertIsNone(self.step())
+        self.change(**old)
+        self.request = {"tool_name": "AskUserQuestion"}
+        self.assertIsNone(self.step())
+        self.assertEqual(self.agents.task_status(self.task("1"), [self.live])[:2], ("needs", "asks"))
+        self.request = None
+        self.log_line("assistant", "Which option do you want?")
+        self.assertIsNone(self.step())
+        self.log_line("assistant", "I'm waiting for your confirmation.")
+        self.assertIsNone(self.step())
+        # An actual Monitor tool result keeps the idle worker Working.
+        with open(self.log, "a") as f:
+            f.write(json.dumps({"type": "user", "timestamp": "2027-01-15T08:00:00+00:00",
+                                "message": {"content": [{"type": "tool_result",
+                                                         "content": "Monitor started (task bg1)"}]}}) + "\n")
+        self.assertEqual(self.agents.task_status(self.task("1"), [self.live])[0], "working")
+        self.assertIsNone(self.step())
+        self.assertEqual(self.sent, [])
+
+    def test_live_worker_is_checked_again_and_drafts_are_respected(self):
+        self.step()
+        self.clock += self.quiet.NUDGE_AFTER_MS
+        for fields in ({"turn": 5}, {"state": "dead"}, {"foreground": {"name": "zsh", "pid": 102}},
+                       {"labels": {"herdr.task": "other#1"}},
+                       {"labels": {**self.live["labels"], "herdr.role": "reviewer"}}):
+            self.fresh = {**self.live, **fields}
+            self.assertNotIn("attempted_at", self.step())
+        self.fresh = None
+        self.draft = "chat"
+        self.assertNotIn("attempted_at", self.step())
+        self.draft = None
+        self.assertIn("attempted_at", self.step())
+        self.assertEqual(len(self.sent), 1)
+
+
 if __name__ == "__main__":
     unittest.main()
 

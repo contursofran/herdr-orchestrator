@@ -121,7 +121,7 @@ STATUSES = {"todo": "To do", "scheduled": "Scheduled", "queued": "Queued", "work
             "ready": "Ready", "merging": "Merging", "done": "Done"}
 
 
-def task_status(task, live):
+def task_status(task, live, *, recovery=True):
     """(status, needs, why): a STATUSES key; for Needs you what kind ("attention", "asks",
     "reply", "stopped") and a one-line reason. live = its running agents (hc records)."""
     st = task["state"]
@@ -136,7 +136,7 @@ def task_status(task, live):
     # A problem Herdr just found (SHEP-133): not Needs you before GRACE_MS have passed, while its
     # agent is told and takes it up; until then the task reads as it would without it.
     if task.get("attention") and now() - (task.get("attention_at") or 0) < GRACE_MS:
-        return task_status({**task, "attention": None}, live)
+        return task_status({**task, "attention": None}, live, recovery=recovery)
     # What Herdr found that stops it (failing checks, a conflict): Needs you, unless its agent is
     # already on it (on_it()); then it is Working, with its agent's own status line.
     if task.get("attention") and not on_it(task, live):
@@ -192,6 +192,12 @@ def task_status(task, live):
     # Quiet without saying ready: alive, it ended its turn (view() says on what: its question or
     # its last sentence); its process gone, the agent stopped.
     if live:
+        row = task.get("quiet_recovery") or {}
+        if recovery and row.get("since") and any(k.get("address") == row.get("address") and k.get("turn") == row.get("turn")
+                                                for k in live):
+            if row.get("reason"):
+                return "needs", "attention", row["reason"]
+            return "working", None, "Waiting after an automatic nudge" if row.get("attempted_at") else "Worker went quiet"
         return "needs", "reply", REASONS["reply"]
     return "needs", "stopped", STOPPED
 
@@ -470,16 +476,22 @@ def last_question(task, address=None):
     return None
 
 
-def turn_began(task, address=None):
-    """When its agent's current turn began: the last time someone wrote to it (its log's
-    timestamp, ms), or None when its log doesn't say."""
+def turn_input(task, address=None):
+    """The most recent prompt and when it was written, if the log says."""
     for d in reversed(log_tail(agent_log(task, address), 131072)):
-        if from_person(d) is not None:
+        text = from_person(d)
+        if text is not None:
             try:
-                return int(datetime.datetime.fromisoformat(str(d.get("timestamp")).replace("Z", "+00:00")).timestamp() * 1000)
+                at = int(datetime.datetime.fromisoformat(str(d.get("timestamp")).replace("Z", "+00:00")).timestamp() * 1000)
             except ValueError:
-                return None
-    return None
+                at = None
+            return at, text
+    return None, ""
+
+
+def turn_began(task, address=None):
+    """When its agent's current turn began, if the log says."""
+    return turn_input(task, address)[0]
 
 
 def own_line(task, address=None):
@@ -497,7 +509,7 @@ def own_line(task, address=None):
     return text[:1].upper() + text[1:]
 
 
-def last_words(task, address=None):
+def last_words(task, address=None, *, default=REASONS["reply"]):
     """Why an agent that ended its turn without saying ready waits: the question its last message
     asks, else that message's last sentence, cut to LINE_MAX at a word ("Waiting for your go on
     the screenshot…"), else "Waits for your reply" (nothing said since the person last wrote)."""
@@ -517,7 +529,7 @@ def last_words(task, address=None):
             if parts:
                 return fit(parts[-1])
         break
-    return REASONS["reply"]
+    return default
 
 
 def permission_words(tool, value, cwd=None):

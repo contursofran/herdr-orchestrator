@@ -39,6 +39,17 @@ describe("a task's status (as herdr-task's task_status)", () => {
     expect(at({ id: 1, state: "running", started: NOW - 600_000 }, [{ address: "t1", status: "idle" }])).toMatchObject({ section: "needs", needs: "reply" });
     expect(at({ id: 1, state: "running", started: NOW - 600_000 })).toMatchObject({ section: "needs", needs: "stopped" });
   });
+  test("quiet recovery follows its worker's turn and leaves questions visible", () => {
+    const live = [{ address: "mac/t1", status: "idle", turn: 4 }];
+    const recovery = { address: "t1", turn: 4, since: NOW - 300_000, attempted_at: NOW - 1000 };
+    const task = { id: 1, state: "running", started: NOW - 600_000, quiet_recovery: recovery };
+    expect(at(task, live)).toMatchObject({ section: "working", why: "Waiting after an automatic nudge" });
+    const held = { ...task, quiet_recovery: { ...recovery, reason: "Worker is still quiet" } };
+    expect(at(held, live)).toMatchObject({ section: "needs", needs: "attention", why: "Worker is still quiet" });
+    expect(at(held, [{ ...live[0], turn: 5 }]).needs).toBe("reply");
+    expect(at(held, [{ ...live[0], status: "blocked" }]).needs).toBe("asks");
+    expect(at(held).needs).toBe("stopped");
+  });
   test("an idle agent on its own background work is working; asking still needs you (SHEP-53)", () => {
     const idle = [{ address: "t1", status: "idle" }];
     expect(at({ id: 1, state: "running", started: NOW - 600_000, own_work: true }, idle)).toMatchObject({ section: "working", needs: null });

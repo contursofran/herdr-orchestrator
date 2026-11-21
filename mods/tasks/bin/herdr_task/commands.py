@@ -423,7 +423,8 @@ def cmd_ready(args):
                 # "For AGENTS.md": what the next agent would need about setting up or testing this
                 # repo; the Assistant decides whether it goes into the repo's AGENTS.md.
                 t["agents_md"] = note[:300]
-            for k in ("attention", "attention_at", "handed_at", "fix_requested", "progress", "retry", "review_out", "back"):
+            for k in ("attention", "attention_at", "handed_at", "fix_requested", "progress", "retry", "review_out", "back",
+                      "quiet_recovery"):
                 t.pop(k, None)
             # Its agents' turns now: a later turn of theirs takes it back to work (busy_again()).
             t["ready_turns"] = ready_turns(live_agents(s.key(t)))
@@ -881,6 +882,7 @@ def cmd_state(args, state):
         if state == "done" and t.get("worktree") and merged_here(s, t):
             t["merged"] = True
         t["state"] = state
+        t.pop("quiet_recovery", None)
         t[{"done": "done_at", "running": "reopened_at", "todo": "reopened_at"}[state]] = now()
         if state != "done":
             unarchive(s, t)

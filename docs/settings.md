@@ -92,6 +92,14 @@ Use `herdr-task add --lock test-device` for a resource shared on the same machin
 more than one. A running or ready task holds its resources until it is done or removed. Tasks with overlapping
 boundaries can run in separate worktrees. Use `--after` when one task needs another to finish first.
 
+## Quiet workers
+
+When Herdr observes an idle task worker with no known reason to wait, it gives the existing worker two minutes
+to resume before sending one nudge. If the worker stays quiet for five more minutes, Herdr shows Needs you and
+notifies the space's Assistant with the task and terminal. Herdr persists the attempt across scheduler restarts.
+A new request, a changed work report, or a new commit can start another recovery episode. Review, CI, background
+work, and requests for input continue through their existing task states.
+
 ## Reactions
 
 Agents › Reactions, on by default: every agent reacts to some of your messages with one emoji, as a person would:
