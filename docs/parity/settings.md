@@ -111,7 +111,7 @@ an add-on's line and Web's state; `service/settings.test.ts` checks the rows the
 
 | Element | Window | Web | State |
 |---|---|---|---|
-| The nine switches | `layout.js:30` SWITCHES (titles, lines) | `service/window.ts` (core SWITCHES) | ✓ |
+| Window switches | `layout.js` (core SWITCHES) | `service/window.ts` (core SWITCHES) | ✓ |
 | Add-ons heading and switches | `layout.js:39` "Add-ons" | group "Add-ons" | ✓ |
 | Blocker words | `:44` "<names> need(s) it: turn that/them off first." / "Needs <names>: turn it/them on first." | core addonAbout | ✓ |
 | A blocked add-on | its switch greyed (disabled) | Switch disabled (was its words only) | ✓ |

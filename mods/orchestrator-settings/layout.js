@@ -24,11 +24,7 @@ import { DELETE } from "./core/usage.js";
 import { on, blockers, flip } from "./addons.js";
 // The switches, their words and an add-on's line: core/settings.js, shared with the web app.
 import { SWITCHES, ADDONS, SECTIONS, INSIGHTS, addonAbout } from "./core/settings.js";
-import { SIDEBAR_PLAN_USAGE } from "./core/machines.js";
 export { SWITCHES };
-
-const WINDOW_SWITCHES = [...SWITCHES, { id: "plan-usage", title: "Plan usage in the sidebar",
-  about: "Show Claude and Codex usage for this Mac or PC in the sidebar footer.", key: SIDEBAR_PLAN_USAGE }];
 
 // A switch kept in shared state: on unless set to false.
 const flag = (key) => ({ on: shared(key) !== false, flip: (on) => setShared(key, !on) });
@@ -55,7 +51,7 @@ export function layoutSection(view, t) {
   const m = view.addons, title = (id) => m.addons.find((a) => a.id === id)?.title ?? id;
   return v_flex()
     .child(view.title(t, SECTIONS.find((s) => s.id === "window").title))
-    .children(WINDOW_SWITCHES.map((s) => {
+    .children(SWITCHES.map((s) => {
       const st = flag(s.key);
       return view.row(t, s.title, s.about, toggleSwitch(`layout-${s.id}`, st.on, () => st.flip(st.on)));
     }))

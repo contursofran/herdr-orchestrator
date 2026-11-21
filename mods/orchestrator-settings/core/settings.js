@@ -315,6 +315,8 @@ export const SWITCHES = [
     key: "chat.helpers" },
   { id: "assistant", title: "Orchestrator in new spaces", about: "A new space opens with its Orchestrator's chat, else a terminal.",
     key: "coordinator.auto" },
+  { id: "plan-usage", title: "Plan usage in the sidebar",
+    about: "Show this computer's Claude and Codex plan usage in the desktop sidebar footer.", key: "sidebar.planUsage" },
 ];
 export const ADDONS = "Add-ons";
 // Usage insights' Delete, under its switch (the window's and the web's Settings > Window): every machine's log.
