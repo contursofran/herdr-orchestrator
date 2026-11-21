@@ -44,6 +44,19 @@ class ReleaseUpdates(unittest.TestCase):
         with patch.dict(self.cli, release_open=not_found):
             self.assertEqual(self.cli["latest_release"]("0.1.0"), {"state": "no-release"})
 
+    def test_release_check_uses_authenticated_gh_when_the_public_quota_is_spent(self):
+        def limited(url, _accept):
+            raise HTTPError(url, 403, "Rate limited", {"X-RateLimit-Remaining": "0"}, None)
+
+        with patch.dict(self.cli, release_open=limited), patch("shutil.which", return_value="/fake/gh"), \
+                patch("subprocess.run") as run_gh:
+            run_gh.return_value = subprocess.CompletedProcess([], 0, stdout=json.dumps(manifest()).encode())
+            self.assertEqual(self.cli["latest_release"]("0.1.9")["tag"], "v0.1.10")
+            run_gh.assert_called_once_with(["/fake/gh", "api", "repos/contursofran/herdr-orchestrator/releases/latest"],
+                                           capture_output=True, timeout=15)
+            run_gh.return_value = subprocess.CompletedProcess([], 1, stdout=b'{"status":"404"}')
+            self.assertEqual(self.cli["latest_release"]("0.1.9"), {"state": "no-release"})
+
     def test_rejects_a_download_that_does_not_match_its_digest(self):
         expected = hashlib.sha256(b"good").hexdigest()
         release = {"tag": "v0.1.1", "size": 4, "digest": expected}
