@@ -74,7 +74,7 @@ export class Footer {
     cx.spawn(async (cx) => {
       try {
         const args = tag ? ["install", tag] : ["check", "--json"];
-        const result = await exec("sh", ["-c", RELEASE_COMMAND, "herdr-orchestrator", ...args], { timeout: tag ? 300_000 : 20_000 });
+        const result = await exec("sh", ["-c", RELEASE_COMMAND, "herdr-orchestrator", ...args], { timeout: tag ? 300_000 : 35_000 });
         if (result.code !== 0) throw new Error(result.stderr.trim().split("\n").slice(-2).join("\n") || "The update command failed.");
         if (tag) {
           this.releaseTag = null;

@@ -4,7 +4,7 @@ A layout and a set of tools for the [Herdr app](https://herdr.dev) that coordina
 
 herdr-orchestrator starts from [Shepherdr](https://github.com/eliasstravik/shepherdr) 3.1.44 and becomes its own tool. It does not follow Shepherdr's updates.
 
-> **Status: early work (0.1.0).** The CLI (`herdr-orchestrator`), layout (`layouts/herdr-orchestrator.json`) and visible names are now `herdr-orchestrator`. The data folders, service and mods now use the new names too.
+> **Status: early work (0.1.1).** The CLI (`herdr-orchestrator`), layout (`layouts/herdr-orchestrator.json`) and visible names are now `herdr-orchestrator`. The data folders, service and mods now use the new names too.
 
 ## What it keeps from the original
 

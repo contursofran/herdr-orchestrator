@@ -431,10 +431,11 @@ class Repo(unittest.TestCase):
 
     def test_version_everywhere(self):
         v = re.search(r'^VERSION = "([^"]+)"', open(J("bin", "herdr-orchestrator")).read(), re.M).group(1)
-        self.assertEqual(v, "0.1.0")
-        self.assertRegex(open(J("CHANGELOG.md")).read(), rf"(?m)^## {re.escape(v)}\b", "CHANGELOG's newest entry")
-        self.assertIn(v, open(J("RECIPE.md")).read())
-        self.assertIn(v, open(J("README.md")).read())
+        self.assertRegex(v, r"^\d+\.\d+\.\d+$")
+        self.assertEqual(re.search(r"^## (.+)$", open(J("CHANGELOG.md")).read(), re.M).group(1), v)
+        self.assertEqual(json.load(open(J("package.json")))["version"], v)
+        self.assertIn(f"herdr-orchestrator {v},", open(J("RECIPE.md")).read())
+        self.assertIn(f"early work ({v})", open(J("README.md")).read())
 
 
 if __name__ == "__main__":

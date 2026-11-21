@@ -1,6 +1,6 @@
 # The web app
 
-herdr-orchestrator 0.1.0 also has a web app: the same spaces, Assistants, tasks, cards, artifacts and settings as the Herdr window,
+herdr-orchestrator also has a web app with the same spaces, Assistants, tasks, cards, artifacts and settings as the Herdr window,
 on a phone, a tablet or another computer's browser, on the same data. Its look is 2.1's web app; what it does is
 3.0's.
 

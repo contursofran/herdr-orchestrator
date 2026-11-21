@@ -70,7 +70,7 @@ import sys
 import tempfile
 import time
 
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 HERDR_APP_MIN = "0.1.12"
 HC_MIN = "0.1.17"
 
@@ -2099,19 +2099,39 @@ def release_open(url, accept):
     return urlopen(Request(url, headers={"Accept": accept, "User-Agent": "herdr-orchestrator"}), timeout=15)
 
 
-def latest_release(current):
-    import re
+def release_metadata():
     from urllib.error import HTTPError
 
+    endpoint = f"repos/{RELEASE_REPO}/releases/latest"
     try:
-        with release_open(f"https://api.github.com/repos/{RELEASE_REPO}/releases/latest", "application/vnd.github+json") as r:
-            release = json.loads(r.read(1024 * 1024))
+        with release_open(f"https://api.github.com/{endpoint}", "application/vnd.github+json") as r:
+            return json.loads(r.read(1024 * 1024))
     except HTTPError as error:
         if error.code == 404:
-            return {"state": "no-release"}
+            return None
+        if error.code == 429 or (error.code == 403 and error.headers and error.headers.get("X-RateLimit-Remaining") == "0"):
+            # A shared public IP can exhaust GitHub's anonymous quota. Reuse gh's own sign-in when present.
+            gh = shutil.which("gh")
+            if gh:
+                try:
+                    result = subprocess.run([gh, "api", endpoint], capture_output=True, timeout=15)
+                    release = json.loads(result.stdout)
+                    if result.returncode == 0:
+                        return release
+                    if isinstance(release, dict) and str(release.get("status")) == "404":
+                        return None
+                except (OSError, subprocess.TimeoutExpired, ValueError):
+                    pass
+            raise Stop("GitHub's anonymous API limit was reached. Try again later or sign in with `gh auth login`.") from error
         raise Stop(f"GitHub couldn't check for releases (HTTP {error.code}).") from error
     except (OSError, ValueError) as error:
         raise Stop(f"Couldn't check GitHub Releases: {error}") from error
+
+
+def latest_release(current):
+    import re
+
+    release = release_metadata()
     tag = release.get("tag_name") if isinstance(release, dict) else None
     version = release_version(tag)
     if version is None or release.get("draft") or release.get("prerelease"):

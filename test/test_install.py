@@ -71,7 +71,7 @@ class Install(unittest.TestCase):
         out = run("install", "--root", self.root, "--yes").stdout
         self.assertRegex(out, r"files: \d+ new\n")
         rec = json.load(open(self.p(APP, "data/herdr-orchestrator/installed.json")))
-        self.assertEqual(rec["version"], "0.1.0")
+        self.assertEqual(rec["version"], run("version").stdout.split()[-1])
         self.assertTrue(os.path.isfile(self.p(APP, "mods/tasks/bin/herdr-task")))
         self.assertTrue(os.path.isfile(self.p(APP, "layouts/herdr-orchestrator.json")))
         self.assertEqual(os.path.realpath(self.p(".local/bin/herdr-task")), os.path.realpath(self.p(APP, "mods/tasks/bin/herdr-task")))

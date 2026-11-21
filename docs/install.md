@@ -1,6 +1,6 @@
 # Install
 
-herdr-orchestrator 0.1.0 is a layout for the Herdr app plus its mods, helpers and role instructions, and a web app for your tailnet ([Web](web.md)). One script puts them in
+herdr-orchestrator is a layout for the Herdr app plus its mods, helpers and role instructions, and a web app for your tailnet ([Web](web.md)). One script puts them in
 place, never overwrites what you made yourself, and keeps a backup of anything it replaces.
 
 ## Requirements

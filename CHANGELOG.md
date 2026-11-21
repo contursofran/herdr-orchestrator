@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.1
+
+First published release of herdr-orchestrator.
+
+- The Projects sidebar shows the Orchestrator and its workers with Claude or Codex icons. `Ctrl+1` through `Ctrl+9` focus the main agents.
+- The sidebar footer shows weekly quota remaining when available. Hover over a provider to see its other windows and reset times.
+- Sidebar Settings checks for updates and can install a verified GitHub release in one click.
+- Independent review verdicts apply to the reviewed commit. Herdr cleans up reviewer sessions and checks task file boundaries before merge.
+- Herdr nudges a quiet worker once and escalates if the worker stays quiet.
+- The Python suite runs on Linux and macOS in GitHub Actions.
+
 ## 0.1.0
 
 Started from Shepherdr 3.1.44 and began the rename to `herdr-orchestrator`:
