@@ -9,7 +9,7 @@ import subprocess
 import time
 from contextlib import contextmanager
 
-from .base import guard, hc_json, now, run, STORE
+from .base import Fail, guard, hc_json, now, run, STORE
 from .settings import bare
 from .agents import (
     agent_log, agent_running, asking, detail, from_person, live_agents, log_tail, said, starting, status_word,
@@ -20,6 +20,7 @@ from .launch import coordinator_in
 from .store import locate, read_list, Store, store_files
 from .output import line, minutes, view
 from .takeover import backup_news
+from . import quiet as recovery
 
 
 # ---- news -----------------------------------------------------------------------------------
@@ -53,7 +54,8 @@ def stall_of(task, v, live):
     """(mark, words) when a Working task went quiet (QUIET_MS) or is far past its own time left
     (as herdr-orchestrator: its report's minutes, plus as many again, at least 20, gone by); else None.
     The mark says which stall it is: the same one is told once."""
-    if v["status"] != "working" or task["state"] != "running" or starting(task) or task.get("retry"):
+    if (v["status"] != "working" or task["state"] != "running" or starting(task) or task.get("retry")
+            or (task.get("quiet_recovery") or {}).get("since")):
         return None
     last = activity(task, live)
     if now() - last >= QUIET_MS:
@@ -119,6 +121,10 @@ def news_pass(report, folder=None):
             for t in s.data["tasks"]:
                 key = f"{s.slug}#{t['id']}"
                 live = [k for k in map(detail, live_agents(s.key(t))) if agent_running(k)] if t["state"] in ("running", "ready") else []
+                try:
+                    recovery.advance(s, t, live)
+                except (Fail, OSError) as e:
+                    report.setdefault("quiet_errors", []).append(f"{s.ref(t)}: {e}")
                 v, event, stall = news_state(s, t, live)
                 # The Tasks panel reads the store, not the log: why its agent waits (its own status
                 # line, its question, its last words), as `list` says it, it shows from here.

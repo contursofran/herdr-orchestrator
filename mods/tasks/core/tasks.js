@@ -195,6 +195,12 @@ export function place(list, task, { live = [], helpers = [], loaded = true, now 
   else if (live.length && task.own_work && st === "running") section = "working";
   // Just gone quiet: still Working for GRACE_MS (settles: when it would need the person).
   else if (live.length && quietSince(live) && now - quietSince(live) < GRACE_MS) { section = "working"; settles = quietSince(live) + GRACE_MS; }
+  else if (task.quiet_recovery?.since && live.some((a) => a.address.split("/").pop() === task.quiet_recovery.address
+                                                     && a.turn === task.quiet_recovery.turn)) {
+    const recovery = task.quiet_recovery;
+    if (recovery.reason) need("attention", recovery.reason);
+    else { section = "working"; why = recovery.attempted_at ? "Waiting after an automatic nudge" : "Worker went quiet"; }
+  }
   // Quiet without saying ready (herdr-task ready): alive, it ended its turn (on what: task.waits);
   // its process gone, the agent stopped.
   else if (live.length) need("reply", task.waits ?? REASONS.reply);
