@@ -5,7 +5,7 @@
 // herdr-task machines find does the work (mods/tasks/bin/herdr_task/machines.py find), on the machine serving this app.
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
-import { Ghost, Small } from '@client/ui.tsx'
+import { Ghost, LoadingText, Small } from '@client/ui.tsx'
 import { card, heading, rowLook } from '@client/Settings.tsx'
 
 type Host = { to: string; over: string; ok?: boolean; state?: string; core?: string; linked?: boolean }
@@ -49,7 +49,7 @@ export function FindMachines({ phone }: { phone: boolean }) {
             this computer&apos;s ssh config and Tailscale. It runs only when you press the button, at most every 10 minutes.
           </Small>
           {!got ? (
-            <Small>Checking…</Small>
+            <Small><LoadingText>Checking…</LoadingText></Small>
           ) : got.error && !hosts.length ? null : hosts.length ? (
             <ul className="flex flex-col gap-0.5" aria-label="Hosts it will try">
               {hosts.map((h) => (

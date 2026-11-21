@@ -4,6 +4,8 @@ import clsx from 'clsx'
 import { Fragment, useEffect, useId, useLayoutEffect, useRef, useState, type ButtonHTMLAttributes, type CSSProperties, type HTMLAttributes, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type Ref, type RefObject, type TextareaHTMLAttributes } from 'react'
 import { ChevronLeftIcon, ChevronUpDownIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/16/solid'
 import { ChevronLeftIcon as BackMini } from '@heroicons/react/20/solid'
+import { BrailleLoader } from './loader.tsx'
+export { BrailleLoader, LoadingText } from './loader.tsx'
 
 /** ‹, every Back's icon: marked, so a voice call's close and back find the screen's own Back (SHEP-51, voice/screen.ts) */
 export const BackIcon = (p: { className?: string }) => <ChevronLeftIcon data-back="" {...p} />
@@ -409,7 +411,9 @@ export function Dot({ s, halo, p, frozen, className }: { s: Status; halo?: boole
       style={pie ? ({ '--p': `${Math.max(4, p)}%` } as CSSProperties) : undefined}
       aria-label={pie ? `${STATUS_WORD[s]}, ${p}% done` : frozen?.progress !== undefined ? `${STATUS_WORD[s]}, ${frozen.progress}% done` : STATUS_WORD[s]}
       role="img"
-    />
+    >
+      {s === 'merging' ? <BrailleLoader /> : null}
+    </span>
   )
 }
 

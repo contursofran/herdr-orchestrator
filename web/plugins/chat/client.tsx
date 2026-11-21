@@ -9,7 +9,7 @@ import { createContext, Fragment, memo, useContext, useEffect, useLayoutEffect, 
 import { act, chatName, definePlugin, getDraft, getState, goChat, has, holdReload, openArtifact, openItem, openNeeds, openTask, registry, setDraft, setOutbox, setUI, taskOf, useDraft, useSnap, useStore, useUI, type UI } from '@client/kernel.ts'
 import { anchorOf, keyOf, partsOf, placesOf, priorOf, reasonOf, SEND_TIMEOUT, type Outgoing } from '@client/outbox.ts'
 import { dropFiles, keepFile, keptFile, postFile, retrying, sweepFiles } from '@client/uploads.ts'
-import { AlertIcon, BackIcon, CameraIcon, CheckIcon, CopyIcon, Count, DeleteIcon, dimmed, Dot, DownIcon, DownloadIcon, Empty, field, FileIcon, ic, IconButton, KeyIcon, LinkButton, LiveWave, MachineIcon, Menu, MenuItem, MenuSeparator, MenuSetting, MicIcon, ModeIcon, MoreIcon, NextIcon, PageIcon, PlanIcon, PlusIcon, Primary, QuestionIcon, ReplyIcon, RestartIcon, roundBtn, SearchIcon, SecretField, Sent, SmileIcon, Tab, Tabs, TextBox, UpIcon, useElapsed, XIcon } from '@client/ui.tsx'
+import { AlertIcon, BackIcon, BrailleLoader, CameraIcon, CheckIcon, CopyIcon, Count, DeleteIcon, dimmed, Dot, DownIcon, DownloadIcon, Empty, field, FileIcon, ic, IconButton, KeyIcon, LinkButton, LiveWave, MachineIcon, Menu, MenuItem, MenuSeparator, MenuSetting, MicIcon, ModeIcon, MoreIcon, NextIcon, PageIcon, PlanIcon, PlusIcon, Primary, QuestionIcon, ReplyIcon, RestartIcon, roundBtn, SearchIcon, SecretField, Sent, SmileIcon, Tab, Tabs, TextBox, UpIcon, useElapsed, XIcon } from '@client/ui.tsx'
 import { canDictate, dictate, dictSample, type Dictation } from '@client/dictation.ts'
 import { extOf, isImage, isVideo } from '@shared/files.ts'
 import { modelCommand, modeName, taskChatId, type CardAsk, type Chat, type Choice, type MergeEvidence, type Message, type Place, type Question, type ReplyQuote, type SecretAsk, type UpdateCard } from '@shared/types.ts'
@@ -339,7 +339,7 @@ function Sending({ out, className }: { out: Outgoing; className?: string }) {
   const words = out.offline || !online ? 'Waiting for a connection. It sends by itself.' : out.up !== undefined && n ? `Uploading ${Math.min(out.up + 1, n)} of ${n} ${pictures}…` : 'Sending…'
   return (
     <div role="status" data-sending className={clsx('mt-1 flex items-center justify-end gap-1.5 text-[0.75rem] text-fg3 tabular-nums phone:text-[0.8125rem]', className)}>
-      <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-[currentColor] motion-safe:animate-pulse" />
+      <BrailleLoader />
       {words}
     </div>
   )
@@ -2585,16 +2585,6 @@ function Mic({ chatKey }: { chatKey: string }) {
 /** writing down after Done this long says it's taking longer than usual */
 export const DICT_SLOW = 5000
 
-/** the calm writing spinner: a faint ring with a turning arc */
-function WritingSpin() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 16 16" className="size-3.5 shrink-0 animate-spin text-fg3 motion-reduce:animate-none">
-      <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeOpacity="0.3" strokeWidth="2" />
-      <path d="M14 8a6 6 0 0 0-6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  )
-}
-
 /** true once writing has taken DICT_SLOW */
 function useSlow(at: number) {
   const [slow, setSlow] = useState(false)
@@ -2624,8 +2614,8 @@ export function DictationBox() {
       </button>
       {writing ? (
         <p role="status" data-dict="writing" className="mx-1.5 flex min-w-0 flex-1 items-center gap-2 text-[0.8125rem] phone:text-[0.9375rem]">
-          <WritingSpin />
-          <span className="shimmer truncate font-medium">{slow ? 'Taking longer than usual…' : 'Writing…'}</span>
+          <BrailleLoader className="text-sm text-fg3" />
+          <span className="truncate font-medium">{slow ? 'Taking longer than usual…' : 'Writing…'}</span>
         </p>
       ) : (
         <>

@@ -7,6 +7,7 @@
 // Ours (cloned from Herdr's machine-add): one name ("Add machine"), one solid primary (the typed
 // host's Add), a neutral card for a Mac, and hover only on rows a click still adds.
 
+import { brailleLoader, loadingText } from "./loader.js";
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input } from "gpui-base";
 import { hc, exec, home, readTextFile, theme, props, closeOverlay, openOverlay } from "herdr";
@@ -207,7 +208,7 @@ export default class MachineAdd extends View {
     const right = done
       ? h_flex().gap(5).items_center().text_size(TEXT.label).text_color(green()).child(svg(I("circle-check")).size(14)).child(W.added)
       : st === "adding"
-        ? h_flex().gap(6).items_center().text_size(TEXT.label).text_color(t.muted).child(svg(I("spinner")).size(14).text_color(t.working).spin(900)).child(W.connecting)
+        ? h_flex().gap(6).items_center().text_size(TEXT.label).text_color(t.muted).child(brailleLoader(14, t.working)).child(W.connecting)
         : st === "terminal"
           ? div().text_size(TEXT.label).text_color(t.muted).child(W.waiting)
           : button(`ma-add-${target}`, W.add, { onClick: (_e, cx) => this.add(target, cx) });
@@ -264,7 +265,7 @@ export default class MachineAdd extends View {
           .overflow_y_scroll()
           .children(
             this.hosts === null
-              ? [div().px(10).py(8).text_size(TEXT.label).text_color(t.dim).child(W.reading)]
+              ? [div().px(10).py(8).text_size(TEXT.label).text_color(t.dim).child(loadingText(W.reading))]
               : hosts.map((h) => this.row(t, h.alias, h.alias, hostSub(h))),
           ),
       )

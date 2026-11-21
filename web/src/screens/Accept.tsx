@@ -10,7 +10,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react'
 import { act, closeArtifact, getState, openArtifact, taskOf, useStore } from '../kernel.ts'
 import { Dialog } from '../rowmenu.tsx'
 import type { Artifact } from '@shared/types.ts'
-import { DownIcon, NextIcon, OpenIcon, Primary } from '../ui.tsx'
+import { DownIcon, LoadingText, NextIcon, OpenIcon, Primary } from '../ui.tsx'
 import { Markdown } from '@plugins/chat/markdown.tsx'
 import { ArtifactFrame } from '@plugins/artifacts/client.tsx'
 // the card's words, the summary's cut and the details as bullets: the window's own (core/accept.js)
@@ -218,7 +218,7 @@ export function AcceptCard() {
       // Accept shows while it is read too, not yet pressable; once settled only Close is left
       buttons={settled ? null : <Primary disabled={!ready || busy} onClick={accept}>{busy ? A.ACCEPT.accepting : A.acceptLabel(e)}</Primary>}>
       {!t ? (
-        <div className="pt-2 pb-1"><p className={error ? 'text-need-fg' : 'text-fg3'} role={error ? 'alert' : undefined}>{error ?? A.ACCEPT.reading}</p></div>
+        <div className="pt-2 pb-1"><p className={error ? 'text-need-fg' : 'text-fg3'} role={error ? 'alert' : undefined}>{error ?? <LoadingText>{A.ACCEPT.reading}</LoadingText>}</p></div>
       ) : proofArt ? (
         // wide: the proof on the left over the card's height, the summary and the rest beside it; narrow: one scroll
         <div className="@container flex min-h-0 flex-1 flex-col pt-2 text-fg">

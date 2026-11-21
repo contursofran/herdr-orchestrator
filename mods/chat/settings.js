@@ -13,6 +13,7 @@
 // A row's dropdown opens mods/chat-models in pick mode; its answer comes back through shared
 // "newspace.pick" = { key, field, value, at }, which the rows apply on the next render.
 
+import { brailleLoader, loadingText } from "./loader.js";
 import { div, svg, image } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { knownAgents, openOverlay, shared, appHome } from "herdr";
@@ -73,7 +74,7 @@ function choose(coord, agentKey, id) {
 // The rows. `coord` = { sel, data }; disabled: dimmed and inert (no coordinator).
 export function settingsRows(t, coord, opts = {}, cx = null) {
   const { sel, data } = coord;
-  if (!sel || !data) return v_flex().h(ROW).justify_center().px(9).text_size(12.8).text_color(t.dim).child("Loading agents…");
+  if (!sel || !data) return v_flex().h(ROW).justify_center().px(9).text_size(12.8).text_color(t.dim).child(loadingText("Loading agents…"));
   coord.key ??= `ns-${Math.random().toString(36).slice(2, 8)}`;
   const off = Boolean(opts.disabled);
   // A dropdown's answer (shared "newspace.pick"): applied once, after this render.
@@ -151,6 +152,7 @@ export function modelButton(t, coord, opts = {}, cx = null) {
     .when(!off, (el) => el.cursor_pointer().hover((s) => s.bg(t.hover).text_color(t.foreground))
       .on_mouse_down("left", (e) => { coord.at = e.bounds ?? (e.position ? { x: e.position.x - 40, y: e.position.y - 14, width: 80, height: 28 } : null); })
       .on_click((_e, cx) => { cx.stop_propagation(); openMenu(coord); cx.notify(); }))
+    .when(!sel || !data, el => el.child(brailleLoader()))
     .child(div().min_w(0).truncate().child(sel && data ? opts.label ?? settingsLabel(coord) : "Loading agents…"))
     .child(svg("mods/workspace-chrome/chevron-down.svg").size(12).flex_none());
 }

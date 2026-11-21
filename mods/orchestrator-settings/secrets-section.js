@@ -6,6 +6,7 @@
 // waiting on one (herdr-secret ask) are listed first, and giving it here answers them too.
 // The vault itself is lib/secrets.js's (its copy here: ./secrets.js).
 
+import { loadingText } from "./loader.js";
 import { div, svg } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input } from "gpui-base";
 import { machines, exec, home } from "herdr";
@@ -182,7 +183,7 @@ export function secretsSection(view, t) {
   const keptStatus = s.moving ? W.moving(s.moving) : s.moveErr || (!reach ? W.unreachable(kept.name) : !kept?.auto ? W.keptAbout : same || !serve ? W.sameAbout : W.following(serve));
   const keptRow = v_flex().relative().gap(8).py(12).border_b(1).border_color(t.border)
     .child(h_flex().gap(10).items_center()
-      .child(div().flex_1().min_w(0).truncate().text_size(TEXT.body).text_color(t.foreground).child(keptName))
+      .child(div().flex_1().min_w(0).truncate().text_size(TEXT.body).text_color(t.foreground).child(kept ? keptName : loadingText(keptName)))
       .child(s.moving ? div() : small("sec-kept-move", W.moveVerb, () => { s.keptOpen = !s.keptOpen; })))
     .when(s.keptSure !== null, (el) => el.child(v_flex().gap(6).p(10).rounded(RADIUS.control).border_1().border_color(t.border)
       .child(div().text_size(TEXT.body).font_medium().text_color(t.foreground).child(W.moveConfirm(s.keptSure || W.thisOne)))
@@ -202,7 +203,7 @@ export function secretsSection(view, t) {
       view.heading(t, W.add),
       over(form, [
         view.heading(t, W.kept),
-        ...(s.list === null ? [div().py(10).text_size(TEXT.body).text_color(t.dim).child(W.loading)] : []),
+        ...(s.list === null ? [div().py(10).text_size(TEXT.body).text_color(t.dim).child(loadingText(W.loading))] : []),
         ...(s.list !== null && !rows.length ? [div().py(10).text_size(TEXT.body).text_color(t.dim).child(W.none)] : []),
         ...rows,
       ], s.open ? menu : null),

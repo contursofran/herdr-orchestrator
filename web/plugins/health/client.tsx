@@ -7,7 +7,7 @@ import clsx from 'clsx'
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { act, definePlugin, getState, setUI, useSnap } from '@client/kernel.ts'
 import { sectionOf } from '@client/Settings.tsx'
-import { CogIcon, Floating, ic, MonitorIcon, NextIcon, ServerIcon, useDismiss } from '@client/ui.tsx'
+import { CogIcon, Floating, ic, LoadingText, MonitorIcon, NextIcon, ServerIcon, useDismiss } from '@client/ui.tsx'
 import type { Machine, MachineStats } from '@shared/types.ts'
 import * as MC from '@core/machines.js'
 import { FindMachines } from './find.tsx'
@@ -209,7 +209,7 @@ function MachinePopup({ m, onClose }: { m: Machine; onClose: () => void }) {
       </div>
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-3.5 py-3">
         {!s ? (
-          <p className="text-[0.8125rem] text-fg3">{core.READING_MACHINE}</p>
+          <p className="text-[0.8125rem] text-fg3"><LoadingText>{core.READING_MACHINE}</LoadingText></p>
         ) : (
           <>
             <div className="flex flex-col gap-2.5">

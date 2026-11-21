@@ -6,6 +6,7 @@ import '../src/styles.css'
 import clsx from 'clsx'
 import { Component, StrictMode, useEffect, useState, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { LoadingText } from '../src/ui.tsx'
 import { Recipe, UNREADABLE } from '../src/screens/Recipe.tsx'
 import * as R from '@core/recipe.js'
 import { deviceFor as deviceOf } from '../src/kernel.ts'
@@ -101,7 +102,7 @@ function Viewer() {
       </div>
       <div className="relative min-h-0 flex-1">
         <div className="absolute inset-0">
-          {error ? <p role="alert" className="p-4 text-fg3">{error}</p> : !recipe ? <p className="p-4 text-fg3">Loading…</p> : (
+          {error ? <p role="alert" className="p-4 text-fg3">{error}</p> : !recipe ? <p className="p-4 text-fg3"><LoadingText>Loading…</LoadingText></p> : (
             <div className={clsx('h-full overflow-y-auto p-4 phone:p-5')}>
               <Shown key={recipe.v}>
                 <Recipe recipe={recipe} asset={(src) => `${api}/file/${src.split('/').map(encodeURIComponent).join('/')}?v=${recipe.v}`} reply={async () => undefined} />

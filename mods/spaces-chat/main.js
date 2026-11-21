@@ -11,6 +11,7 @@
 // Opened as an overlay (props.view), this mod is instead one of its menus (popups.js), the
 // rename and New section dialog (rename.js) or that dialog's icon picker (icon.js).
 
+import { brailleLoader, loadingText } from "./loader.js";
 import { View, div, image, svg } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
 import { machines, run, props, exec, hc, home, theme, shared, setShared, watchFolder, window, layout, nextCommand, readTextFile } from "herdr";
@@ -266,14 +267,13 @@ export default class Spaces extends View {
     });
   }
 
-  // A space's Autopilot mark after its name (SHEP-5): a small rocket, as its chat's wake lines have, dim while on, in
-  // the working colour and breathing while a wake runs or waits. A linked machine's spaces too (#1010), by pilotKey().
+  // A space's Autopilot mark after its name: a small rocket while on, a loader during a wake.
   pilotMark(w, t) {
     const p = this.pilots?.get(pilotKey(w));
     if (!p) return null;
-    return div().id(`pilot-${w.id}`).flex_none().text_color(p === "waking" ? t.working : t.dim)
-      .when(p === "waking", (el) => el.loop("opacity", { from: 0.35, to: 1, period: 1200 }))
-      .child(svg("mods/spaces-chat/rocket.svg").size(12).flex_none());
+    return div().id(`pilot-${w.id}`).flex_none().child(p === "waking"
+      ? brailleLoader(12, t.working).accessibility_label("Autopilot waking")
+      : svg("mods/spaces-chat/rocket.svg").size(12).flex_none().text_color(t.dim));
   }
 
   // SHEP-105, SHEP-135: a voice call with herdr-orchestrator itself, not one chat, started from the voice button in the brand row
@@ -504,7 +504,8 @@ export default class Spaces extends View {
       return layout === "loading" || (!layout && this.machines.some(k => k.name === m && k.state === "connected"))
         || spaces().some(s => (s.machine ?? null) === m && !this.shown.has(s.id));
     };
-    const loadingRow = m => div().id(`machine-loading-${m ?? "local"}`).h(28).flex_none().px(8).flex().items_center().text_size(TEXT.label).text_color(t.dim).child(collapsed ? "…" : "Loading…");
+    const loadingRow = m => div().id(`machine-loading-${m ?? "local"}`).h(28).flex_none().px(8).flex().items_center().when(collapsed, el => el.justify_center()).text_size(TEXT.label).text_color(t.dim)
+      .child(collapsed ? brailleLoader().accessibility_label("Loading") : loadingText("Loading…"));
     const pinned = this.pinned(projects?.pinned ?? [], Boolean(remote.length), t);
     if (!remote.length) return [...pinned, ...(loading(null) && !rows.length && !pinned.length ? [loadingRow(null)] : body(null, rows))];
     // in the order the person dragged them into, the same on every device and in the web app (SHEP-153)
@@ -549,7 +550,7 @@ export default class Spaces extends View {
           ? div().w(14).flex_none().flex().justify_center().text_size(12).when(offline, el => el.opacity(0.5)).child(machineLook(m).icon)
           : svg(`mods/workspace-chrome/${m ? "server" : "monitor"}.svg`).size(14).flex_none().text_color(offline ? t.dim : t.muted))
         .when(!collapsed, el => el.child(div().flex_1().min_w(0).truncate().child(machineLook(m).name))
-          .when(offline, el => el.child(div().flex_none().font_normal().child(state === "connecting" ? "Connecting\u2026" : "Offline")))
+          .when(offline, el => el.child(div().flex_none().font_normal().child(state === "connecting" ? loadingText("Connecting…") : "Offline")))
           // + (New space or New section, there) hugging its one meter. HERD-70.
           .when(connected, el => el.child(h_flex().flex_none().gap(2).items_center()
             .child(div().id(`machine-add-${m ?? "local"}`).size(20).flex_none().flex().items_center().justify_center().rounded(RADIUS.control)

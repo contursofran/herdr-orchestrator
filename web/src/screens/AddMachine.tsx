@@ -10,7 +10,7 @@ import * as MA from '@core/machine-add.js'
 import { copyText } from '../copy.ts'
 import { act } from '../kernel.ts'
 import { Sheet, SheetClose } from '../Stack.tsx'
-import { CheckCircleIcon, CheckIcon, CopyIcon, FootButton, Ghost, ic, Primary, ServerIcon, Who } from '../ui.tsx'
+import { BrailleLoader, CheckCircleIcon, LoadingText, CheckIcon, CopyIcon, FootButton, Ghost, ic, Primary, ServerIcon, Who } from '../ui.tsx'
 
 const W = MA.WORDS
 type Host = { alias: string; aliases: string[]; hostname: string | null; user: string | null }
@@ -36,14 +36,6 @@ export function AddMachineButton() {
 export function AddMachineDialog() {
   const on = useSyncExternalStore((f) => { listeners.add(f); return () => listeners.delete(f) }, () => open)
   return on ? <AddMachine /> : null
-}
-
-function Spinner() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden className={clsx(ic, 'animate-spin text-work-fg')}>
-      <path d="M21 12a9 9 0 1 1-6.2-8.56" />
-    </svg>
-  )
 }
 
 function AddMachine() {
@@ -143,7 +135,7 @@ function AddMachine() {
           {done ? (
             <span className="flex shrink-0 items-center gap-1.5 text-[0.75rem] text-ready-fg"><CheckCircleIcon className={ic} />{W.added}</span>
           ) : st === 'adding' ? (
-            <span className="flex shrink-0 items-center gap-1.5 text-[0.75rem] text-fg2"><Spinner />{W.connecting}</span>
+            <span className="flex shrink-0 items-center gap-1.5 text-[0.75rem] text-fg2"><BrailleLoader className="text-sm text-work-fg" />{W.connecting}</span>
           ) : (
             <Ghost onClick={(e) => { e.stopPropagation(); void add(target) }}>{W.add}</Ghost>
           )}
@@ -166,7 +158,7 @@ function AddMachine() {
         <p className="text-pretty text-fg2">{W.about}</p>
         <p className={clsx(label, 'pt-4')}>{hosts?.length ? W.fromConfig : W.noHosts}</p>
         <ul className="-mx-2 flex max-h-[280px] min-h-0 shrink flex-col overflow-y-auto overscroll-contain">
-          {hosts === null ? <li className="px-2.5 py-2 text-[0.75rem] text-fg3">{W.reading}</li> : hosts.map(row)}
+          {hosts === null ? <li className="px-2.5 py-2 text-[0.75rem] text-fg3"><LoadingText>{W.reading}</LoadingText></li> : hosts.map(row)}
         </ul>
         <label htmlFor="add-machine-typed" className={clsx(label, 'pt-3.5')}>{W.orType}</label>
         <div className="flex items-center gap-2">

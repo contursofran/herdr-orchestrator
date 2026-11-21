@@ -7,7 +7,7 @@
 import clsx from 'clsx'
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { act, definePlugin, getState, launchHref, goChat, goPlace, listView, openArtifact, openItem, openTask, placeOf, placesDrawn, registry, setFilter, setUI, shownItem, taskInMiddle, useStore, useUI, visibleChats, type UI } from '@client/kernel.ts'
-import { EndCallIcon, FitIcon, ic, IconButton, MicIcon, MicOffIcon, RoundButton, UnfitIcon, useElapsed, WaveIcon, Waves, XIcon } from '@client/ui.tsx'
+import { BrailleLoader, EndCallIcon, FitIcon, ic, IconButton, MicIcon, MicOffIcon, RoundButton, UnfitIcon, useElapsed, WaveIcon, Waves, XIcon } from '@client/ui.tsx'
 import { useWindowWidth } from '@client/Frame.tsx'
 import { cancelDictation } from '@plugins/chat/client.tsx'
 import { pageNames, sectionLike, sectionOf } from '@client/Settings.tsx'
@@ -321,16 +321,18 @@ function usePhase() {
   }, [])
   const muted = useUI((u) => u.callMuted)
   const { phase, doing } = now
-  // working: what it does says it ("Checking tasks…"), the dots beside say it's at work
+  // working: what it does says it ("Checking tasks…"), the loader beside says it's at work
   const word = muted && (phase === 'listening' || phase === 'connecting') ? 'Muted' : phase === 'working' && doing ? `${doing[0].toUpperCase()}${doing.slice(1)}…` : WORD[phase]
   return { word, phase }
 }
 
-/** SHEP-113: the call's mark beside its words, one per state: the wave moves while the voice speaks, stands still
- *  while it listens, and gives way to the typing dots while it thinks or works */
+/** The call's mark beside its words: a Braille loader while it connects or works, and a wave while it listens or speaks. */
+function callPending(phase: Phase) {
+  return phase === 'connecting' || phase === 'reconnecting' || phase === 'thinking' || phase === 'working'
+}
 function CallMark({ phase, className }: { phase: Phase; className?: string }) {
-  if (phase === 'thinking' || phase === 'working')
-    return <span aria-hidden data-call-mark={phase} className={clsx('typing inline-flex shrink-0 items-center gap-[3px] [&>i]:size-[4px]!', className)}><i /><i /><i /></span>
+  if (callPending(phase))
+    return <span data-call-mark={phase} className="inline-grid shrink-0 place-items-center"><BrailleLoader /></span>
   return <span data-call-mark={phase} className="contents"><Waves className={clsx('shrink-0', phase !== 'speaking' && 'wv-still', className)} /></span>
 }
 
@@ -454,14 +456,12 @@ function TopHelp() {
 /** the logo's staff, exactly (public/icon.svg): its path, round cap and 12° tilt about (16 16); its hook's centre */
 const STAFF = 'M21 60V12a7 7 0 0 0-14 0v2.5'
 const HOOK = [14, 12] as const
-const ease = (x: number) => x * x * (3 - 2 * x)
 const fract = (x: number) => x - Math.floor(x)
 const clamp = (x: number) => Math.min(1, Math.max(0, x))
 
 /** The full-screen call's mark (SHEP-137, option 1 of SHEP-134): the hooked staff from herdr-orchestrator's logo as one white
  *  line on the call's near-black, green only for the voice. herdr-orchestrator's voice ripples out from the hook, yours ripples
- *  in; it draws itself while connecting, a green glint runs along it while it thinks or works, and it goes grey and
- *  still while you are muted. Everything it draws stays inside its own box (no blur, blend or clip: SHEP-120's grey
+ *  in. The staff goes grey while you are muted. Everything it draws stays inside its own box (no blur, blend or clip: SHEP-120's grey
  *  square came from those on WebKit), so the box is the room the rings need and nothing else overlaps it. Each frame
  *  sets a few attributes from the call's sound; React only renders it once per phase */
 function Crook({ phase, className }: { phase: string; className?: string }) {
@@ -473,12 +473,10 @@ function Crook({ phase, className }: { phase: string; className?: string }) {
     const el = svg.current
     if (!el) return
     const g = el.querySelector<SVGGElement>('[data-crook-tilt]')!
-    const line = el.querySelector<SVGPathElement>('[data-crook-line]')!
-    const glint = el.querySelector<SVGPathElement>('[data-crook-glint]')!
     const rings = [...el.querySelectorAll<SVGCircleElement>('[data-crook-ring]')]
     const calm = matchMedia('(prefers-reduced-motion: reduce)')
     // eased values, so a change of phase glides instead of jumping
-    let raf = 0, last = performance.now(), lvl = 0, glow = 0, ring = 0
+    let raf = 0, last = performance.now(), lvl = 0, ring = 0
     const step = (ms: number) => {
       const dt = Math.min(0.1, (ms - last) / 1000), still = calm.matches, t = still ? 0 : ms / 1000, p = now.current
       last = ms
@@ -490,14 +488,6 @@ function Crook({ phase, className }: { phase: string; className?: string }) {
       const l = still ? lvl * 0.6 : lvl
       const sway = still ? 0 : Math.sin((t * Math.PI * 2) / 7) * 1.4
       g.setAttribute('transform', `rotate(${sway.toFixed(2)} 16 41) rotate(12 16 16) translate(${HOOK[0]} ${HOOK[1]}) scale(${(1 + l * 0.03).toFixed(4)}) translate(${-HOOK[0]} ${-HOOK[1]})`)
-      // connecting: it draws itself up from the staff to the hook, holds, and draws again
-      const draw = (p === 'connecting' || p === 'reconnecting') && !still ? Math.max(0, 1 - ease(Math.min(1, fract(t / 2.6) / 0.6))) : 0
-      line.setAttribute('stroke-dashoffset', (draw * 100).toFixed(2))
-      line.setAttribute('stroke-opacity', clamp((1 - draw) * 5).toFixed(3))
-      // thinking or working: a green glint runs along it, from the staff over the hook (still: it rests on the hook)
-      glow = glide(glow, p === 'thinking' || p === 'working' ? 1 : 0, 0.1)
-      glint.setAttribute('stroke-opacity', glow.toFixed(3))
-      glint.setAttribute('stroke-dashoffset', still ? '-70' : (-(fract(t / (p === 'working' ? 1.1 : 1.8)) * 134 - 14)).toFixed(2))
       // the rings: out from the hook while herdr-orchestrator speaks, in to it while it listens, as bright as the voice
       const inward = p === 'listening'
       ring = glide(ring, inward || p === 'speaking' ? 1 : 0, 0.08)
@@ -531,10 +521,8 @@ function Crook({ phase, className }: { phase: string; className?: string }) {
           <circle key={i} data-crook-ring cx={HOOK[0]} cy={HOOK[1]} r="9.5" strokeWidth="0.9" strokeOpacity="0"
             className="fill-none stroke-ready transition-[stroke] duration-700 group-data-[phase=connecting]:stroke-fg3 group-data-[phase=muted]:stroke-fg3 group-data-[phase=reconnecting]:stroke-fg3" />
         ))}
-        <path data-crook-line d={STAFF} pathLength={100} strokeDasharray="100 100" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" mask={`url(#${mask})`}
+        <path data-crook-line d={STAFF} strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" mask={`url(#${mask})`}
           className="fill-none stroke-fg transition-[stroke,opacity] duration-700 group-data-[phase=connecting]:stroke-fg2 group-data-[phase=muted]:stroke-fg3 group-data-[phase=muted]:opacity-80 group-data-[phase=reconnecting]:stroke-fg2" />
-        <path data-crook-glint d={STAFF} pathLength={100} strokeDasharray="14 120" strokeOpacity="0" strokeWidth="4.5" strokeLinecap="round" mask={`url(#${mask})`}
-          className="fill-none stroke-ready" />
       </g>
     </svg>
   )
@@ -594,7 +582,7 @@ function FullCall() {
         <Crook phase={look} className="h-[min(46dvh,100vw,400px)] short:h-(--crook-short)" />
         <p className="flex h-7 max-w-full min-w-0 items-center gap-2 text-lg/7 font-medium text-fg2">
           <span role="status" className="min-w-0 truncate">{word}</span>
-          {phase === 'thinking' || phase === 'working' ? <span aria-hidden className="typing inline-flex shrink-0 items-center gap-[3px] [&>i]:size-[5px]!"><i /><i /><i /></span> : null}
+          {callPending(phase) ? <BrailleLoader /> : null}
         </p>
       </div>
       <div role="group" aria-label="Call controls" className="flex items-start justify-center gap-6 px-6 short:col-start-2 short:row-start-3 short:mt-10">

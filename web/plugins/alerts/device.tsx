@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 import { setPushEndpoint, useSnap } from '@client/kernel.ts'
-import { Ghost, Primary, Small } from '@client/ui.tsx'
+import { BrailleLoader, Ghost, Primary, Small } from '@client/ui.tsx'
 import { Switch, card, heading, rowLook } from '@client/Settings.tsx'
 import { registerWorker } from './worker.ts'
 import { DEFAULT_TOPICS, PUSH_TOPICS, deviceState, type DeviceState, type PushTopic } from '@shared/alerts.ts'
@@ -130,7 +130,7 @@ export function DeviceAlerts({ phone }: { phone: boolean }) {
           <div className={clsx(rowLook(phone), phone ? '' : 'border-b border-line')}>
             <div className="flex min-w-0 flex-1 flex-col gap-0.5">
               <span className="flex items-center gap-2">
-                <span aria-hidden className={clsx('size-2 shrink-0 rounded-full', state === 'on' ? 'bg-ready' : state === 'blocked' || state === 'install' ? 'bg-need' : 'bg-line2')} />
+                {words ? <span aria-hidden className={clsx('size-2 shrink-0 rounded-full', state === 'on' ? 'bg-ready' : state === 'blocked' || state === 'install' ? 'bg-need' : 'bg-line2')} /> : <BrailleLoader />}
                 <span data-state={state ?? 'reading'}>{words?.title ?? 'Checking…'}</span>
               </span>
               {words ? <Small className="text-pretty">{words.about}</Small> : null}

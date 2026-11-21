@@ -4,6 +4,7 @@
 //   "instructions"  pane: the coordinator template, editable, saved as you type
 // Starting, restarting and closing live in coordinator.js and the *.sh scripts beside it.
 
+import { loadingText } from "./loader.js";
 import { View, div, svg, image } from "gpui-kit";
 import { v_flex, h_flex, Editor, EditorState } from "gpui-base";
 import { props, theme, settings, knownAgents, closeOverlay, home, exec, readTextFile, writeTextFile, watchFolder } from "herdr";
@@ -151,7 +152,7 @@ export default class Coordinator extends View {
         if (a) pick(a);
       })
       .child(div().px(8).child(heading(SWITCH_AGENT.title)))
-      .when(this.agents === null, (el) => el.child(div().px(8).py(6).text_color(t.dim).child(SWITCH_AGENT.loading)))
+      .when(this.agents === null, (el) => el.child(div().px(8).py(6).text_color(t.dim).child(loadingText(SWITCH_AGENT.loading))))
       .children(list.map((a, i) => {
         const on = a === current;
         return h_flex().id(`agent-${a.key}`).h(H.lg).px(8).gap(8).rounded(RADIUS.control).items_center().flex_none()
