@@ -13,6 +13,7 @@ core/asks.js: chat jump spaces-chat tabs-tasks tasks workspace-status-chat toast
 core/needs.js: chat jump spaces-chat tabs-tasks tasks workspace-status-chat toasts
 core/tasks.js: chat jump spaces-chat tasks
 core/projects.js: spaces-chat
+core/mainagents.js: spaces-chat
 taskthread.js: chat spaces-chat jump
 core/notify.js: chat spaces-chat tabs-tasks tasks orchestrator-settings workspace-status-chat
 parked.js: chat spaces-chat tabs-tasks workspace-status-chat
