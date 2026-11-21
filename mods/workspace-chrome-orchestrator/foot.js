@@ -110,10 +110,11 @@ export class Footer {
     const details = p.windows.map((w) => [`${w.name}, ${w.used}% used`, w.refill ? `Resets in ${w.refill}` : w.resetWords]
       .filter(Boolean).join(" · "));
     const lines = [p.name, ...details, p.freshness, p.failure].filter(Boolean);
+    const detail = lines.join("\n");
     const number = (width, value, color) => h_flex().w(width).justify_end().flex_none().text_size(TEXT.id)
       .font_family("Menlo").text_color(color).child(value);
     return h_flex().id(`foot-plan-${p.cli}`).h(ROW).flex_none().gap(tight ? 5 : 8).items_center()
-      .accessibility_label(lines.join(". ")).tooltip(lines.join("\n"))
+      .accessibility_label(lines.join(". ")).tooltip(detail)
       .child(h_flex().w(tight ? 58 : 64).flex_none().gap(6).items_center().text_size(TEXT.label).text_color(t.foreground)
         .child(image(`icons/${p.cli}.svg`).size(14).flex_none()).child(p.name))
       .child(div().w(tight ? 28 : 34).flex_none().truncate().text_size(TEXT.id).text_color(t.muted).child(period))
