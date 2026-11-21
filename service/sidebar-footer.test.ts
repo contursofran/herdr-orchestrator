@@ -56,13 +56,13 @@ test("the installed footer fits zero, one and two local plans and keeps the cont
   plans({ claude });
   render();
   expect(height).toBe(79);
-  expect(byId("foot-plan-claude").kids.at(-1).kids).toEqual(["70% wk"]);
+  expect(byId("foot-plan-claude").kids[3].kids).toEqual(["70%"]);
   expect(byId("foot-plan-codex")).toBeUndefined();
 
   plans({ claude, codex });
   render();
   expect(height).toBe(105);
-  expect(byId("foot-plan-codex").kids.at(-1).kids).toEqual(["18% wk"]);
+  expect(byId("foot-plan-codex").kids[3].kids).toEqual(["18%"]);
   render();
   expect(ran).toEqual([45, 79, 105].map((px) => ["layout.resize", { id: "sidebar-footer", px }]));
 });
@@ -140,28 +140,51 @@ test("the narrow rail fits Settings and Add machine and returns the plan rows wh
   expect(height).toBe(105);
 });
 
-test("usage comes from the most-used current window and ignores missing or expired data", () => {
+test("the weekly summary prefers the shared quota and hover includes all reported windows", () => {
   const now = 60_000_000;
-  expect(planUsage({ limits: {
+  const [plan] = planUsage({ limits: {
     codex: { state: "signed-out" },
-    claude: read([{ name: "Quarter", used: 99, resets_at: now - 1 },
-      { name: "5-hour", used: 93, resets_at: now + 60_000 }, { name: "Weekly", used: 69 }]),
+    claude: read([{ name: "Weekly (Sonnet)", used: 99, resets_at: now - 1 },
+      { name: "5-hour", used: 93, resets_at: now + 60_000 }, { name: "Weekly (all models)", used: 69 }]),
     elevenlabs: read([{ name: "Month", used: 81 }]),
-  } }, now)).toEqual([{ cli: "claude", name: "Claude", used: 93, zone: "5h", level: "over", refill: "1m",
-    windowName: "5-hour", freshness: null, failure: null }]);
+  } }, now);
+  expect(plan.cli).toBe("claude");
+  expect(plan.summary).toMatchObject({ name: "Weekly (all models)", used: 69, period: "Week" });
+  expect(plan.windows).toEqual([
+    { name: "Weekly (Sonnet)", period: "Week", used: 99, expired: true, refill: null, resetWords: "Reset passed" },
+    { name: "5-hour", period: "5h", used: 93, expired: false, refill: "1m", resetWords: null },
+    plan.summary,
+  ]);
 });
 
-test.each([["5-hour", "5h"], ["Weekly", "wk"]])("Codex model limits keep the %s window and refill", (windowName, zone) => {
+test("the footer aligns the icon, weekly window, meter, percent, and reset with full detail on hover", () => {
+  const now = Date.now();
+  plans({ claude: read([{ name: "5-hour", used: 93, resets_at: now + 60_000 },
+    { name: "Weekly (all models)", used: 66, resets_at: now + 47 * 3600_000 }]), codex });
+  render();
+  const plan = byId("foot-plan-claude");
+  expect(plan.kids[0].kids[0].kind).toBe("image");
+  expect(plan.kids[0].kids[1]).toBe("Claude");
+  expect(plan.kids[1].kids).toEqual(["Week"]);
+  expect(prop(plan.kids[2].kids[0], "w")).toBe("66%");
+  expect(plan.kids[3].kids).toEqual(["66%"]);
+  expect(plan.kids[4].kids).toEqual(["1d 23h"]);
+  expect(prop(plan, "tooltip")).toBe("Claude\n5-hour, 93% used · Resets in 1m\nWeekly (all models), 66% used · Resets in 1d 23h");
+  expect(prop(plan, "accessibility_label")).toContain("5-hour, 93% used");
+  expect(prop(byId("foot-plan-codex"), "tooltip")).toBe("Codex\nWeekly, 18% used");
+});
+
+test.each([["5-hour", "5h"], ["1-day", "Day"], ["Weekly", "Week"]])("reported %s limits use their real period and refill", (windowName, period) => {
   const full = "Codex Test Model With a Long Name · " + windowName;
   plans({ codex: read([{ name: full, used: 88, resets_at: Date.now() + 360_000 }]) });
   render();
-  expect(byId("foot-plan-codex").kids.at(-1).kids).toEqual([`88% ${zone} · 6m`]);
+  expect(byId("foot-plan-codex").kids.at(-1).kids).toEqual(["6m"]);
   width = 190;
   render();
   const plan = byId("foot-plan-codex");
-  expect(plan.kids.at(-1).kids).toEqual([`88% ${zone}`]);
-  expect(prop(plan, "tooltip")).toBe(`Codex, 88% used · ${full} · Refills in 6m`);
-  expect(prop(plan, "accessibility_label")).toBe(prop(plan, "tooltip"));
+  expect(plan.kids[1].kids).toEqual([period]);
+  expect(plan.kids.at(-1).kids).toEqual(["88%"]);
+  expect(prop(plan, "tooltip")).toBe(`Codex\n${full}, 88% used · Resets in 6m`);
 });
 
 test("failed and old reads are labeled Stale and omit the live refill countdown", () => {
@@ -172,10 +195,12 @@ test("failed and old reads are labeled Stale and omit the live refill countdown"
   plans({ claude: old, codex: failed });
   render();
   const claudePlan = byId("foot-plan-claude"), codexPlan = byId("foot-plan-codex");
-  expect(claudePlan.kids.at(-1).kids).toEqual(["97% 5h · Stale"]);
+  expect(claudePlan.kids[3].kids).toEqual(["97%"]);
+  expect(claudePlan.kids.at(-1).kids).toEqual(["Stale"]);
   expect(prop(claudePlan, "tooltip")).toContain("Stale, read 16m ago");
+  expect(prop(claudePlan, "tooltip")).toContain("Reset passed");
   expect(prop(codexPlan, "tooltip")).toContain("Last read failed: Timed out");
-  expect(prop(codexPlan, "tooltip")).not.toContain("Refills in");
+  expect(prop(codexPlan, "tooltip")).not.toContain("Resets in");
   width = 190;
   render();
   expect(byId("foot-plan-codex").kids.at(-1).kids).toEqual(["Stale"]);

@@ -1,7 +1,7 @@
-import { div, svg } from "gpui-kit";
+import { div, image, svg } from "gpui-kit";
 import { h_flex, v_flex, Popover } from "gpui-base";
 import { layout, run, shared, updates } from "herdr";
-import { ago, failedWords, leftOf, liveWindow, planLevelOf, readOld, SIDEBAR_PLAN_USAGE, span } from "./core/machines.js";
+import { ago, failedWords, liveWindow, planLevelOf, readOld, SIDEBAR_PLAN_USAGE, span } from "./core/machines.js";
 import { openSettings, RADIUS, TEXT } from "./ui.js";
 
 const ICON = "mods/workspace-chrome-orchestrator/";
@@ -11,26 +11,33 @@ const CONTROLS = 30, CONTROLS_TOP = 4, CONTROLS_BOTTOM = 10;
 const ADD_MACHINE = 28, CONTROL_GAP = 4;
 const PLANS = [["claude", "Claude"], ["codex", "Codex"]];
 
+function periodOf(name) {
+  const period = name.split(" · ").at(-1);
+  if (/^week(?:ly)?\b/i.test(period)) return "Week";
+  if (/^(?:daily|day|1[- ]day|24[- ]hour)s?\b/i.test(period)) return "Day";
+  return period.replace(/^(\d+)[- ](minute|hour|day)s?\b.*$/i, (_, n, unit) => n + unit[0].toLowerCase());
+}
+
 export function planUsage(stats, now = Date.now()) {
   return PLANS.flatMap(([cli, name]) => {
     const read = stats?.limits?.[cli];
     if (read?.state !== "ok") return [];
     const stale = readOld(read, now);
-    const windows = (read.windows ?? []).filter((window) => Number.isFinite(window.used));
-    const current = windows.filter((window) => liveWindow(window, now));
-    let worst = null;
-    for (const window of current.length ? current : stale ? windows : []) {
-      if (!worst || window.used > worst.used) worst = window;
-    }
-    if (!worst) return [];
-    const left = Math.min(100, leftOf(worst));
-    const windowName = worst.name || "";
-    const suffix = windowName.split(" · ").at(-1);
-    const zone = /^week/i.test(suffix) ? "wk" : suffix.replace(/^(\d+)[- ](minute|hour|day)s?\b.*$/i, (_, n, unit) => n + unit[0].toLowerCase());
+    const windows = (read.windows ?? []).filter((w) => Number.isFinite(w.used)).map((w) => {
+      const name = w.name || "Limit";
+      const expired = !liveWindow(w, now);
+      const used = Math.max(0, Math.min(100, Math.round(w.used)));
+      return { name, period: periodOf(name), used, expired,
+        refill: !stale && !expired && w.resets_at ? span(w.resets_at - now) : null,
+        resetWords: expired ? "Reset passed" : !stale && w.resets ? `Resets ${w.resets}` : null };
+    });
+    // The subscription's shared weekly quota takes priority over per-model quotas.
+    const weekly = windows.filter((w) => w.period === "Week");
+    const summary = weekly.find((w) => /^week(?:ly)?(?: \(all models\))?$/i.test(w.name))
+      ?? weekly.find((w) => !w.expired) ?? weekly[0] ?? windows.find((w) => !w.expired) ?? windows[0];
+    if (!summary) return [];
     const freshness = stale ? ["Stale", Number.isFinite(read.at) ? "read " + ago(read.at, now) : null].filter(Boolean).join(", ") : null;
-    return [{ cli, name, used: 100 - left, zone, level: planLevelOf(left),
-      windowName, freshness, failure: read.failed ? failedWords(read) : null,
-      refill: !stale && worst.resets_at ? span(worst.resets_at - now) : null }];
+    return [{ cli, name, summary, windows, freshness, failure: read.failed ? failedWords(read) : null }];
   });
 }
 
@@ -96,28 +103,35 @@ export class Footer {
   }
 
   plan(t, p, tight) {
-    const color = p.freshness ? t.dim : p.level === "over" ? t.blocked : p.level === "busy" ? t.working : t.muted;
-    const value = [`${p.used}%`, p.zone].filter(Boolean).join(" ");
-    const summary = tight ? (p.freshness ? "Stale" : value) : [value, p.freshness ? "Stale" : p.refill].filter(Boolean).join(" · ");
-    const detail = [`${p.name}, ${p.used}% used`, p.windowName, p.refill ? `Refills in ${p.refill}` : null,
-      p.freshness, p.failure].filter(Boolean).join(" · ");
-    return h_flex().id(`foot-plan-${p.cli}`).h(ROW).flex_none().gap(8).items_center()
-      .accessibility_label(detail).tooltip(detail)
-      .child(div().w(44).flex_none().text_size(TEXT.label).text_color(t.muted).child(p.name))
+    const { period, used, refill, expired } = p.summary;
+    const stale = p.freshness || expired;
+    const level = planLevelOf(100 - used);
+    const color = stale ? t.dim : level === "over" ? t.blocked : level === "busy" ? t.working : t.muted;
+    const details = p.windows.map((w) => [`${w.name}, ${w.used}% used`, w.refill ? `Resets in ${w.refill}` : w.resetWords]
+      .filter(Boolean).join(" · "));
+    const lines = [p.name, ...details, p.freshness, p.failure].filter(Boolean);
+    const number = (width, value, color) => h_flex().w(width).justify_end().flex_none().text_size(TEXT.id)
+      .font_family("Menlo").text_color(color).child(value);
+    return h_flex().id(`foot-plan-${p.cli}`).h(ROW).flex_none().gap(tight ? 5 : 8).items_center()
+      .accessibility_label(lines.join(". ")).tooltip(lines.join("\n"))
+      .child(h_flex().w(tight ? 58 : 64).flex_none().gap(6).items_center().text_size(TEXT.label).text_color(t.foreground)
+        .child(image(`icons/${p.cli}.svg`).size(14).flex_none()).child(p.name))
+      .child(div().w(tight ? 28 : 34).flex_none().truncate().text_size(TEXT.id).text_color(t.muted).child(period))
       .child(div().flex_1().min_w(0).h(4).rounded(2).bg(t.hover)
-        .child(div().h(4).rounded(2).bg(color).w(`${p.used}%`)))
-      .child(div().max_w(tight ? 52 : 125).flex_none().truncate().font_family("Menlo").text_size(TEXT.id)
-        .text_color(p.freshness ? t.working : t.muted).child(summary));
+        .child(div().h(4).rounded(2).bg(color).w(`${used}%`)))
+      .child(number(tight ? 34 : 30, stale && tight ? "Stale" : `${used}%`, stale && tight ? t.working : t.muted))
+      .when(!tight, (el) => el.child(number(60, stale ? "Stale" : refill ?? "", stale ? t.working : t.muted)));
   }
 
   render(t, width, cx) {
     const narrow = width < 160;
+    const tight = width < 245;
     const plans = narrow || shared(SIDEBAR_PLAN_USAGE) === false ? [] : planUsage(shared("machines.stats")?.[""]);
     this.resize(footerHeight(plans.length, narrow), cx);
     const controls = narrow ? v_flex() : h_flex();
     return v_flex().id("foot").size_full().bg(t.chrome).border_t(1).border_color(t.border)
-      .when(plans.length > 0, (el) => el.child(v_flex().flex_none().pt(TOP).px(16).pb(BOTTOM).gap(GAP)
-        .children(plans.map((p) => this.plan(t, p, width < 245)))))
+      .when(plans.length > 0, (el) => el.child(v_flex().flex_none().pt(TOP).px(tight ? 8 : 14).pb(BOTTOM).gap(GAP)
+        .children(plans.map((p) => this.plan(t, p, tight)))))
       .child(controls.flex_none().pt(CONTROLS_TOP).pb(CONTROLS_BOTTOM).px(narrow ? 0 : 10).gap(CONTROL_GAP).items_center()
         .child(div().when(narrow, (el) => el.w(32)).when(!narrow, (el) => el.flex_1().min_w(0)).child(this.settings(t, narrow)))
         .child(div().id("foot-add-machine").size(ADD_MACHINE).flex_none().flex().items_center().justify_center().rounded(RADIUS.card)
