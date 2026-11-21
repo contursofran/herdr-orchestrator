@@ -48,9 +48,9 @@ export function projectTasks(lists, machine) {
 
 function statusOf(node, taskPlace) {
   const { terminal, agentStatus } = node;
+  if (terminal.state !== "live") return "stopped";
   if (agentStatus === "blocked" || agentStatus === "error") return "needs";
   if (!helper(terminal) && taskPlace?.section === "ready") return "ready";
-  if (terminal.state !== "live") return "stopped";
   if (agentStatus === "working") return "working";
   if (!helper(terminal) && taskPlace?.section === "needs") return "needs";
   if (!helper(terminal) && taskPlace?.section === "working") return "working";
@@ -142,11 +142,13 @@ export function projectTree({ spaces, terminals, panes, agents, assistants, task
     const assistant = assistantId(space, assistants.get(space));
     const rows = [], visited = new Set();
     // This fallback row keeps workers attached while the Assistant's chat waits for a new process.
-    const synthetic = !nodes.has(assistant) && children.has(assistant);
-    const starts = [assistant, ...(roots.get(space) ?? []), ...members];
+    const workers = members.filter((id) => nodes.get(id)?.taskKey && id !== assistant);
+    const synthetic = !nodes.has(assistant) && workers.length > 0;
+    // Reach any cycles of workers below the Orchestrator before starting the other roots.
+    const starts = [assistant, ...workers, ...(roots.get(space) ?? []), ...members];
     for (const start of starts) {
       if (!nodes.has(start) && !synthetic) continue;
-      const stack = [{ id: start, depth: 0, inherited: null }];
+      const stack = [{ id: start, depth: nodes.get(start)?.taskKey && start !== assistant ? 1 : 0, inherited: null }];
       while (stack.length) {
         const { id, depth, inherited } = stack.pop();
         if (visited.has(id)) continue;

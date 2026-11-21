@@ -47,6 +47,7 @@ const execImpl = async (_cmd: string, args: string[], opts?: { on?: string }) =>
   opts?.on && String(args?.[1] ?? "").includes(".autopilot.json") && farFiles[opts.on] != null
     ? { code: 0, stdout: farFiles[opts.on], stderr: "" } : { code: 1, stdout: "", stderr: "" };
 let sidebarPx = 260;
+let platform = "macos";
 const space = (id: string, active = false) => ({ id, name: id, active, machine: null as string | null, tabs: [] as unknown[], folder: "/tmp/x" });
 let liveSpaces = [space("s1", true), space("s2")];
 let liveTerminals: object[] = [], livePanes: object[] = [];
@@ -56,6 +57,7 @@ let readModel: ((args: string[], on?: string) => string | undefined) | null = nu
 let taskTerminal: string | null = null;
 let taskPanel = true;
 const ran: [string, unknown][] = [];
+const labels: string[][] = [];
 const reply = (stdout: string) => ({ code: 0, stdout, stderr: "" });
 const theme = new Proxy({}, { get: () => "#000000" });
 const herdr = {
@@ -64,14 +66,17 @@ const herdr = {
   exec: async (cmd: string, args: string[], opts?: { on?: string }) => {
     const text = args[2] === "projects" ? readProjects?.(args, opts?.on) : readModel?.(args, opts?.on);
     return text === undefined ? execImpl(cmd, args, opts) : reply(text);
-  }, hc: async (args: string[]) => args[0] === "get" && getTerminal
-    ? reply(JSON.stringify(getTerminal(args[1]))) : { code: 1, stdout: "", stderr: "" },
+  }, hc: async (args: string[]) => {
+    if (args[0] === "label") { labels.push(args); return reply(""); }
+    if (args[0] === "get" && getTerminal) return reply(JSON.stringify(getTerminal(args[1])));
+    return { code: 1, stdout: "", stderr: "" };
+  },
   run: (command: string, args: unknown) => { ran.push([command, args]); },
   openOverlay: () => {}, closeOverlay: () => {}, notify: () => {}, playSound: () => {},
   shared: (k: string) => shared.get(k), setShared: (k: string, v: unknown) => { shared.set(k, v); },
   machines: () => machinesNow, focused: () => null, knownAgents: () => [], settings: () => ({}),
   readTextFile: async (path: string) => (path.endsWith("/.autopilot.json") ? localPilot : null), writeTextFile: async () => {}, watchFolder: () => {},
-  props: () => ({}), theme: () => theme, window: () => ({ platform: "linux" }), nextCommand: () => null,
+  props: () => ({}), theme: () => theme, window: () => ({ platform }), nextCommand: () => null,
   layout: () => ({ id: "root", children: [{ id: "sidebar", size: { px: sidebarPx } }, ...(taskPanel ? [
     { id: "panel", hidden: true, children: [{ id: "panel-body", children: [{ id: "tasks", children: [
       { id: "tasks-thread", children: [{ id: "tasks-thread-body", active: "tasks-thread-chat", children: [
@@ -89,6 +94,7 @@ mock.module("gpui-base", () => fakeGpuiBase({
 
 const { default: Spaces, pilotKey } = await import("../mods/spaces-chat/main.js");
 const { PanelHost } = await import("../mods/chat/panel.js");
+const { default: Pane } = await import("../mods/pane-chat/main.js");
 const cx: any = new Proxy({ timer: { every: () => {}, after: () => {} } }, { get: (t, k) => (t as any)[k] ?? (() => {}) });
 const sidebar = () => { const s: any = new Spaces(); s.init({}, cx); return s.render(cx); };
 
@@ -110,7 +116,7 @@ describe("Spaces sidebar without a voice row (GitHub #869)", () => {
     machinesNow = [{ name: null, layout: "loading" }];
     const s: any = new Spaces();
     s.init({}, cx);
-    const [row] = s.grouped(theme, true, [], { pinned: [], groups: new Map() });
+    const [row] = s.grouped(theme, true, [], null);
     expect(row.elementId).toBe("machine-loading-local");
     expect(row.parts[0].animation).toEqual([BRAILLE_FRAMES, BRAILLE_MS]);
     expect(row.parts[0].label).toBe("Loading");
@@ -196,6 +202,7 @@ describe("Desktop Projects tree", () => {
   beforeEach(() => {
     shared.clear();
     sidebarPx = 320;
+    platform = "macos";
     machinesNow = [{ name: null, layout: "ready" }];
     liveSpaces = [{ ...space("s1", true), tabs: [{ id: "assistant-tab" }] }, space("s2"), space("s3"), space("pinned")];
     livePanes = [{ pane: "chat", tab: "assistant-tab", mod: "chat" }];
@@ -206,6 +213,7 @@ describe("Desktop Projects tree", () => {
     taskTerminal = null;
     taskPanel = true;
     ran.length = 0;
+    labels.length = 0;
     shared.set("spaces-chat", {
       pinned: ["pinned"],
       sections: [{ id: "ideas", name: "Ideas", machine: null, spaces: ["s3"], folded: false }],
@@ -292,6 +300,46 @@ describe("Desktop Projects tree", () => {
     ]);
   });
 
+  test("clicking or using a number for a parked standalone agent focuses its chat", () => {
+    liveSpaces[0].tabs.push({ id: "notes-tab" });
+    livePanes.push({ pane: "notes", tab: "notes-tab", mod: "chat" });
+    liveTerminals = [assistant(), { address: "t5", state: "live", program: { agent: true }, labels: { "herdr.chat": "notes" } }];
+    byId(s.render(cx), "project-agent-t5").click({}, cx);
+    const commands: [string, unknown][] = [["tab.select", { id: "notes-tab" }], ["pane.focus", { pane: "notes" }]];
+    expect(ran).toEqual(commands);
+    ran.length = 0;
+    s.focusMainAgent(2);
+    expect(ran).toEqual(commands);
+  });
+
+  test("opening a Terminal-mode Orchestrator targets its pane even as the header mounts", () => {
+    liveSpaces[0].active = false;
+    liveSpaces[1].active = true;
+    const target = { pane: "work", tab: "assistant-tab", terminal: "t1", program: { key: "codex" } };
+    const previous = { pane: "other", tab: "other-tab", terminal: "t9", program: { key: "codex" }, focused: true };
+    livePanes = [target, previous];
+    liveTerminals = [{ ...assistant(), labels: { "herdr.role": "coordinator", "herdr.coordinator.space": "s1" } }];
+    byId(s.render(cx), "project-agent-t1").click({}, cx);
+    expect(ran).toEqual([["space.select", { id: "s1" }], ["tab.select", { id: "assistant-tab" }], ["pane.focus", { pane: "work" }]]);
+    expect(shared.get("pane-chat.openreq")).toMatchObject({ pane: "work", terminal: "t1" });
+    const timers: Function[] = [];
+    const context = { timer: { after: (_ms: number, fn: Function) => timers.push(fn) } };
+    const head = new Pane();
+    head.born = Date.now();
+    head.me = () => target;
+    const toChat = mock(() => {});
+    head.toChat = toChat;
+    head.openRequestedChat(previous, context);
+    expect(timers).toHaveLength(0);
+    // Re-renders can schedule the same request, but its header consumes it only once.
+    head.openRequestedChat(target, context);
+    head.openRequestedChat(target, context);
+    for (const fn of timers) fn(context);
+    expect(toChat).toHaveBeenCalledTimes(1);
+    expect(toChat).toHaveBeenCalledWith(target, context);
+    expect(shared.get("pane-chat.openreq")).toBeNull();
+  });
+
   test("clicking the stopped Assistant opens its registered chat while a worker remains", () => {
     livePanes.unshift({ pane: "elsewhere", tab: "assistant-tab", terminal: null });
     liveTerminals = [worker("t2", null)];
@@ -368,17 +416,58 @@ describe("Desktop Projects tree", () => {
     expect(ran).toEqual([]);
   });
 
+  test("pinned remote projects and saved machine order determine shortcuts, with folded rows excluded", () => {
+    const remote = (machine: string, name: string) => ({
+      ...space(`${machine}/${name}`), machine, tabs: [{ id: `${machine}/${name}-tab` }],
+    });
+    liveSpaces = [liveSpaces[0], remote("alpha", "pinned"), remote("alpha", "section"), remote("alpha", "top"), remote("zulu", "project")];
+    s.shown = new Set(liveSpaces.map((w) => w.id));
+    s.machines = ["alpha", "zulu"].map((name) => ({ name, state: "connected" }));
+    liveTerminals = [assistant(), ...liveSpaces.slice(1).map((w) => ({
+      address: w.id, state: "live", program: { agent: true }, labels: { "herdr.tab": `${w.id.split("/")[1]}-tab` },
+    }))];
+    const prefs = {
+      pinned: ["alpha/pinned"], machineOrder: ["zulu", "", "alpha"],
+      sections: [{ id: "alpha-section", name: "Ideas", machine: "alpha", spaces: ["alpha/section"], folded: false }],
+    };
+    const badges = () => ids(s.render(cx)).filter((id) => id.startsWith("project-key-")).map((id) => id.slice("project-key-".length));
+    shared.set("spaces-chat", prefs);
+    expect(badges()).toEqual(["alpha/pinned", "zulu/project", "t1", "alpha/top", "alpha/section"]);
+    s.focusMainAgent(1);
+    expect(ran.at(-1)).toEqual(["agent.focus", { terminal: "alpha/pinned" }]);
+
+    shared.set("spaces-chat", { ...prefs, pinnedFolded: true, sections: [{ ...prefs.sections[0], folded: true }] });
+    expect(badges()).toEqual(["zulu/project", "t1", "alpha/top"]);
+    s.folded.add("alpha");
+    expect(badges()).toEqual(["zulu/project", "t1"]);
+    ran.length = 0;
+    s.focusMainAgent(3);
+    expect(ran).toEqual([]);
+  });
+
+  test("shows the section drop line when all of its projects are hidden under More", () => {
+    s.pressed = "s1";
+    s.over = "section:ideas";
+    s.line = (_t: any, edge: string) => el().id(`drop-${edge}`);
+    const tree = s.render(cx);
+    expect(byId(tree, "space-s3")).toBeUndefined();
+    expect(byId(byId(tree, "section-ideas"), "drop-bottom")).toBeDefined();
+  });
+
   test("a helper in a layout without a Tasks panel opens a terminal peek", () => {
     taskPanel = false;
     liveTerminals = [assistant(), worker("t2", null),
       { ...worker("t3", "t2"), labels: { "herdr.role": "helper" } }];
     byId(s.render(cx), "project-agent-t3").click({}, cx);
     expect(ran.at(-1)).toEqual(["terminal.peek", { terminal: "t3" }]);
+    byId(s.render(cx), "project-agent-t2").click({}, cx);
+    expect(ran.at(-1)).toEqual(["terminal.peek", { terminal: "t2" }]);
     expect(shared.has("tasks.thread")).toBe(false);
   });
 
   test("hover shows model and effort and gives both agent controls their own click targets", async () => {
     liveTerminals = [assistant()];
+    platform = "linux";
     let reads = 0;
     getTerminal = (addr) => {
       expect(addr).toBe("t1");
@@ -397,21 +486,46 @@ describe("Desktop Projects tree", () => {
     let stopped = 0;
     const mouse = { notify() {}, stop_propagation() { stopped++; }, spawn: (fn: Function) => { model = fn(mouse); } };
     let tree = s.render(cx);
+    expect(words(byId(tree, "project-key-t1"))).toEqual(["Ctrl+1"]);
     expect(byId(tree, "project-stop-t1")).toBeUndefined();
     byId(tree, "project-agent-t1").hoverChanged(true, mouse);
     await model;
     tree = s.render(cx);
+    expect(byId(tree, "project-key-t1")).toBeUndefined();
     expect(byId(tree, "project-agent-t1").tip).toBe("gpt-6.2-sol · High effort");
     expect(byId(tree, "project-stop-t1").tip).toBe("Stop");
     byId(tree, "project-stop-t1").click({}, mouse);
     expect(ran.at(-1)).toEqual(["terminal.kill", { terminal: "t1" }]);
+    s.projectModels.get("t1").at -= 15000;
+    getTerminal = null;
     byId(s.render(cx), "project-agent-t1").hoverChanged(true, mouse);
+    await model;
     tree = s.render(cx);
+    expect(byId(tree, "project-agent-t1").tip).toBe("gpt-6.2-sol · High effort");
     expect(byId(tree, "project-tab-t1").tip).toBe("Open in a new tab");
-    byId(tree, "project-tab-t1").click({}, mouse);
+    let opened: Promise<unknown> | undefined;
+    const open = { ...mouse, spawn: (fn: Function) => { opened = fn(open); }, sleep: async () => {
+      expect(labels).toEqual([]);
+      livePanes.push({ pane: "new-terminal", tab: "new-tab", terminal: "t1" });
+    } };
+    byId(tree, "project-tab-t1").click({}, open);
+    await opened;
     expect(ran.at(-1)).toEqual(["terminal.keep", { terminal: "t1", place: "tab" }]);
+    expect(labels).toEqual([["label", "t1", "herdr.chat="]]);
     expect(stopped).toBe(2);
     expect(reads).toBe(1);
     expect(byId(s.render(cx), "project-tab-t1")).toBeUndefined();
+  });
+
+  test("opening a terminal in a new tab leaves a newer chat label alone", async () => {
+    liveTerminals = [assistant()];
+    let opened: Promise<unknown> | undefined;
+    const context = { spawn: (fn: Function) => { opened = fn(context); }, sleep: async () => {
+      livePanes.push({ pane: "new-terminal", tab: "new-tab", terminal: "t1" });
+      liveTerminals = [{ ...assistant(), labels: { "herdr.chat": "new-chat" } }];
+    } };
+    s.openProjectTerminal("t1", context);
+    await opened;
+    expect(labels).toEqual([]);
   });
 });

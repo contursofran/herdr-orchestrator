@@ -26,9 +26,9 @@ import { unreadSpaces, readShown } from "./unread.js";
 import { muted } from "./notify.js";
 import { MachinePopup, openMachine, openMachineSettings } from "./machine-popup.js";
 import { startPolling, allStats, healthMeters, bars } from "./machines.js";
-import { countBadge, red, green, H, TEXT, RADIUS, toast } from "./ui.js";
+import { countBadge, red, green, H, TEXT, RADIUS, toast, plainError } from "./ui.js";
 import { on as addonOn } from "./addons.js";
-import { assistantOf, machineOf, spaceName, gitTail, tilde, sharedNames, inOrder, withOrder, machinesInOrder, machineOrderOf, withMachineOrder } from "./core/spaces.js";
+import { assistantOf, CHAT, chatPane, machineOf, spaceName, gitTail, tilde, sharedNames, inOrder, withOrder, machinesInOrder, machineOrderOf, withMachineOrder } from "./core/spaces.js";
 import { coordinatorIn, coordinatorTab, slotIn } from "./coordinator.js";
 import { projectTasks, projectTree, splitProjects } from "./core/projects.js";
 import { mainAgents } from "./core/mainagents.js";
@@ -486,19 +486,25 @@ export default class Spaces extends View {
     return out;
   }
 
+  orderedMachines(rows) {
+    return machinesInOrder([null, ...this.machines.map((m) => m.name), ...rows.map((r) => r.w.machine)], machineOrderOf(data()))
+      .map((m) => m || null);
+  }
+
+  machineState(m) {
+    const state = !m ? "connected" : this.machines.find((k) => k.name === m)?.state ?? (this.machinesRead ? "unreachable" : null);
+    const offline = state !== null && state !== "connected";
+    return { state, offline, folded: offline ? !this.openOffline.has(m) : this.folded.has(m) };
+  }
+
   // The rows, under a header per machine once one isn't this computer.
   // Pinned spaces (sections.js) sit in Pinned at the top instead (not on the rail).
   grouped(t, collapsed, visible, projects) {
     // Names two spaces on one machine share (a worktree under its repo aside: its branch shows).
     this.dup = sharedNames(visible.map((r) => ({ id: r.w.id, machine: r.w.machine, name: r.name, linked: Boolean(r.g?.linked) })));
-    const pins = new Set(projects?.pinned.map((r) => r.w.id));
-    const all = visible.filter((r) => !pins.has(r.w.id));
-    const rows = this.ordered(all);
-    const draw = (r) => (collapsed ? this.compact(r, t) : this.row(r, t));
+    const rows = projects?.rows ?? this.ordered(visible);
     // A machine's spaces: those in no section first, then its sections (the rail has none).
-    const body = (m, mine) => collapsed ? mine.map(draw) : this.sectioned(m, projects.groups.get(m) ?? this.projectGroups(m, []), t);
-    // the other machines as hc lists them (as the web app's), then any only a space names
-    const remote = [...new Set([...this.machines.map(m => m.name), ...rows.map(r => r.w.machine).filter(Boolean)])];
+    const body = (m, mine) => collapsed ? mine.map((r) => this.compact(r, t)) : this.sectioned(m, projects.groups.get(m), t);
     const loading = m => {
       const layout = machines().find(k => k.name === m)?.layout;
       return layout === "loading" || (!layout && this.machines.some(k => k.name === m && k.state === "connected"))
@@ -506,20 +512,15 @@ export default class Spaces extends View {
     };
     const loadingRow = m => div().id(`machine-loading-${m ?? "local"}`).h(28).flex_none().px(8).flex().items_center().when(collapsed, el => el.justify_center()).text_size(TEXT.label).text_color(t.dim)
       .child(collapsed ? brailleLoader().accessibility_label("Loading") : loadingText("Loading…"));
-    const pinned = this.pinned(projects?.pinned ?? [], Boolean(remote.length), t);
-    if (!remote.length) return [...pinned, ...(loading(null) && !rows.length && !pinned.length ? [loadingRow(null)] : body(null, rows))];
-    // in the order the person dragged them into, the same on every device and in the web app (SHEP-153)
-    const machineNames = machinesInOrder([null, ...remote], machineOrderOf(data())).map((k) => k || null);
+    const machineNames = projects?.machineNames ?? this.orderedMachines(rows);
+    const many = machineNames.length > 1;
+    const pinned = projects ? this.pinned(projects.pinned, many, t) : [];
+    if (!many) return [...pinned, ...(loading(null) && !rows.length && !pinned.length ? [loadingRow(null)] : body(null, rows))];
     this.machineOrder = machineNames;
     return [...pinned, ...machineNames.flatMap((m) => {
       const mine = rows.filter((r) => (r.w.machine ?? null) === m);
-      const machine = this.machines.find(k => k.name === m);
-      // Not known yet (hc hasn't answered): neither connected nor offline.
-      const state = !m ? "connected" : machine?.state ?? (this.machinesRead ? "unreachable" : null);
+      const { state, offline, folded } = this.machineState(m);
       const connected = state === "connected";
-      const offline = state !== null && !connected;
-      // Offline, it starts folded; a click opens it for now.
-      const folded = offline ? !this.openOffline.has(m) : this.folded.has(m);
       const health = this.stats?.[m ?? ""];
       // A space dropped on its machine's header leaves its section, for the top.
       const out = this.pressed && (sectionOf(this.pressed) || data().pinned.includes(this.pressed)) && this.over === `top:${m}`;
@@ -561,7 +562,7 @@ export default class Spaces extends View {
             .child(this.meter(m, t))))
           .when(connected && Boolean(health?.error), el => el.child(div().id(`machine-dot-${m ?? "local"}`).size(6).rounded(3).flex_none().bg(red())))
           .child(svg(`mods/workspace-chrome/chevron-${folded ? "right" : "down"}.svg`).size(12).flex_none().text_color(t.dim)));
-      const own = !collapsed && sectionsOf(m).length;
+      const own = !collapsed && projects.groups.get(m).sections.length;
       // An empty machine is just its header: its + makes a space.
       return [head, ...(folded ? [] : mine.length || own ? body(m, mine) : loading(m) ? [loadingRow(m)] : [])];
     })];
@@ -586,9 +587,8 @@ export default class Spaces extends View {
   // Pinned, as herdr-orchestrator's: a heading like a section's (its pin, no menu), shown while it holds
   // any, then its spaces in their own order, each with its machine after its name once there
   // are several. Folded, it still shows the space you're in and its unread ones.
-  pinned(members, many, t) {
+  pinned({ members, open, shown }, many, t) {
     if (!members.length) return [];
-    const open = !data().pinnedFolded || (this.pressed !== null && this.peek === "pinned");
     const needs = open ? 0 : members.reduce((n, r) => n + this.needs(r.w), 0);
     const ready = open ? 0 : members.reduce((n, r) => n + this.readyIn(r.w), 0);
     const head = this.groupHead("section-pinned", t)
@@ -599,7 +599,6 @@ export default class Spaces extends View {
       .when(needs > 0 || ready > 0, (el) => el.child(countBadge(needs, ready, t.chrome)))
       .child(svg(`mods/workspace-chrome/chevron-${open ? "down" : "right"}.svg`).size(12).flex_none())
       .when(this.pressed !== null && this.over === "pinned" && !open, (el) => el.child(this.line(t, "bottom")));
-    const shown = open ? members : members.filter((r) => r.w.active || this.unread.has(r.w.id));
     return [head, ...shown.map((r, n) => this.project({ ...r, tree: null, pinned: true, tag: many ? machineLook(r.w.machine ?? null).name : null,
       end: open && n === shown.length - 1 ? "pinned" : null }, t))];
   }
@@ -610,61 +609,70 @@ export default class Spaces extends View {
     openMenu("add", { machine: m }, r ? { x: Math.max(8, r.x + r.width - 210), y: r.y + r.height + 4 } : "pointer");
   }
 
-  projectGroups(m, list) {
+  projectGroups(m, list, projectRows) {
     const sections = sectionsOf(m);
     const byId = new Map(list.map((r) => [r.w.id, r]));
     const filed = new Set(sections.flatMap((s) => s.spaces));
+    const more = this.moreProjects.has(m);
+    let hidden = 0;
+    const shownProjects = (ordered) => {
+      const { shown, idle } = splitProjects(ordered, ({ w }) =>
+        w.active || this.unread.has(w.id) || this.pressed === w.id || projectRows.has(w.id));
+      hidden += idle.length;
+      return more ? ordered : shown;
+    };
     return {
-      top: this.ordered(list.filter((r) => !filed.has(r.w.id))),
+      top: shownProjects(this.ordered(list.filter((r) => !filed.has(r.w.id)))),
       sections: sections.map((section) => {
         const members = section.spaces.map((id) => byId.get(id)).filter(Boolean);
-        return { section, members, projects: this.ordered(members) };
+        const open = !section.folded || (this.pressed !== null && this.peek === section.id);
+        const shown = open ? shownProjects(this.ordered(members))
+          : this.ordered(members.filter((r) => r.w.active || this.unread.has(r.w.id)));
+        return { section, members, open, shown };
       }),
+      more, hidden,
     };
   }
 
-  projectLayout(visible) {
+  projectLayout(visible, projectRows) {
     const byId = new Map(visible.map((r) => [r.w.id, r]));
-    const pins = data().pinned;
-    const pinned = pins.map((id) => byId.get(id)).filter(Boolean);
+    const settings = data();
+    const pins = new Set(settings.pinned);
+    const members = settings.pinned.map((id) => byId.get(id)).filter(Boolean);
+    const open = !settings.pinnedFolded || (this.pressed !== null && this.peek === "pinned");
+    const pinned = { members, open, shown: open ? members : members.filter((r) => r.w.active || this.unread.has(r.w.id)) };
+    const unpinned = visible.filter((r) => !pins.has(r.w.id));
     const grouped = new Map();
-    for (const r of visible) {
-      if (pins.includes(r.w.id)) continue;
+    for (const r of unpinned) {
       const machine = r.w.machine ?? null;
       if (!grouped.has(machine)) grouped.set(machine, []);
       grouped.get(machine).push(r);
     }
-    const groups = new Map([...grouped].map(([m, rows]) => [m, this.projectGroups(m, rows)]));
-    const order = [...pinned, ...[...groups.values()].flatMap(({ top, sections }) =>
-      [...top, ...sections.flatMap((s) => s.projects)])];
-    return { pinned, groups, spaces: order.map((r) => r.w) };
+    const rows = this.ordered(unpinned);
+    const machineNames = this.orderedMachines(rows);
+    const groups = new Map(machineNames.map((m) => [m, this.projectGroups(m, grouped.get(m) ?? [], projectRows)]));
+    const order = [...pinned.shown, ...machineNames.flatMap((m) => {
+      if (machineNames.length > 1 && this.machineState(m).folded) return [];
+      const { top, sections } = groups.get(m);
+      return [...top, ...sections.flatMap((s) => s.shown)];
+    })];
+    return { pinned, groups, rows, machineNames, spaces: order.map((r) => r.w) };
   }
 
   focusMainAgent(number) {
     const target = inRender(() => {
-      const ordered = this.projectLayout(this.visible()).spaces;
-      return mainAgents(ordered, this.projectTree(spaces()))[number - 1];
+      const sp = spaces(), projectRows = this.projectTree(sp);
+      this.unread = shared("sidebar.unread") === false ? new Set() : unreadSpaces(sp);
+      return mainAgents(this.projectLayout(this.visible(), projectRows).spaces, projectRows)[number - 1];
     });
     if (target) this.focusProjectAgent(target.row, target.space);
   }
 
   // A machine's Projects: its unfiled spaces, then the spaces under each section's header.
-  sectioned(m, { top, sections }, t) {
-    const more = this.moreProjects.has(m);
-    let hidden = 0;
-    const shownProjects = (ordered) => {
-      const { shown, idle } = splitProjects(ordered, ({ w }) =>
-        w.active || this.unread.has(w.id) || this.pressed === w.id || this.projectRows.has(w.id));
-      hidden += idle.length;
-      return more ? ordered : shown;
-    };
-    const out = shownProjects(top).map((r) => this.project(r, t));
-    for (const { section: s, members, projects } of sections) {
-      const open = !s.folded || (this.pressed !== null && this.peek === s.id);
-      out.push(this.sectionHead(s, members, t, open));
-      // Folded, it still shows the space you're in and its unread ones, as Slack does.
-      const shown = open ? shownProjects(projects)
-        : this.ordered(members.filter((r) => r.w.active || this.unread.has(r.w.id)));
+  sectioned(m, { top, sections, more, hidden }, t) {
+    const out = top.map((r) => this.project(r, t));
+    for (const { section: s, members, open, shown } of sections) {
+      out.push(this.sectionHead(s, members, t, open, !open || (members.length > 0 && !shown.length)));
       // Dropped on the header, a space goes to the section's end: the line shows under its last row.
       shown.forEach((r, n) => out.push(this.project({ ...r, end: open && n === shown.length - 1 ? `section:${s.id}` : null }, t)));
       if (open && !members.length) out.push(this.emptySection(s, t));
@@ -691,15 +699,17 @@ export default class Spaces extends View {
 
   focusProjectAgent(row, space) {
     const { address } = row;
-    if (row.role === "assistant") {
-      const chat = address && chatOf(address);
-      const pane = chat || row.slot?.pane;
-      const target = panes().find((p) => pane ? p.pane === pane : address && p.terminal === address);
+    const orchestrator = row.role === "assistant";
+    if (orchestrator || !row.task) {
+      const pane = (address && chatOf(address)) || row.slot?.pane;
+      const target = panes().find((p) => pane ? p.pane === pane : orchestrator && address && p.terminal === address);
       if (target) {
         if (!space.active) run("space.select", { id: space.id });
         run("tab.select", { id: target.tab });
         run("pane.focus", { pane: target.pane });
-        if (target.mod !== "chat" && address) run("pane-chat.toggle");
+        if (orchestrator && target.mod !== "chat" && row.live) {
+          setShared("pane-chat.openreq", { pane: target.pane, terminal: address, at: Date.now() });
+        }
         return;
       }
     }
@@ -710,7 +720,7 @@ export default class Spaces extends View {
         openTaskThread(address, row.task.ref, row.task.title, { key: row.task.key, openTerminal: terminal });
         return;
       }
-      if (terminal) { run("terminal.peek", { terminal: address }); return; }
+      if (row.live) { run("terminal.peek", { terminal: address }); return; }
     }
     run("agent.focus", { terminal: address });
   }
@@ -728,18 +738,41 @@ export default class Spaces extends View {
     this.projectModels.set(row.address, entry);
     if (this.projectModels.size > 64) this.projectModels.delete(this.projectModels.keys().next().value);
     cx.spawn(async (cx) => {
-      try { entry.tip = await projectModel(row.address); }
-      catch { entry.tip = old?.tip ?? ""; }
+      try { entry.tip = (await projectModel(row.address)) ?? entry.tip; }
+      catch { /* Keep the last known model when the terminal cannot be read. */ }
       finally { entry.pending = false; }
       if (this.hoveredProjectAgent === row.id) cx.notify();
     });
   }
 
-  projectAgentControl(id, label, icon, command, args, t) {
+  openProjectTerminal(address, cx) {
+    const chat = () => chatPane(terminals().find((k) => k.address === address));
+    const previous = chat();
+    run("terminal.keep", { terminal: address, place: "tab" });
+    if (!previous) return;
+    cx.spawn(async (cx) => {
+      // Keep may acknowledge before a linked machine adds the pane. Leave the chat's ownership
+      // intact until the new pane exists, and leave any newly opened chat alone.
+      try {
+        for (let i = 0; i < 50 && chat() === previous; i++) {
+          if (panes().some((p) => p.terminal === address)) {
+            const result = await hc(["label", address, `${CHAT}=`]);
+            if (result.code !== 0) throw new Error(result.stderr.trim() || "Couldn't detach the terminal from its chat.");
+            return;
+          }
+          await cx.sleep(200);
+        }
+      } catch (e) {
+        toast({ title: "Couldn't detach the terminal from its chat", body: plainError(e), level: "error" });
+      }
+    });
+  }
+
+  projectAgentControl(id, label, icon, action, t) {
     return div().id(id).size(20).flex_none().flex().items_center().justify_center().rounded(RADIUS.control)
       .text_color(t.muted).cursor_pointer().hover((s) => s.bg(t.raised).text_color(t.foreground))
       .accessibility_label(label).tooltip(label)
-      .on_click((_e, cx) => { cx.stop_propagation(); run(command, args); this.hoveredProjectAgent = null; cx.notify(); })
+      .on_click((_e, cx) => { cx.stop_propagation(); action(cx); this.hoveredProjectAgent = null; cx.notify(); })
       .child(svg(icon).size(12));
   }
 
@@ -758,22 +791,22 @@ export default class Spaces extends View {
         .accessibility_label(harness.name)
         .child(harness.tint ? svg(harness.icon).size(14).text_color(t.muted) : image(harness.icon).w(14).h(14))))
       .child(div().flex_1().min_w(0).truncate().text_color(row.role === "assistant" ? t.foreground : t.muted).child(row.title))
-      .when(Boolean(number), (el) => el.child(div().id(`project-key-${row.id}`).flex_none().text_size(TEXT.id)
-        .text_color(t.dim).child(`⌃${number}`)))
+      .when(Boolean(number) && !controls, (el) => el.child(div().id(`project-key-${row.id}`).flex_none().text_size(TEXT.id)
+        .text_color(t.dim).child(`${window()?.platform === "macos" ? "⌃" : "Ctrl+"}${number}`)))
       .when(this.showProjectStates && !controls, (el) => el.child(div().flex_none().text_size(TEXT.id).text_color(t.dim).child(PROJECT_STATES[row.state])))
       .when(controls, (el) => el
         .child(this.projectAgentControl(`project-stop-${row.id}`, "Stop", "mods/workspace-chrome-orchestrator/square.svg",
-          "terminal.kill", { terminal: row.address }, t))
+          () => run("terminal.kill", { terminal: row.address }), t))
         .child(this.projectAgentControl(`project-tab-${row.id}`, "Open in a new tab", "mods/spaces-chat/open-tab.svg",
-          "terminal.keep", { terminal: row.address, place: "tab" }, t)));
+          (cx) => this.openProjectTerminal(row.address, cx), t)));
   }
 
-  sectionHead(s, members, t, open) {
+  sectionHead(s, members, t, open, dropAtHead) {
     const needs = open ? 0 : members.reduce((n, r) => n + this.needs(r.w), 0);
     const ready = open ? 0 : members.reduce((n, r) => n + this.readyIn(r.w), 0);
-    // Over it, the line shows where the space lands: under the section's last row ("Drag spaces
-    // here" when empty), or under the header while it's folded.
-    const line = this.pressed !== null && this.over === `section:${s.id}` && !open;
+    // Over it, show the line under the header if its members are hidden. Visible or empty
+    // sections show the line in their last row.
+    const line = this.pressed !== null && this.over === `section:${s.id}` && dropAtHead;
     return this.groupHead(`section-${s.id}`, t)
       .on_click(() => foldSection(s.id))
       .on_mouse_down("right", (e) => openMenu("section", { section: s.id, row: rectOf(e) }))
@@ -1028,13 +1061,13 @@ export default class Spaces extends View {
     const sp = spaces();
     this.projectRows = collapsed ? new Map() : this.projectTree(sp);
     const visible = this.visible();
-    const projects = collapsed ? null : this.projectLayout(visible);
-    const mains = projects ? mainAgents(projects.spaces, this.projectRows) : [];
-    this.mainKeys = new Map(mains.map(({ row }, i) => [row.id, i + 1]));
     // Assistants with something new; any on screen is read now.
     readShown();
     // herdr-orchestrator settings' "Bold unread spaces" off (shared "sidebar.unread" false): none.
     this.unread = shared("sidebar.unread") === false ? new Set() : unreadSpaces(sp);
+    const projects = collapsed ? null : this.projectLayout(visible, this.projectRows);
+    const mains = projects ? mainAgents(projects.spaces, this.projectRows) : [];
+    this.mainKeys = new Map(mains.map(({ row }, i) => [row.id, i + 1]));
     const ids = new Set(sp.map(p => p.id));
     const kept = Object.fromEntries(Object.entries(shared("space.colors") ?? {}).filter(([id]) => ids.has(id)));
     let changed = Object.keys(kept).length !== Object.keys(shared("space.colors") ?? {}).length;

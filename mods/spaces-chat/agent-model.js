@@ -19,7 +19,7 @@ async function recentModel(kind, pid, machine) {
 
 export async function projectModel(address) {
   const result = await hc(["get", address, "--json"]);
-  if (result.code !== 0) return "";
+  if (result.code !== 0) return null;
   const terminal = JSON.parse(result.stdout);
   const kind = kinds[terminal?.status?.app] ?? kinds[terminal?.foreground?.name] ?? kinds[terminal?.labels?.["herdr.agent"]];
   if (!kind) return "";

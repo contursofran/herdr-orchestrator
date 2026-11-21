@@ -5,7 +5,7 @@ const project = (id, machine = null) => ({ id, machine });
 const main = (id) => ({ id, live: true, depth: 0 });
 const ids = (spaces, projects) => mainAgents(spaces, projects).map(({ row }) => row.id);
 
-test("main agents follow the local projects, then the linked machines by name", () => {
+test("main agents follow the supplied sidebar order and skip workers, helpers, and reviewers", () => {
   const projects = new Map([
     ["zulu", [main("zulu-assistant")]],
     ["second", [main("second-assistant")]],
@@ -13,11 +13,14 @@ test("main agents follow the local projects, then the linked machines by name", 
     ["first", [
       main("first-assistant"), { ...main("child"), depth: 1 },
       { ...main("detached-worker"), task: { ref: "SHOP-1" } },
+      { ...main("orphaned-helper"), role: "helper" },
+      { ...main("orphaned-reviewer"), role: "reviewer" },
+      { ...main("orphaned-worker"), role: "worker" },
       main("ordinary"), { ...main("stopped"), live: false },
     ]],
   ]);
   expect(ids([project("zulu", "zulu"), project("first"), project("alpha", "alpha"), project("second")], projects))
-    .toEqual(["first-assistant", "ordinary", "second-assistant", "alpha-assistant", "zulu-assistant"]);
+    .toEqual(["zulu-assistant", "first-assistant", "ordinary", "alpha-assistant", "second-assistant"]);
 });
 
 test("only the first nine main agents get keys", () => {

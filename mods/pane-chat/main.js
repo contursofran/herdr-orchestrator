@@ -107,6 +107,20 @@ export default class Pane extends View {
     return panes().find((p) => p.pane === props()?.pane);
   }
 
+  openRequestedChat(pane, cx) {
+    const req = shared("pane-chat.openreq");
+    if (!req || req.pane !== pane.pane || req.terminal !== pane.terminal || Date.now() - req.at >= 5000
+        || pane.mod === CHAT || !chatty(pane) || this.busy) return;
+    cx.timer.after(0, (cx) => {
+      const current = shared("pane-chat.openreq"), target = this.me();
+      if (current?.at !== req.at || current?.pane !== req.pane || current?.terminal !== req.terminal
+          || target?.pane !== req.pane || target.terminal !== req.terminal || target.mod === CHAT || !chatty(target) || this.busy) return;
+      setShared("pane-chat.openreq", null);
+      lastSwap = Date.now();
+      this.toChat(target, cx);
+    });
+  }
+
   // A 24 px icon button (split, zoom, close).
   button(t, id, icon, command, args, fn = null) {
     return h_flex()
@@ -209,6 +223,7 @@ export default class Pane extends View {
     const t = theme();
     const self = this.me();
     if (!self) return div();
+    this.openRequestedChat(self, cx);
     // A chat pane wears its agent's header: same name, folder and status.
     const chatMode = self.mod === CHAT;
     const agent = chatMode ? agentOf(self.pane) : null;
