@@ -31,7 +31,7 @@ from .takeover import cant_go_on, takeover
 from .ghnews import main_pass, pr_deliver, pr_news
 from .scheduler import SCHEDULER
 from .revive import revive_pass
-from . import reviews
+from . import boundaries, resources, reviews
 
 
 PR_WAIT_EVERY = 20000  # how often a pull request whose checks still run is read again (ms)
@@ -74,6 +74,10 @@ def queue_pass(s, t, v, report):
     head = v.get("headRefOid")
     if ("timed_out" in why.lower().replace(" ", "_") and head and t.get("requeued") != head
             and not pr_problem(v) and not reviews.merge_problem(s, t, head)):
+        if problem := boundaries.check_pr(s, t, v, pr_view):
+            boundaries.hold(s, t, problem)
+            report["attention"].append(t["id"])
+            return
         ok, err = queue_merge(t, head)
         if ok:
             t["requeued"], t["merge_queued"] = head, now()
@@ -283,7 +287,9 @@ def tick_store(s, report):
                     pr_deliver(s, t, report)
                 except Exception as e:  # never stops the tick
                     report.setdefault("github_error", []).append(f"{s.ref(t)}: {e}")
-            if t["state"] == "ready" and t.get("auto_merge") and t.get("pr") and not t.get("attention") and t.get("_pr_fresh"):
+            attention = t.get("attention") or ""
+            if (t["state"] == "ready" and t.get("auto_merge") and t.get("pr") and t.get("_pr_fresh")
+                    and (not attention or attention.startswith(boundaries.HOLD))):
                 if not merge_now(s, t):
                     report["done"].append(t["id"])
             t.pop("_pr_fresh", None)
@@ -307,7 +313,7 @@ def tick_store(s, report):
                 s.dirty = True
             continue
         # Its machine too busy (HERD-40): it, and every one after it, waits with why.
-        held = machine_hold()
+        held = resources.waiting(s, t) or machine_hold()
         if (t.get("held") or None) != held:
             t["held"] = held
             if not held:
@@ -319,6 +325,10 @@ def tick_store(s, report):
         try:
             sp = q.get("space") or t.get("space") or default_space()
             a = begin(s, t, q.get("argv") or worker_argv(s, t, sp), sp, q.get("parent"))
+        except resources.Busy as e:
+            t["held"] = str(e)
+            s.dirty = True
+            continue
         except Fail as e:
             t["attention"] = f"Couldn't start: {e}"
             s.dirty = True

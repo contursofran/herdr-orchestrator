@@ -196,6 +196,10 @@ def main():
                                       "setting, else the folder's current branch)")
         c.add_argument("--branch", help="its branch's exact name, e.g. a ticket's ABC-2137 (default: the folder's Branch names "
                                         "setting, else task/<n>-<title words>); refused when that branch exists already (\"\": the pattern's)")
+        c.add_argument("--require-boundary", action=argparse.BooleanOptionalAction,
+                       help="require a Boundary line of allowed paths in the brief before merging")
+        c.add_argument("--lock", action="append", metavar="RESOURCE",
+                       help="reserve a named resource on this machine while the task is active (repeatable; \"\" clears)")
 
     def agent_opts(c):
         c.add_argument("--agent", help="agent key (claude, codex, ...)")

@@ -3946,6 +3946,217 @@ class IndependentReview(unittest.TestCase):
         gh.assert_not_called()
 
 
+class MergeBoundaries(unittest.TestCase):
+    setUp = ReviewedNamesItsCommit.setUp
+    git = ReviewedNamesItsCommit.git
+
+    def commit_file(self, folder, name, text):
+        path = os.path.join(folder, name)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as f:
+            f.write(text)
+        self.git(folder, "add", "--", name)
+        self.git(folder, "commit", "-qm", "change file")
+        return self.git(folder, "rev-parse", "HEAD")
+
+    def local(self):
+        self.main = self.store.loc["folder"]
+        self.git(self.main, "reset", "--hard", self.task["start"])
+        self.task.update(state="ready", prompt="Boundary: src/**")
+        return self.main
+
+    def test_local_accept_blocks_outside_paths_and_rechecks_after_a_scope_edit(self):
+        from unittest import mock
+        main = self.local()
+        self.task["head"] = self.commit_file(self.wt, "other.txt", "one\n")
+        args = self.argparse.Namespace(id="1", json=True)
+        with mock.patch.object(self.commands, "live_agents", return_value=[]), \
+                mock.patch.object(self.commands, "github", return_value=None), \
+                mock.patch.object(self.commands, "github_unreachable", return_value=None), \
+                mock.patch.object(self.commands, "finish", side_effect=lambda s, t, **kw: t.update(state="done")), \
+                mock.patch.object(self.commands, "tell") as tell:
+            with self.assertRaises(SystemExit):
+                self.commands.cmd_accept(args)
+            self.assertIn("other.txt", self.task["attention"])
+            self.assertEqual(self.git(main, "rev-parse", "HEAD"), self.task["start"])
+            self.task["prompt"] = "Boundary: src/** other.txt"
+            self.commands.cmd_accept(args)
+        tell.assert_not_called()
+        self.assertEqual(self.git(main, "rev-parse", "HEAD"), self.task["head"])
+        self.assertEqual(self.task["state"], "done")
+
+    def test_required_missing_empty_and_unreadable_boundaries_hold(self):
+        from unittest import mock
+        from herdr_task import boundaries
+        self.local()
+        self.task["head"] = self.commit_file(self.wt, "src/allowed.txt", "one\n")
+        for prompt in ("Do the thing", "Boundary:"):
+            self.task.update(prompt=prompt, require_boundary=True)
+            self.assertFalse(self.commands.ff_merge(self.store, self.task))
+            self.assertIn("Add a Boundary line", self.task["attention"])
+        self.task["prompt"] = "Boundary: src/**"
+        with mock.patch.object(boundaries, "changed_paths", side_effect=OSError("fixture failure")):
+            self.assertFalse(self.commands.ff_merge(self.store, self.task))
+            self.assertIn("fixture failure", self.task["attention"])
+        self.assertTrue(self.commands.ff_merge(self.store, self.task))
+
+    def test_checks_both_sides_of_a_rename_and_segment_matching(self):
+        from herdr_task import boundaries
+        main = self.local()
+        base = self.commit_file(self.wt, "before/a\n b.txt", "one\n")
+        self.git(main, "merge", "--ff-only", base)
+        os.makedirs(os.path.join(self.wt, "src"))
+        self.git(self.wt, "mv", "before/a\n b.txt", "src/a\n b.txt")
+        self.git(self.wt, "commit", "-qm", "rename")
+        self.task["head"] = self.git(self.wt, "rev-parse", "HEAD")
+        self.assertFalse(self.commands.ff_merge(self.store, self.task))
+        self.assertIn(repr("before/a\n b.txt"), self.task["attention"])
+        self.task["prompt"] = "Boundary: before/**"
+        self.assertFalse(self.commands.ff_merge(self.store, self.task))
+        self.assertIn(repr("src/a\n b.txt"), self.task["attention"])
+        self.assertFalse(boundaries.matches("src/deep/file.ts", ("src", "*.ts")))
+        self.assertTrue(boundaries.matches("src/file.ts", ("src", "**", "*.ts")))
+        self.task["prompt"] = "Boundary: before/** src/**"
+        self.assertTrue(self.commands.ff_merge(self.store, self.task))
+
+    def test_attempts_to_merge_on_github_recheck_the_base_and_pin_the_checked_head(self):
+        from unittest import mock
+        from herdr_task import tick
+        self.local()
+        head = self.commit_file(self.wt, "src/in-scope.txt", "one\n")
+        self.task.update(head=head, auto_merge="checks", pr={"number": 1, "repo": "demo/example"})
+        pr = {"state": "OPEN", "headRefOid": head, "baseRefOid": self.task["start"], "baseRefName": "main",
+              "statusCheckRollup": [{"status": "COMPLETED", "conclusion": "SUCCESS"}]}
+        report = {"done": [], "attention": []}
+        with mock.patch.object(self.commands, "pr_view", side_effect=[pr, {**pr, "baseRefOid": self.other}, pr, pr, pr]), \
+                mock.patch.object(self.commands, "note_checks"), mock.patch.object(self.commands, "checks_since"), \
+                mock.patch.object(self.commands, "expected_checks"), \
+                mock.patch.object(self.commands, "gh", return_value=(True, "", "")) as gh, \
+                mock.patch.object(tick, "back_pass"), \
+                mock.patch.object(tick, "facts", side_effect=lambda s, t, r: t.update(_pr_fresh=True)):
+            tick.tick_store(self.store, report)
+            self.assertIn("changed during the check", self.task["attention"])
+            gh.assert_not_called()
+            tick.tick_store(self.store, report)
+        gh.assert_called_once_with("pr", "merge", "1", "--repo", "demo/example", "--squash", "--match-head-commit", head)
+
+    def test_github_merge_catches_a_file_renamed_outside_scope_on_the_base(self):
+        from herdr_task import boundaries
+        main = self.local()
+        common = self.commit_file(self.wt, "src/internal.txt", "one\ntwo\nthree\nfour\n")
+        self.git(main, "merge", "--ff-only", common)
+        os.makedirs(os.path.join(main, "outside"))
+        self.git(main, "mv", "src/internal.txt", "outside/internal.txt")
+        self.git(main, "commit", "-qm", "rename on main")
+        base = self.git(main, "rev-parse", "HEAD")
+        head = self.commit_file(self.wt, "src/internal.txt", "one\ntwo\nthree\nchanged\n")
+        self.task["head"] = head
+        self.assertIn("outside/internal.txt", boundaries.check(self.store, self.task, head, base, pull_request=True))
+        self.task["prompt"] = "Boundary: src/** outside/internal.txt"
+        self.assertIsNone(boundaries.check(self.store, self.task, head, base, pull_request=True))
+
+    def test_moved_local_head_is_refused_before_merge(self):
+        main = self.local()
+        self.task["head"] = self.commit_file(self.wt, "src/one.txt", "one\n")
+        self.commit_file(self.wt, "src/two.txt", "two\n")
+        self.assertFalse(self.commands.ff_merge(self.store, self.task))
+        self.assertIn("branch moved", self.task["attention"])
+        self.assertEqual(self.git(main, "rev-parse", "HEAD"), self.task["start"])
+
+    def test_automatic_local_merge_stays_held_without_handing_it_to_an_agent(self):
+        from unittest import mock
+        main = self.local()
+        self.task["head"] = self.commit_file(self.wt, "outside.txt", "one\n")
+        with mock.patch.object(self.commands, "github", return_value=None), \
+                mock.patch.object(self.commands, "github_unreachable", return_value=None), \
+                mock.patch.object(self.commands, "merge_policy", return_value="auto"), \
+                mock.patch.object(self.commands, "tell") as tell:
+            self.assertIn("outside.txt", self.commands.finalize(self.store, self.task))
+        tell.assert_not_called()
+        self.assertEqual(self.git(main, "rev-parse", "HEAD"), self.task["start"])
+
+    def test_timed_out_merge_queue_retry_obeys_the_boundary(self):
+        from unittest import mock
+        from herdr_task import base, tick
+        self.local()
+        head = self.commit_file(self.wt, "outside.txt", "one\n")
+        self.task.update(head=head, pr={"number": 1, "repo": "demo/example"}, merge_queued=base.now() - 300000)
+        pr = {"state": "OPEN", "headRefOid": head, "baseRefOid": self.task["start"], "baseRefName": "main"}
+        queue = {"in": False, "auto": False, "reason": "CHECKS_TIMED_OUT"}
+        with mock.patch.object(tick, "queue_entry", return_value=queue), \
+                mock.patch.object(tick, "queue_merge") as retry:
+            tick.queue_pass(self.store, self.task, pr, {"attention": []})
+        retry.assert_not_called()
+        self.assertIn("outside.txt", self.task["attention"])
+
+
+class TaskResourceLocks(unittest.TestCase):
+    setUp = Scheduled.setUp
+    run_cmd = Scheduled.run_cmd
+    add = Scheduled.add
+    task = Scheduled.task
+    tick_at = Scheduled.tick_at
+
+    def test_overlapping_boundaries_can_both_start_but_a_named_resource_waits(self):
+        self.add("First", prompt="Boundary: tests/**", lock=["test-device"], in_="1m")
+        self.add("Second", prompt="Boundary: tests/**", in_="1m")
+        self.add("Third", prompt="Boundary: tests/**", lock=["test-device"], in_="1m")
+        instant = self.task("1")["scheduled_for"] + 1000
+        self.assertEqual(len(self.tick_at(instant)), 2)
+        holder = self.task("1")
+        self.assertEqual(holder["state"], "running")
+        self.assertEqual(self.task("2")["state"], "running")
+        self.assertIn("test-device", self.task("3")["held"])
+        with self.store_mod.Store(self.store_mod.locate(self.folder)) as store:
+            store.find("1")["state"] = "done"
+            store.dirty = True
+        self.assertEqual(len(self.tick_at(instant + 1000)), 1)
+        self.assertEqual(self.task("3")["state"], "running")
+
+    def test_only_one_simultaneous_start_acquires_a_resource_across_repos(self):
+        from concurrent.futures import ThreadPoolExecutor
+        from threading import Barrier
+        from unittest import mock
+        from herdr_task import resources
+        another = os.path.join(self.tmp, "another")
+        os.mkdir(another)
+        for folder in (self.folder, another):
+            self.add("Use device", folder=folder, lock=["test-device"])
+        barrier = Barrier(2, timeout=5)
+
+        def try_lock(folder):
+            with self.store_mod.Store(self.store_mod.locate(folder)) as store:
+                task = store.find("1")
+                barrier.wait()
+                try:
+                    with resources.activate(store, task):
+                        return task["state"]
+                except resources.Busy:
+                    return task["state"]
+
+        with mock.patch.object(resources, "STORE", self.store_mod.STORE), ThreadPoolExecutor(2) as pool:
+            self.assertCountEqual(pool.map(try_lock, (self.folder, another)), ["running", "todo"])
+        self.assertCountEqual((self.task("1")["state"], self.task_at(another, "1")["state"]), ["running", "todo"])
+
+    def test_failed_launch_releases_its_reservation(self):
+        from unittest import mock
+        from herdr_task import resources
+        self.add("First", lock=["test-device"])
+        self.add("Second", lock=["test-device"])
+        with mock.patch.object(resources, "STORE", self.store_mod.STORE):
+            with self.store_mod.Store(self.store_mod.locate(self.folder)) as store:
+                with self.assertRaises(self.Fail):
+                    with resources.activate(store, store.find("1")):
+                        raise self.Fail("could not launch")
+                with resources.activate(store, store.find("2")):
+                    self.assertEqual(store.find("2")["state"], "running")
+        self.assertEqual(self.task("1")["state"], "todo")
+
+    def task_at(self, folder, ref):
+        with self.store_mod.Store(self.store_mod.locate(folder), write=False) as store:
+            return dict(store.find(ref))
+
+
 if __name__ == "__main__":
     unittest.main()
 

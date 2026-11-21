@@ -9,6 +9,7 @@ import sys
 from .base import beside_store, ENTRY, Fail, guard, now, STORE
 from .agents import agent_running, live_agents
 from .store import parse_ref, prefixes_in_use, read_list, store_path
+from . import resources
 
 
 # ---- queues ---------------------------------------------------------------------------------
@@ -167,6 +168,8 @@ def queue_reason(s, task):
     wait = [f"{s.prefix}-{i}" for i in waiting_for(s, task)] + waiting_ext(task)
     if wait:
         return "after " + ", ".join(wait)
+    if reason := resources.waiting(s, task):
+        return reason
     n = running_count(s, task)
     if n >= s.max_running():
         return f"{n} tasks are running here" if n != 1 else "1 task is running here"

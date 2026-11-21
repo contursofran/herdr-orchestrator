@@ -80,6 +80,18 @@ task values a machine set before (the old machine scope) still apply there until
   `everywhere`) and its heartbeat file (`~/.config/herdr-core/autopilot/everywhere.md`) are what Everywhere inherits
   until it's set.
 
+## Task file boundaries and resource locks
+
+Add a line such as `Boundary: src/login/** tests/login.test.ts` to a worktree task's brief. Herdr checks the
+proposed changes at merge time, including both paths of a rename. Use whitespace-separated paths or globs,
+and quote names that contain spaces. `*` matches within one path segment and `**` matches across directories.
+`herdr-task add --require-boundary` also blocks merging if the line is missing. Use `herdr-task edit --prompt-file`
+to update the brief when the agreed scope changes.
+
+Use `herdr-task add --lock test-device` for a resource shared on the same machine. Repeat `--lock` to request
+more than one. A running or ready task holds its resources until it is done or removed. Tasks with overlapping
+boundaries can run in separate worktrees. Use `--after` when one task needs another to finish first.
+
 ## Reactions
 
 Agents › Reactions, on by default: every agent reacts to some of your messages with one emoji, as a person would:
