@@ -6654,23 +6654,26 @@ class ProcessTable(unittest.TestCase):
         self.addCleanup(lambda: (os.killpg(tree.pid, signal.SIGKILL), tree.wait()))
         import time
         time.sleep(0.3)
-        ran, reads = [], []
-        real = self.sessions._read_table
-        with self.mock.patch.object(self.sessions, "run", lambda args, **kw: ran.append(args)), \
-                self.mock.patch.object(self.sessions, "_read_table", lambda: reads.append(1) or real()):
+        with tempfile.TemporaryDirectory() as home, self.mock.patch.object(self.sessions, "HOME", home), \
+                self.mock.patch.object(self.sessions, "run", wraps=self.sessions.run) as run, \
+                self.mock.patch.object(self.sessions, "_read_table", wraps=self.sessions._read_table) as read_table:
+            # A Claude session on the root pid keeps these lookups from opening lsof for each process.
+            sessions = os.path.join(home, ".claude", "sessions")
+            os.makedirs(sessions)
+            with open(os.path.join(sessions, f"{tree.pid}.json"), "w") as f:
+                json.dump({"sessionId": "test-session"}, f)
             under = self.sessions.kids(tree.pid)
             for _ in range(20):   # a pass's other agents and session lookups share the same read
                 self.sessions.kids(tree.pid)
-                self.sessions.session_of(tree.pid)
-        self.assertEqual(len(under), 3, under)   # the inner sh and both sleeps
-        if os.path.isdir("/proc/self"):
-            self.assertEqual(ran, [])   # nothing started: no pgrep, no ps
-        self.assertEqual(len(reads), 1)
-        # the next pass (TABLE_FOR later) reads it again, so new processes show
-        self.sessions._table["at"] -= self.sessions.TABLE_FOR + 1
-        with self.mock.patch.object(self.sessions, "_read_table", lambda: reads.append(1) or real()):
+                self.assertEqual(self.sessions.session_of(tree.pid), ("test-session", None))
+            self.assertEqual(len(under), 3, under)   # the inner sh and both sleeps
+            expected = [] if os.path.isdir("/proc/self") else [self.mock.call(["ps", "-axo", "pid=,ppid="])]
+            self.assertEqual(run.call_args_list, expected)
+            read_table.assert_called_once_with()
+            # The next pass reads again so new processes show.
+            self.sessions._table["at"] -= self.sessions.TABLE_FOR + 1
             self.sessions.kids(tree.pid)
-        self.assertEqual(len(reads), 2)
+            self.assertEqual(read_table.call_count, 2)
 
     def test_macos_reads_one_ps(self):
         from types import SimpleNamespace

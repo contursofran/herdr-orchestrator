@@ -94,9 +94,23 @@ class Preview(unittest.TestCase):
         # bound to loopback: the port is the server's on 127.0.0.1 and nowhere else
         with open(os.path.join(self.home, ".herdr", "artifacts", ".preview")) as f:
             st = json.load(f)
-        out = subprocess.run(["sh", "-c", f"cat /proc/net/tcp /proc/net/tcp6 2>/dev/null"], stdout=subprocess.PIPE, universal_newlines=True).stdout
-        mine = [l.split()[1] for l in out.splitlines()[1:] if l.split()[1].endswith(":%04X" % st["port"]) and l.split()[3] == "0A"]
-        self.assertEqual(mine, ["0100007F:%04X" % st["port"]])
+        port = st["port"]
+        if sys.platform == "darwin":
+            out = subprocess.check_output(
+                ["/usr/sbin/lsof", "-nP", "-a", "-p", str(st["pid"]), "-iTCP", "-sTCP:LISTEN", "-Fn"], text=True)
+            listeners = [line[1:] for line in out.splitlines() if line.startswith("n")]
+            self.assertEqual(listeners, [f"127.0.0.1:{port}"])
+        else:
+            listeners = []
+            for path in ("/proc/net/tcp", "/proc/net/tcp6"):
+                if os.path.exists(path):
+                    with open(path) as f:
+                        next(f)
+                        for line in f:
+                            _, local, _, state, *_ = line.split()
+                            if state == "0A" and local.endswith(f":{port:04X}"):
+                                listeners.append(local)
+            self.assertEqual(listeners, [f"0100007F:{port:04X}"])
 
     def test_started_once_and_reused(self):
         a, b = self.preview(), self.preview("--version", "1")
