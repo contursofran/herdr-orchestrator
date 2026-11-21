@@ -756,7 +756,7 @@ export default class Spaces extends View {
       .when(Boolean(tip), (el) => el.tooltip(tip))
       .child(div().size(6).rounded(3).flex_none().bg(color))
       .when(Boolean(harness), (el) => el.child(div().id(`project-harness-${row.id}`).size(14).flex_none()
-        .accessibility_label(harness.name).tooltip(harness.name)
+        .accessibility_label(harness.name)
         .child(harness.tint ? svg(harness.icon).size(14).text_color(t.muted) : image(harness.icon).w(14).h(14))))
       .child(div().flex_1().min_w(0).truncate().text_color(row.role === "assistant" ? t.foreground : t.muted).child(row.title))
       .when(Boolean(number), (el) => el.child(div().id(`project-key-${row.id}`).flex_none().text_size(TEXT.id)

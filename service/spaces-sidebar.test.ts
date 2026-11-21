@@ -9,7 +9,7 @@ const EL = Symbol("element");
 const ok = (v: unknown) => typeof v === "string" || typeof v === "number" || (v !== null && typeof v === "object" && (v as any)[EL]);
 function el(asset?: string): any {
   const self: any = new Proxy({ [EL]: true, parts: [] as unknown[], elementId: "", indent: 0, click: null as Function | null,
-    hoverChanged: null as Function | null, tip: "", asset }, {
+    hoverChanged: null as Function | null, tip: "", label: "", asset }, {
     get(target, k) {
       if (k === EL) return true;
       if (k === "child") return (v: unknown) => {
@@ -27,6 +27,7 @@ function el(asset?: string): any {
       if (k === "on_click") return (click: Function) => { target.click = click; return self; };
       if (k === "on_hover") return (hover: Function) => { target.hoverChanged = hover; return self; };
       if (k === "tooltip") return (tip: string) => { target.tip = tip; return self; };
+      if (k === "accessibility_label") return (label: string) => { target.label = label; return self; };
       if (k === "when") return (c: unknown, f: (e: any) => any) => (c ? f(self) : self);
       if (k === "then") return undefined;
       return (target as any)[k] ?? (() => self);
@@ -223,7 +224,7 @@ describe("Desktop Projects tree", () => {
     expect(s.projectRows.get("s1")).toHaveLength(1);
   });
 
-  test("renders a worker's Herdr icon next to its status dot and keeps the tooltip", () => {
+  test("renders a worker's accessible Herdr icon next to its status dot", () => {
     const labeled = worker("t2", "t1");
     const claude = worker("t3", null, "blocked");
     liveTerminals = [assistant(), { ...labeled, labels: { ...labeled.labels, "herdr.agent": "codex" } },
@@ -234,7 +235,7 @@ describe("Desktop Projects tree", () => {
       const row = byId(tree, `project-agent-${terminal}`);
       const icon = byId(row, `project-harness-${terminal}`);
       expect(row.parts[1]).toBe(icon);
-      expect(icon.tip).toBe(name);
+      expect(icon.label).toBe(name);
       expect(icon.parts[0].asset).toBe(`icons/${file}.svg`);
     }
   });
