@@ -247,6 +247,11 @@ def plan(k, rec, running):
     task = task_of(k) if labels.get("herdr.task") else None
     if labels.get("herdr.task") and (task or {}).get("state") not in ("running", "ready"):
         return None
+    if labels.get("herdr.role") == "reviewer" and labels.get("herdr.review.attempt"):
+        req = (task or {}).get("review_request") or {}
+        if (req.get("id") != labels["herdr.review.attempt"] or req.get("status") not in ("queued", "reviewing")
+                or req.get("name") != k.get("name") or (req.get("reviewer") and req["reviewer"] != k["address"])):
+            return None
     if rec and rec.get("pid") == k.get("pid"):
         # Typed here already: once more only when the resume said its session is gone.
         if rec.get("how") != "resume" or now() - (rec.get("sent") or 0) > LOOK_MS:

@@ -387,16 +387,29 @@ def cmd_ready(args):
             raise Fail(f"{s.ref(t)} is already done.")
         wt = t.get("worktree") if t.get("mode") == "worktree" else None
         signed = reviews.signed(s, t)
+        refused, review_wait = None, None
         if signed:
             folder = wt or (s.loc["folder"] if s.loc["kind"] == "repo" else None)
-            t["head"] = reviews.commit(folder)
+            head = reviews.commit(folder)
+            if not no_review_work(s, {**t, "head": head}, wt):
+                req = t.get("review_request") or {}
+                if req.get("head") == head and req.get("status") == "approved":
+                    review_wait = "has its approval. The task engine is advancing it."
+                elif not reviews.approval(t, head):
+                    try:
+                        review_wait = reviews.request(s, t, head, rounds_used(t), review_limits(s, t)[1])
+                    except Fail as error:
+                        refused = str(error)
+            if not refused:
+                t["head"] = head
         elif wt and os.path.isdir(wt):
             if git(wt, "status", "--porcelain", "--untracked-files=no")[1]:
                 raise Fail(f"{wt} has uncommitted changes. Commit them, then run ready again.")
             t["head"] = git(wt, "rev-parse", "HEAD")[1]
-        if wt and os.path.isdir(wt):
+        if not refused and wt and os.path.isdir(wt):
             own_work(s, t)
-        refused = None if signed else review_refusal(s, t, wt)
+        if not signed:
+            refused = review_refusal(s, t, wt)
         if refused:
             # Kept (the task's line says why it waits); refused after the store is saved.
             s.dirty = True
@@ -429,15 +442,9 @@ def cmd_ready(args):
             # Its agents' turns now: a later turn of theirs takes it back to work (busy_again()).
             t["ready_turns"] = ready_turns(live_agents(s.key(t)))
             s.dirty = True
-            if signed and not no_review_work(s, t, wt):
-                req = t.get("review_request") or {}
-                if req.get("head") == t["head"] and req.get("status") == "approved":
-                    say(args, view(s, t), f"{s.ref(t)} has its approval. The task engine is advancing it.")
-                    return
-                if not reviews.approval(t, t["head"]):
-                    result = reviews.request(s, t, t["head"], rounds_used(t), review_limits(s, t)[1])
-                    say(args, view(s, t), f"{s.ref(t)}: {result}")
-                    return
+            if review_wait:
+                say(args, view(s, t), f"{s.ref(t)}: {review_wait}")
+                return
     if refused:
         raise Fail(refused)
     with open_store(args) as s:
@@ -630,8 +637,8 @@ def cmd_review_more(args):
         t["review_rounds_added"] = int(t.get("review_rounds_added") or 0) + 1
         t.pop("review_out", None)
         if t.get("signed_reviews") and (t.get("review_request") or {}).get("status") == "escalated":
-            t.pop("review_request", None)
             t.pop("attention", None)
+            reviews.clear(s, t)
         s.dirty = True
         live = workers(s, t)
         told = None
@@ -781,6 +788,7 @@ def finalize(s, t):
     t["state"], t["ready_at"] = "ready", now()
     for k in ("attention", "merge_requested", "review"):
         t.pop(k, None)
+    reviews.clear(s, t)
     (t.get("pr") or {}).pop("wait", None)
     s.dirty = True
     msg = f"{s.ref(t)} is ready."
@@ -888,6 +896,8 @@ def cmd_state(args, state):
             unarchive(s, t)
         for k in ("merge_requested", "attention", "queue", "queued_at", "progress", "retry", "scheduled_for", "held") if state != "running" else ("attention", "scheduled_for"):
             t.pop(k, None)
+        reviews.clear(s, t)
+        reviews.cleanup(s, t)
         s.dirty = True
         v = view(s, t)
     say(args, v, f"{s.ref(t)} is done." if state == "done" else f"{s.ref(t)} is {state}.")

@@ -217,6 +217,17 @@ test("subagentsOf: its own hc children labelled reviewer or helper, never worker
   expect(subagentTitle({ role: "reviewer", cli: null })).toBe("Reviewer");
 });
 
+test("a detached independent reviewer stays with its task on the same machine", () => {
+  const terms = [
+    { address: "t1", state: "live", labels: { "herdr.task": "x#1" } },
+    { address: "other/t1", state: "live", labels: { "herdr.task": "x#1" } },
+    { address: "t2", state: "live", labels: { "herdr.task": "x#1", "herdr.role": "reviewer", "herdr.review.attempt": "attempt" } },
+  ];
+  expect(isHelper(terms[2])).toBe(true);
+  expect(subagentsOf(terms, "t1").map((s) => s.address)).toEqual(["t2"]);
+  expect(subagentsOf(terms, "other/t1")).toEqual([]);
+});
+
 // SHEP-69 (#591, #592, #589): the person's words as typed, and the session's first message found again.
 describe("the person's words and the session's first message", () => {
   test("a <word> the person typed stays in their bubble; code is left alone (#591)", () => {

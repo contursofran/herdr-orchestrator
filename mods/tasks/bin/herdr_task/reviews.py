@@ -4,8 +4,8 @@ import json
 import secrets
 import shlex
 
-from .agents import from_person, log_tail, ready_turns, said, status_word
-from .base import Fail, git, hc_json, now
+from .agents import agent_running, from_person, log_tail, ready_turns, said, status_word
+from .base import Fail, git, hc_json, now, run
 from .launch import agent_name, launch, coordinator_in
 from .news import send_or_hold
 from .sessions import session_of
@@ -16,6 +16,7 @@ from .templates import instructions
 VERDICTS = ("approved", "changes-requested")
 REVIEW_TIMEOUT = 15 * 60000
 PREFIX = "HERDR_REVIEW "
+IN_FLIGHT = ("queued", "reviewing")
 
 
 def signed(s, task):
@@ -56,20 +57,89 @@ def escalate(s, task, req, reason):
     s.dirty = True
 
 
+def remember(s, task, req):
+    """Keep enough identity to retire a reviewer after its request is replaced or cleared."""
+    if not req.get("name"):
+        return
+    address = req.get("reviewer")
+    rows = task.setdefault("reviewers", [])
+    row = next((r for r in rows if r.get("attempt") == req["id"]
+                or (not r.get("attempt") and address and r.get("address") == address)), None)
+    fields = {"attempt": req["id"], "name": req["name"], "address": address}
+    fields.update({k: req[k] for k in ("session", "log") if req.get(k)})
+    if row is None:
+        rows.append({**fields, "at": now(), "parent": req.get("builder")})
+        s.dirty = True
+    elif any(row.get(k) != v for k, v in fields.items()):
+        row.update(fields)
+        s.dirty = True
+
+
+def retiring(task):
+    if not task.get("signed_reviews"):
+        return []
+    active = task.get("review_request") or {}
+    if task["state"] != "running" or active.get("status") not in IN_FLIGHT:
+        active = {}
+    return [r for r in task.get("reviewers") or [] if not r.get("retired")
+            and not (active and (r.get("attempt") == active["id"]
+                or (not r.get("attempt") and r.get("address") and r["address"] == active.get("reviewer"))))]
+
+
+def cleanup(s, task):
+    """Stop retired independent reviewers. Keep uncertain or failed stops for a later tick."""
+    rows = retiring(task)
+    if not rows:
+        return
+    result = hc_json("ls", "--label", f"herdr.task={s.key(task)}", "--label", "herdr.role=reviewer")
+    if not result or not isinstance(result.get("terminals"), list):
+        return
+    # Save verdicts and retirement intent before ending the process that supplied them.
+    s.save()
+    live = [k for k in result["terminals"] if k.get("state") == "live" and k.get("address")]
+    for row in rows:
+        address = row.get("address")
+        match = next((k for k in live if (k["address"] == address if address else k.get("name") == row.get("name"))), None)
+        if match:
+            terminal = hc_json("get", match["address"])
+            if terminal is None:
+                continue
+            labels = terminal.get("labels") or {}
+            attempt = labels.get("herdr.review.attempt")
+            if (terminal.get("state") == "live" and terminal.get("address") == match["address"]
+                    and labels.get("herdr.task") == s.key(task) and labels.get("herdr.role") == "reviewer"
+                    and attempt and attempt == row.get("attempt", attempt)
+                    and terminal.get("name") == row.get("name", terminal.get("name"))):
+                if run(["hc", "kill", match["address"]]).returncode != 0:
+                    continue
+        row["retired"] = True
+        s.dirty = True
+
+
+def clear(s, task):
+    req = task.pop("review_request", None)
+    if req:
+        remember(s, task, req)
+        s.dirty = True
+    if task.pop("review_out", None) is not None:
+        s.dirty = True
+
+
 def request(s, task, head, used, rounds):
     """Keeps an existing attempt for the same HEAD, or queues a new one."""
     old = task.get("review_request") or {}
     if old.get("head") == head and old.get("status") in ("queued", "reviewing", "approved"):
         return "Independent review is already in progress."
     if old.get("head") == head and old.get("status") == "escalated" and not old.get("retryable"):
-        escalate(s, task, old, old["escalation"])
-        return old["escalation"]
+        raise Fail(old["escalation"])
     if old.get("head") == head and old.get("status") == "changes-requested":
-        return f"Commit a fix to the findings for {head[:12]} before requesting another review."
+        raise Fail(f"Commit a fix to the findings for {head[:12]} before requesting another review.")
+    remember(s, task, old)
     attempt = secrets.token_hex(8)
     req = {"id": attempt, "head": head, "at": now(), "status": "queued"}
     task["review_request"] = req
     task["state"] = "running"
+    task["head"] = head
     for key in ("auto_merge", "attention", "attention_at", "review_out", "back", "merge_requested"):
         task.pop(key, None)
     s.dirty = True
@@ -77,11 +147,14 @@ def request(s, task, head, used, rounds):
         task["review_out"] = now()
         reason = f"Out of review rounds for {head[:12]}. The Orchestrator can add a round."
         escalate(s, task, req, reason)
-        return reason
+        cleanup(s, task)
+        raise Fail(reason)
     if any(r.get("head") == head and r.get("result") == "changes-requested" for r in task.get("reviews") or []):
         reason = f"The reviewed commit {head[:12]} still has changes requested. Commit a fix before requesting another review."
         escalate(s, task, req, reason)
-        return reason
+        cleanup(s, task)
+        raise Fail(reason)
+    cleanup(s, task)
     return f"Independent review queued for {head[:12]}."
 
 
@@ -132,8 +205,7 @@ def launch_review(s, task, req, builders):
         if not registered(s, task, req, terminal):
             raise Fail("Couldn't verify the independent reviewer's terminal.")
     req.update(reviewer=terminal["address"], status="reviewing", launched_at=now())
-    if not any(r["address"] == terminal["address"] for r in task.get("reviewers") or []):
-        task.setdefault("reviewers", []).append({"address": terminal["address"], "at": now(), "parent": req.get("builder")})
+    remember(s, task, req)
     s.dirty = True
 
 
@@ -164,15 +236,23 @@ def verdict_of(log, req):
 
 
 def observe(s, task, req, terminal):
-    if not registered(s, task, req, terminal):
+    if not registered(s, task, req, terminal) or not agent_running(terminal):
         return None
     pid = (terminal.get("foreground") or {}).get("pid")
-    if pid and not req.get("log"):
+    if not pid:
+        return None
+    finished = terminal.get("turn") and status_word(terminal) in ("done", "idle")
+    bind = not req.get("log") or pid != req.get("pid")
+    if bind or finished:
         session, log = session_of(pid)
-        if log:
-            req.update(session=session, log=log, pid=pid)
-            s.dirty = True
-    if req.get("log") and pid == req.get("pid") and terminal.get("turn") and status_word(terminal) in ("done", "idle"):
+        if not session or not log or (req.get("log") and (session, log) != (req.get("session"), req["log"])):
+            return None
+    if bind:
+        req.update(session=session, log=log, pid=pid)
+        req.pop("finished_at", None)
+        remember(s, task, req)
+        s.dirty = True
+    if finished:
         return verdict_of(req["log"], req)
     return None
 
@@ -200,7 +280,8 @@ def tell_review(s, task, req, builders):
     last = next((r for r in reversed(task.get("reviews") or []) if r.get("attempt") == req["id"]), {})
     findings = "\n\n" + last["text"] if last.get("text") else ""
     if last.get("result") == "changes-requested" and not req.get("builder_notified"):
-        builder = next((a["address"] for a in builders if a["address"] == req.get("builder")), None)
+        builder = next((a["address"] for a in builders if a["address"] == req.get("builder")),
+                       builders[-1]["address"] if builders else None)
         if not builder and req["status"] == "changes-requested":
             escalate(s, task, req, "The builder stopped before receiving the review findings.")
         elif builder:
@@ -221,6 +302,9 @@ def advance(s, task):
     req = task.get("review_request")
     if not req or task["state"] != "running" or not signed(s, task):
         return
+    if req["status"] not in IN_FLIGHT:
+        remember(s, task, req)
+        cleanup(s, task)
     from .commands import finish_ready, rounds_used, workers
     builders = workers(s, task)
     status = req["status"]
@@ -253,6 +337,8 @@ def advance(s, task):
                 elif now() - req["finished_at"] >= 30000:
                     req["retryable"] = True
                     escalate(s, task, req, "The independent reviewer finished without a valid verdict for the requested commit.")
+            elif req.pop("finished_at", None) is not None:
+                s.dirty = True
         elif not any(status_word(a) in ("working", "blocked") for a in builders):
             try:
                 if commit(where) != req["head"]:
@@ -266,7 +352,10 @@ def advance(s, task):
                     task["ready_turns"] = ready_turns(builders)
                     finish_ready(s, task, task.get("worktree"))
                     if task["state"] != "running" and (task.get("review_request") or {}).get("id") == req["id"]:
-                        task.pop("review_request", None)
+                        clear(s, task)
                     s.dirty = True
+    if status in IN_FLIGHT and req["status"] not in IN_FLIGHT:
+        remember(s, task, req)
+        cleanup(s, task)
     if req["status"] in ("changes-requested", "escalated"):
         tell_review(s, task, req, builders)

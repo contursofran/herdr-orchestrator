@@ -3,6 +3,8 @@
 // too: their words, a message's time, who sent a message, a launch brief's label, a task's news line, which
 // artifact a publish made, how images under a message are sized. Plain JS: no herdr, node or DOM.
 
+import { machineOf } from "./spaces.js";
+
 // Every fixed word the chat shows, once: both sides read them from here (core/chat-view.test.js checks).
 export const WORDS = {
   top: "Start of conversation",
@@ -382,7 +384,8 @@ export function bgGroups(items) {
   return [...(sub.length ? [group("sub", sub)] : []), ...(proc.length ? [group("proc", proc)] : [])];
 }
 const roleOf = (k) => k?.labels?.["herdr.role"] ?? null;
-export const isHelper = (k) => HELPER_ROLES.includes(roleOf(k)) && !!k?.parent;
+const independentReviewer = (k) => roleOf(k) === "reviewer" && Boolean(k?.labels?.["herdr.review.attempt"]);
+export const isHelper = (k) => independentReviewer(k) || (HELPER_ROLES.includes(roleOf(k)) && !!k?.parent);
 
 // k's parent, as an address comparable with `addr`: another machine's terminal names its parent on that machine ("t5"
 // for "vm/t5").
@@ -420,9 +423,16 @@ export function subagentStatus(k) {
 // terms: every terminal hc knows (live and finished).
 export function subagentsOf(terms, addr, now = Date.now()) {
   if (!addr) return [];
+  const live = new Map(terms.filter((k) => k?.state === "live").map((k) => [k.address, k]));
+  const builder = live.get(addr);
+  const task = builder && !isHelper(builder) ? builder.labels?.["herdr.task"] : null;
   const out = [];
   for (const k of terms) {
-    if (!k || !isHelper(k) || parentAddr(k) !== addr) continue;
+    if (!k || !isHelper(k)) continue;
+    const parent = parentAddr(k);
+    const detached = task && independentReviewer(k) && !live.has(parent)
+      && k.labels["herdr.task"] === task && machineOf(k.address) === machineOf(addr);
+    if (parent !== addr && !detached) continue;
     const ended = k.state && k.state !== "live";
     if (ended && now - (k.finished_ms ?? 0) > SUBAGENT_KEEP_MS) continue;
     const s = { address: k.address, role: roleOf(k), cli: subagentCli(k), status: subagentStatus(k), at: k.created_ms ?? now, name: k.name ?? null, ...(ended ? { ended: k.finished_ms ?? now } : {}) };
