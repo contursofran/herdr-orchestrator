@@ -9,6 +9,25 @@ const activeTask = (task) => task?.state === "running" || task?.state === "ready
 const roleOf = (terminal) => terminal.labels?.["herdr.role"];
 const helper = (terminal) => ["reviewer", "helper"].includes(roleOf(terminal));
 
+const CLAUDE = { name: "Claude Code", icon: "icons/claude.svg", tint: false };
+const HARNESSES = new Map([
+  ["claude", CLAUDE],
+  ["claude-code", CLAUDE],
+  ["codex", { name: "Codex", icon: "icons/codex.svg", tint: false }],
+]);
+
+function workerHarness(terminal, agent) {
+  // A detached worker can have only its launch label until it reports to Herdr.
+  for (const program of [agent?.program, terminal.program]) {
+    if (program?.agent && program.key !== "agent" && program.icon) return program;
+  }
+  for (const key of [agent?.app, terminal.status?.app, terminal.labels?.["herdr.agent"]]) {
+    const harness = HARNESSES.get(key);
+    if (harness) return harness;
+  }
+  return null;
+}
+
 function taskTarget(node) {
   const match = /^([\w.@-]+)#(\d+)$/.exec(node?.taskLabel);
   if (!match) return null;
@@ -77,7 +96,7 @@ export function projectTree({ spaces, terminals, panes, agents, assistants, task
     const taggedSpace = qualified(machine, labels["herdr.space"] ?? labels["herdr.coordinator.space"]);
     const space = [assistant, taskSpace, byTab.get(tab), qualified(machine, agent?.space), taggedSpace, byTab.get(ownerTab)].find((id) => ids.has(id));
     nodes.set(address, { terminal, space, assistant: Boolean(assistant), taskKey, taskLabel: task, knownTask,
-      parent: qualified(machine, terminal.parent), agentStatus: agent?.status ?? terminal.status });
+      parent: qualified(machine, terminal.parent), agentStatus: agent?.status ?? terminal.status, agent });
   }
   // A child agent without its own space uses the closest parent that has one.
   for (const node of nodes.values()) {
@@ -148,11 +167,13 @@ export function projectTree({ spaces, terminals, panes, agents, assistants, task
         }
         const k = node?.terminal;
         const isAssistant = node?.assistant || !node;
+        const role = isAssistant ? "assistant" : roleOf(k) ?? (node.taskKey ? "worker" : null);
         rows.push({
-          id, depth, role: isAssistant ? "assistant" : roleOf(k) ?? (node.taskKey ? "worker" : null),
+          id, depth, role,
           title: isAssistant ? "Assistant" : task?.title || k.name || k.title || k.program?.name || k.template || k.address,
           state: node ? statusOf(node, taskPlace) : "stopped",
           address: k?.address ?? null, live: k?.state === "live",
+          harness: role === "worker" ? workerHarness(k, node.agent) : null,
           slot: isAssistant ? assistants.get(space)?.slot ?? null : null,
           task: !isAssistant ? taskTarget(helper(k) ? inherited ?? node : node) : null,
         });

@@ -11,7 +11,7 @@
 // Opened as an overlay (props.view), this mod is instead one of its menus (popups.js), the
 // rename and New section dialog (rename.js) or that dialog's icon picker (icon.js).
 
-import { View, div, svg } from "gpui-kit";
+import { View, div, image, svg } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
 import { machines, run, props, exec, hc, home, theme, shared, setShared, watchFolder, window, layout, nextCommand, readTextFile } from "herdr";
 import { agents, panes, spaces as allSpaces, terminals, inRender } from "./live.js";
@@ -747,6 +747,7 @@ export default class Spaces extends View {
     const controls = row.live && this.hoveredProjectAgent === row.id;
     const tip = this.projectModels.get(row.address)?.tip;
     const number = this.mainKeys.get(row.id);
+    const harness = row.harness;
     return h_flex().id(`project-agent-${row.id}`).h(24).flex_none().pl(30 + (tree ? 18 : 0) + Math.min(row.depth, 4) * 12)
       .pr(8).items_center().gap(7).text_size(TEXT.label).rounded(RADIUS.control)
       .when(Boolean(row.address || row.slot), (el) => el.cursor_pointer().hover((s) => s.bg(t.hover))
@@ -754,6 +755,9 @@ export default class Spaces extends View {
       .when(row.live, (el) => el.on_hover((on, cx) => this.hoverProjectAgent(row, on, cx)))
       .when(Boolean(tip), (el) => el.tooltip(tip))
       .child(div().size(6).rounded(3).flex_none().bg(color))
+      .when(Boolean(harness), (el) => el.child(div().id(`project-harness-${row.id}`).size(14).flex_none()
+        .accessibility_label(harness.name)
+        .child(harness.tint ? svg(harness.icon).size(14).text_color(t.muted) : image(harness.icon).w(14).h(14))))
       .child(div().flex_1().min_w(0).truncate().text_color(row.role === "assistant" ? t.foreground : t.muted).child(row.title))
       .when(Boolean(number), (el) => el.child(div().id(`project-key-${row.id}`).flex_none().text_size(TEXT.id)
         .text_color(t.dim).child(`⌃${number}`)))
