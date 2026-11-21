@@ -3,6 +3,7 @@ import hashlib
 import io
 import json
 from pathlib import Path
+import re
 import runpy
 import subprocess
 import tarfile
@@ -92,7 +93,7 @@ class ReleaseUpdates(unittest.TestCase):
             tagged = subprocess.check_output(["git", "archive", "HEAD"], cwd=ROOT)
             subprocess.run(["tar", "-xf", "-", "-C", source], input=tagged, check=True)
             installer = source / "bin" / "herdr-orchestrator"
-            installer.write_text(installer.read_text().replace(f'VERSION = "{self.cli["VERSION"]}"', 'VERSION = "9.0.1"'))
+            installer.write_text(re.sub(r'^VERSION = "[\d.]+"$', 'VERSION = "9.0.1"', installer.read_text(), flags=re.M))
             dist = source / "web" / "dist"
             dist.mkdir()
             (dist / "index.html").write_text("<title>Packaged web app</title>")

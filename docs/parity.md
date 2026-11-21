@@ -1,6 +1,6 @@
 # Window and web parity
 
-herdr-orchestrator 0.1.0's web app works exactly as herdr-orchestrator's layout in the Herdr window: the same contents, labels,
+The web app matches herdr-orchestrator's layout in the Herdr window, including its contents, labels,
 controls, states, menus, empty and error texts, sub-pages and behavior. Only the look is 2.1's, fitted to desktop,
 tablet and phone. The window decides; where the two differ, the web changes.
 
