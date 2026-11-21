@@ -217,24 +217,26 @@ describe("Desktop Projects tree", () => {
     expect(ids(expanded).indexOf("section-ideas")).toBeLessThan(ids(expanded).indexOf("space-s3"));
   });
 
-  test("renders a parked Assistant even if it has no workers", () => {
+  test("renders a parked Orchestrator even if it has no workers", () => {
     liveTerminals = [assistant()];
-    const tree = s.render(cx);
-    expect(words(byId(tree, "project-agent-t1"))).toEqual(["Assistant", "⌃1", "Idle"]);
+    const row = byId(s.render(cx), "project-agent-t1");
+    expect(words(row)).toEqual(["Orchestrator", "⌃1", "Idle"]);
+    expect(row.parts).toHaveLength(3);
     expect(s.projectRows.get("s1")).toHaveLength(1);
   });
 
-  test("renders a worker's accessible Herdr icon next to its status dot", () => {
+  test("renders accessible harness icons as the first child of Orchestrator and worker rows", () => {
+    const lead = assistant();
     const labeled = worker("t2", "t1");
     const claude = worker("t3", null, "blocked");
-    liveTerminals = [assistant(), { ...labeled, labels: { ...labeled.labels, "herdr.agent": "codex" } },
+    liveTerminals = [{ ...lead, labels: { ...lead.labels, "herdr.agent": "codex" } },
+      { ...labeled, labels: { ...labeled.labels, "herdr.agent": "codex" } },
       { ...claude, labels: { ...claude.labels, "herdr.agent": "claude" } }];
     const tree = s.render(cx);
-    expect(byId(tree, "project-harness-t1")).toBeUndefined();
-    for (const [terminal, name, file] of [["t2", "Codex", "codex"], ["t3", "Claude Code", "claude"]]) {
+    for (const [terminal, name, file] of [["t1", "Codex", "codex"], ["t2", "Codex", "codex"], ["t3", "Claude Code", "claude"]]) {
       const row = byId(tree, `project-agent-${terminal}`);
       const icon = byId(row, `project-harness-${terminal}`);
-      expect(row.parts[1]).toBe(icon);
+      expect(row.parts[0]).toBe(icon);
       expect(icon.label).toBe(name);
       expect(icon.parts[0].asset).toBe(`icons/${file}.svg`);
     }

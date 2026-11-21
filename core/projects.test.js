@@ -24,7 +24,7 @@ test("an empty project has no agent rows even if it has an Assistant chat slot",
 test("an Assistant and an ordinary chat agent are sibling rows", () => {
   const other = { address: "t9", state: "live", status: "working", name: "Explore", program: { agent: true }, labels: { "herdr.chat": "notes" } };
   expect(rows(read([other, assistant], { panes: [{ pane: "notes", tab: "notes-tab" }] }))).toEqual([
-    ["t1", 0, "idle", "Assistant"], ["t9", 0, "working", "Explore"],
+    ["t1", 0, "idle", "Orchestrator"], ["t9", 0, "working", "Explore"],
   ]);
 });
 
@@ -33,25 +33,26 @@ test("a worker's children stay at their actual depth even with a coordinator lab
   const t3 = worker("t3", 1, { parent: "t2", status: "blocked", labels: { "herdr.role": "reviewer", "herdr.coordinator": "assistant-tab" } });
   const t4 = { address: "t4", parent: "t3", state: "live", status: "working", program: { agent: true } };
   expect(rows(read([t4, t3, t2, assistant]))).toEqual([
-    ["t1", 0, "idle", "Assistant"], ["t2", 1, "working", "Add checkout"],
+    ["t1", 0, "idle", "Orchestrator"], ["t2", 1, "working", "Add checkout"],
     ["t3", 2, "needs", "Add checkout"], ["t4", 3, "working", "Add checkout"],
   ]);
 });
 
 test("scheduled and Autopilot workers without a coordinator label use their task space", () => {
   expect(rows(read([assistant, worker("auto", 1), worker("scheduled", 2, { status: "idle" })]))).toEqual([
-    ["t1", 0, "idle", "Assistant"], ["auto", 1, "working", "Add checkout"], ["scheduled", 1, "ready", "Check receipts"],
+    ["t1", 0, "idle", "Orchestrator"], ["auto", 1, "working", "Add checkout"], ["scheduled", 1, "ready", "Check receipts"],
   ]);
 });
 
-test("worker harness uses the detected program and falls back to the reported app or launch label", () => {
+test("the Orchestrator and workers use the detected program, reported app, or launch label", () => {
   const program = { agent: true, key: "pi", name: "Pi", icon: "icons/pi.svg", tint: true };
+  const orchestrator = { ...assistant, labels: { ...assistant.labels, "herdr.agent": "claude" } };
   const labeled = worker("labeled", 1, { labels: { "herdr.agent": "codex" } });
   const reported = worker("reported", 2, { status: { app: "claude-code" }, labels: { "herdr.agent": "codex" } });
   const detected = worker("detected", 3, { program, labels: { "herdr.agent": "claude" } });
   const unknown = worker("unknown", 3, { program: { agent: true, key: "agent", icon: "icons/agent.svg" } });
-  expect(read([assistant, labeled, reported, detected, unknown]).get("shop")?.map((row) => row.harness)).toEqual([
-    null, { name: "Codex", icon: "icons/codex.svg", tint: false },
+  expect(read([orchestrator, labeled, reported, detected, unknown]).get("shop")?.map((row) => row.harness)).toEqual([
+    { name: "Claude Code", icon: "icons/claude.svg", tint: false }, { name: "Codex", icon: "icons/codex.svg", tint: false },
     { name: "Claude Code", icon: "icons/claude.svg", tint: false }, program, null,
   ]);
 });
@@ -61,9 +62,9 @@ test("a worker follows the restarted Assistant even when its old parent and tab 
   const workerFromBefore = worker("t2", 1, { parent: "t1", labels: { "herdr.coordinator": "old-tab" } });
   expect(rows(read([{ ...assistant, state: "finished" }, workerFromBefore, replacement], {
     assistants: new Map([["shop", { terminal: replacement }]]),
-  }))).toEqual([["t7", 0, "idle", "Assistant"], ["t2", 1, "working", "Add checkout"]]);
+  }))).toEqual([["t7", 0, "idle", "Orchestrator"], ["t2", 1, "working", "Add checkout"]]);
   expect(rows(read([workerFromBefore], { assistants: new Map([["shop", { slot: { pane: "chat" } }]]) }))).toEqual([
-    ["assistant:chat", 0, "stopped", "Assistant"], ["t2", 1, "working", "Add checkout"],
+    ["assistant:chat", 0, "stopped", "Orchestrator"], ["t2", 1, "working", "Add checkout"],
   ]);
 });
 
@@ -80,7 +81,7 @@ test("task metadata and parent IDs stay on the worker's machine", () => {
 });
 
 test("finished tasks leave the Projects tree even if their agent's shell is still live", () => {
-  expect(rows(read([assistant, worker("t2", 4)]))).toEqual([["t1", 0, "idle", "Assistant"]]);
+  expect(rows(read([assistant, worker("t2", 4)]))).toEqual([["t1", 0, "idle", "Orchestrator"]]);
 });
 
 test("cyclic terminal parents never repeat or hide their rows", () => {
