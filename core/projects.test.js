@@ -44,6 +44,18 @@ test("scheduled and Autopilot workers without a coordinator label use their task
   ]);
 });
 
+test("worker harness uses the detected program and falls back to the reported app or launch label", () => {
+  const program = { agent: true, key: "pi", name: "Pi", icon: "icons/pi.svg", tint: true };
+  const labeled = worker("labeled", 1, { labels: { "herdr.agent": "codex" } });
+  const reported = worker("reported", 2, { status: { app: "claude-code" }, labels: { "herdr.agent": "codex" } });
+  const detected = worker("detected", 3, { program, labels: { "herdr.agent": "claude" } });
+  const unknown = worker("unknown", 3, { program: { agent: true, key: "agent", icon: "icons/agent.svg" } });
+  expect(read([assistant, labeled, reported, detected, unknown]).get("shop")?.map((row) => row.harness)).toEqual([
+    null, { name: "Codex", icon: "icons/codex.svg", tint: false },
+    { name: "Claude Code", icon: "icons/claude.svg", tint: false }, program, null,
+  ]);
+});
+
 test("a worker follows the restarted Assistant even when its old parent and tab are gone", () => {
   const replacement = { ...assistant, address: "t7" };
   const workerFromBefore = worker("t2", 1, { parent: "t1", labels: { "herdr.coordinator": "old-tab" } });

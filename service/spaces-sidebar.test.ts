@@ -7,9 +7,9 @@ import { fakeGpuiBase, fakeGpuiKit } from "./fake-gpui";
 
 const EL = Symbol("element");
 const ok = (v: unknown) => typeof v === "string" || typeof v === "number" || (v !== null && typeof v === "object" && (v as any)[EL]);
-function el(): any {
+function el(asset?: string): any {
   const self: any = new Proxy({ [EL]: true, parts: [] as unknown[], elementId: "", indent: 0, click: null as Function | null,
-    hoverChanged: null as Function | null, tip: "" }, {
+    hoverChanged: null as Function | null, tip: "", asset }, {
     get(target, k) {
       if (k === EL) return true;
       if (k === "child") return (v: unknown) => {
@@ -221,6 +221,22 @@ describe("Desktop Projects tree", () => {
     const tree = s.render(cx);
     expect(words(byId(tree, "project-agent-t1"))).toEqual(["Assistant", "⌃1", "Idle"]);
     expect(s.projectRows.get("s1")).toHaveLength(1);
+  });
+
+  test("renders a worker's Herdr icon next to its status dot and keeps the tooltip", () => {
+    const labeled = worker("t2", "t1");
+    const claude = worker("t3", null, "blocked");
+    liveTerminals = [assistant(), { ...labeled, labels: { ...labeled.labels, "herdr.agent": "codex" } },
+      { ...claude, labels: { ...claude.labels, "herdr.agent": "claude" } }];
+    const tree = s.render(cx);
+    expect(byId(tree, "project-harness-t1")).toBeUndefined();
+    for (const [terminal, name, file] of [["t2", "Codex", "codex"], ["t3", "Claude Code", "claude"]]) {
+      const row = byId(tree, `project-agent-${terminal}`);
+      const icon = byId(row, `project-harness-${terminal}`);
+      expect(row.parts[1]).toBe(icon);
+      expect(icon.tip).toBe(name);
+      expect(icon.parts[0].asset).toBe(`icons/${file}.svg`);
+    }
   });
 
   test("reads only the worker's task list and renders detached and nested workers by task title", async () => {
