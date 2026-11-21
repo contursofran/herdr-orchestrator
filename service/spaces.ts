@@ -82,7 +82,7 @@ export async function execTemplate(hub: Hub, name: string, machine: string | nul
   if (pick?.agent === "claude" || pick?.agent === "codex") {
     if (await has(pick.agent)) cmd = argvFor(pick, { agent: null, argv: [] }).argv.map(shellWord).join(" ");
     else if (!(await has(own.split(/\s+/)[0]))) {
-      throw new Error(`${(NAMES as Record<string, string>)[pick.agent] ?? pick.agent} isn't installed on ${machine ?? "this computer"}. Install it, or pick another agent for the Assistant in Settings › Agents.`);
+      throw new Error(`${(NAMES as Record<string, string>)[pick.agent] ?? pick.agent} isn't installed on ${machine ?? "this computer"}. Install it, or pick another agent for the Orchestrator in Settings › Agents.`);
     }
   }
   const one = `herdr-${name}-${Date.now().toString(36)}`;

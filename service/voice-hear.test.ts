@@ -36,7 +36,7 @@ test("follows the chat on screen and the ones it sent to; says their replies, no
   expect(h.take()).toEqual([]);
   w.chats["p:shop"].reply = { id: "r1", text: "The build is fixed." };
   h.tick();
-  expect(texts(h.take())).toContain('the shop Assistant replied: """The build is fixed."""');
+  expect(texts(h.take())).toContain('the shop Orchestrator replied: """The build is fixed."""');
   // sent to lab, then moved to another space: lab stays followed, shop goes
   h.sentTo("p:lab");
   h.onScreen({ client: "web", place: "lab" });
@@ -62,7 +62,7 @@ test("anything new anywhere that needs the person: one short line, once; a follo
   expect(out).toHaveLength(1);
   expect(out[0].type).toBe("user_message");
   expect(out[0].text).toContain("2 things came in together");
-  expect(out[0].text).toContain("the lab Assistant needs the person: Which port?");
+  expect(out[0].text).toContain("the lab Orchestrator needs the person: Which port?");
   expect(out[0].text).toContain('TEST 7, "Fix the login", is ready for review');
   // said once
   h.tick();
@@ -73,7 +73,7 @@ test("anything new anywhere that needs the person: one short line, once; a follo
   w.snap.needs.push({ id: "q2", chat: "p:shop", place: "shop", at: 2, text: "Deploy now?" });
   h.tick();
   const said = texts(h.take());
-  expect(said).toContain("the shop Assistant needs the person: Deploy now?");
+  expect(said).toContain("the shop Orchestrator needs the person: Deploy now?");
   expect(said.match(/needs the person/g)).toHaveLength(1);
   h.stop();
 });
@@ -139,7 +139,7 @@ test("a quick answer to the call's send, there by the chat's first read, is stil
   loaded();
   await Bun.sleep(0);
   h.tick();
-  expect(texts(h.take())).toContain('the lab Assistant replied: """Port 5173."""');
+  expect(texts(h.take())).toContain('the lab Orchestrator replied: """Port 5173."""');
   h.stop();
 });
 

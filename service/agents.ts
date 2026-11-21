@@ -248,7 +248,7 @@ export class Agents {
       return out.terminal as string;
     }
     const script = layoutScript("restart.sh");
-    if (!script) throw new Error("This install can't restart an Assistant: update herdr-orchestrator on that machine.");
+    if (!script) throw new Error("This install can't restart an Orchestrator: update herdr-orchestrator on that machine.");
     const p = Bun.spawn(["bash", script, addr, JSON.stringify(built.argv)], { stdout: "pipe", stderr: "pipe", stdin: "ignore",
       env: { ...process.env, HERDR_RESTART_CHAT: pane, ...(built.resume ? { HERDR_RESTART_RESUME: "1" } : {}) } });
     const [out, err] = await Promise.all([new Response(p.stdout).text(), new Response(p.stderr).text()]);

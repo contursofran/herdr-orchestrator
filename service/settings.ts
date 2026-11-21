@@ -420,7 +420,7 @@ export class Settings {
         if (!machine) throw new Error("That is set per machine.");
         for (const k of Object.keys(layer)) if (!["machine", "home"].includes(k)) delete layer[k];
       } else if (field === "home") {
-        if (!machine) throw new Error("Home Assistant is set per machine.");
+        if (!machine) throw new Error("Home Orchestrator is set per machine.");
         const on = word === "on";
         if (on === (machine === LOCAL)) delete layer.home; else layer.home = on;
       } else {

@@ -24,6 +24,7 @@ import type { Place, PlaceTab, Snapshot, Task, TabState } from '@shared/types.ts
 import * as CF from '@core/confirm.js'
 import * as MNc from '@core/menus.js'
 import * as APc from '@core/autopilot.js'
+import { orchestratorTabName } from '@core/spaces.js'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const MN = MNc as any, AP = APc as any
@@ -341,7 +342,7 @@ interface BarTab {
 function barTabs(snap: Snapshot, place: Place): BarTab[] {
   const a = place.assistantTab
   return [
-    { key: place.chat, id: a?.id, name: a?.name ?? 'Assistant', named: !!a?.named, state: a?.state ?? 'idle', agent: a?.agent ?? a?.cli, assistant: true, term: null, remote: place.machine !== snap.host },
+    { key: place.chat, id: a?.id, name: orchestratorTabName(a?.name), named: !!a?.named, state: a?.state ?? 'idle', agent: a?.agent ?? a?.cli, assistant: true, term: null, remote: place.machine !== snap.host },
     ...(place.tabs ?? []).map((t: PlaceTab) => ({ key: t.term, id: t.id, name: t.name, named: !!t.named, state: t.state ?? 'idle', agent: t.agent ?? t.cli, assistant: false, term: t.term, remote: t.term.slice(2).includes('/') })),
   ]
 }
@@ -570,7 +571,7 @@ export function TabMenuItems({ place, tab, close }: { place: Place; tab: BarTab;
   }
   const acts: Record<string, () => void> = {
     rename: () => { close(); openTabRename({ place: place.id, key: tab.key }) },
-    instructions: () => { close(); openRole({ kind: 'file', role: 'coordinator', title: 'What every Assistant is told first', file: 'assistant.md' }) },
+    instructions: () => { close(); openRole({ kind: 'file', role: 'coordinator', title: 'What every Orchestrator is told first', file: 'assistant.md' }) },
     switch: () => setSub(true),
     restart,
     close: () => { close(); void closeTab(snap, place, tab) },
@@ -809,8 +810,8 @@ function CloseAssistant() {
     </button>
   )
   return (
-    <Dialog title="Close the Assistant?" onCancel={() => openClose(null)} safe
-      buttons={<Primary disabled={busy || workers === null} onClick={() => void go()}>{busy ? 'Closing…' : 'Close Assistant'}</Primary>}>
+    <Dialog title="Close the Orchestrator?" onCancel={() => openClose(null)} safe
+      buttons={<Primary disabled={busy || workers === null} onClick={() => void go()}>{busy ? 'Closing…' : 'Close Orchestrator'}</Primary>}>
       <div className="flex flex-col gap-2 text-pretty">
         <p className="text-fg2">{workers === null ? (error ? '' : 'Reading…') : workers ? `It has ${workers} worker${workers > 1 ? 's' : ''} running. Their branches and worktrees stay either way.` : 'It has no workers running.'}</p>
         {workers ? (

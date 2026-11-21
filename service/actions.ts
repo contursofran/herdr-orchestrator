@@ -455,12 +455,12 @@ export async function act(hub: Hub, b: any, compat: Compat): Promise<unknown> {
     // 3.0's Close Assistant: its tab closes; "stop" ends the workers it started first, "keep" lets them finish
     const key = `p:${b.place.replace("/", ":")}`, a = compat.addrOf(key);
     const t: any = a ? hub.terminals.get(a) : null;
-    if (!t) throw new Error("This space has no Assistant running.");
+    if (!t) throw new Error("This space has no Orchestrator running.");
     const workers = [...hub.terminals.values()].filter((x: any) => x.state === "live" && x.parent === a).length;
     if (b.mode === "count") return { ok: true, workers };
     const tab = t.labels?.["herdr.coordinator.tab"];
     const script = join(appHome(), "mods", "coordinator", "close.sh");
-    if (!tab || !existsSync(script)) throw new Error("Closing an Assistant needs herdr-orchestrator's window layout installed.");
+    if (!tab || !existsSync(script)) throw new Error("Closing an Orchestrator needs herdr-orchestrator's window layout installed.");
     const r = await run(["bash", script, tab, a!, b.mode === "stop" ? "stop" : "keep"]);
     if (r.code !== 0) throw new Error("It didn't close: the Herdr window needs to be open.");
     return { ok: true };
@@ -478,7 +478,7 @@ export async function act(hub: Hub, b: any, compat: Compat): Promise<unknown> {
     // as the window's prompt does). tab: its id; place: the space whose Assistant's tab it is.
     const a = typeof b.place === "string" ? compat.addrOf(`p:${b.place.replace("/", ":")}`) : null, t: any = a ? hub.terminals.get(a) : null;
     const tab = typeof b.tab === "string" ? b.tab : t?.labels?.["herdr.coordinator.tab"], name = b.name.trim().slice(0, 80);
-    if (!tab || !/^[\w./:-]{1,200}$/.test(tab)) throw new Error("This space has no Assistant tab.");
+    if (!tab || !/^[\w./:-]{1,200}$/.test(tab)) throw new Error("This space has no Orchestrator tab.");
     const r = await run(["herdr-app", "do", "tab.rename", "--id", tab, "--name", name]);
     if (r.code !== 0) {
       // no window: its saved name; a tab's place reads the space's machine ("vm/…"), the Assistant's label its own id
@@ -620,7 +620,7 @@ export async function act(hub: Hub, b: any, compat: Compat): Promise<unknown> {
     tpl.done();
     let out: any = {};
     try { out = JSON.parse(r.stdout || "{}"); } catch {}
-    if (r.code !== 0 || !out.address) throw new Error((r.stderr || r.stdout).trim().split("\n").pop() || "The Assistant didn't start.");
+    if (r.code !== 0 || !out.address) throw new Error((r.stderr || r.stdout).trim().split("\n").pop() || "The Orchestrator didn't start.");
     // what the person asked, for its chat to show apart from the template (the window's data/chat-first)
     const first = join(appHome(), "data", "chat-first");
     const addr = sp.machine && !String(out.address).includes("/") ? `${sp.machine}/${out.address}` : String(out.address);

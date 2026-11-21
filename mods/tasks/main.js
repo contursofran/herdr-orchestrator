@@ -621,7 +621,7 @@ export default class Tasks extends View {
   // The list's line when it shows nothing at all: how tasks come, unless there are some (all
   // archived, say).
   emptyLine() {
-    return this.lists.some((l) => l.tasks.length) ? "Nothing to do." : "No tasks on any machine. Ask an Assistant to plan some.";
+    return this.lists.some((l) => l.tasks.length) ? "Nothing to do." : "No tasks on any machine. Ask an Orchestrator to plan some.";
   }
 
   // Folded headings ("<group key>"), remembered.

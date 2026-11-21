@@ -9,6 +9,7 @@ import '@xterm/xterm/css/xterm.css'
 import { act, agentChat, definePlugin, getState, openItem, placeOf, setUI, shownItem, useStore, useUI } from '@client/kernel.ts'
 import { CTRL, ic, MenuItem, MenuSeparator, MenuSetting, ModelIcon, shortcut, Small, Tab, Tabs, TermIcon } from '@client/ui.tsx'
 import type { Place, TermScreen } from '@shared/types.ts'
+import { orchestratorTabName } from '@core/spaces.js'
 import { connectTerminal, streamInput } from './stream.ts'
 import { keysTerm, termInPlace, termInput, touchScreen, typedInBox } from './shown.ts'
 import { colsOf, fitFont, foldShown, frame, LINE, MAX, MIN, PAD, ZOOM } from './screen.ts'
@@ -307,7 +308,7 @@ function PlaceTerm({ place }: { place: Place }) {
   const other = !!ui.term?.startsWith('t:') && (place.tabs ?? []).some((t) => t.term === ui.term)
   const on = ui.term === place.chat
   const go = (term: string | null) => setUI({ term, arts: null, menu: false, plus: null, pick: null })
-  const tabs = [{ term: null as string | null, name: place.assistantTab?.name ?? 'Assistant', cli: place.assistantTab?.cli }, ...(place.tabs ?? [])]
+  const tabs = [{ term: null as string | null, name: orchestratorTabName(place.assistantTab?.name), cli: place.assistantTab?.cli }, ...(place.tabs ?? [])]
   return (
     <>
       {/* Settings › Window › Show tabs off: the space's tabs aren't listed */}

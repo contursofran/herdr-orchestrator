@@ -1,4 +1,4 @@
-"""/exit in an Assistant's chat keeps its tab and offers Restart Assistant (GitHub #1039).
+"""/exit in an Orchestrator's chat keeps its tab and offers Restart Orchestrator (GitHub #1039).
 
 Before, the chat's follow loop closed its own pane once its agent ended unless it was the Coordinator tab's own slot
 chat, so an Assistant chat opened from its terminal (Terminal, then Chat) took its tab with it, and a slot chat went
@@ -61,7 +61,7 @@ class AssistantExitKeepsItsTab(unittest.TestCase):
 
     def test_the_notice_offers_restart_assistant(self):
         self.assertIn('"chat-restart-assistant"', SRC)
-        self.assertRegex(SRC, r'"Restart Assistant", null, "primary", t, \(cx\) => this\.restartAssistant\(cx\)')
+        self.assertRegex(SRC, r'"Restart Orchestrator", null, "primary", t, \(cx\) => this\.restartAssistant\(cx\)')
 
     def test_restart_resumes_the_same_session(self):
         body = SRC[SRC.index("  restartAssistant(cx) {"):SRC.index("  closeSelf() {")]

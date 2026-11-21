@@ -425,7 +425,7 @@ def my_space(args):
     labels = caller_labels()
     sp = labels.get("herdr.space") or labels.get("herdr.coordinator.space")
     if not sp:
-        raise Fail("Which space? Run this as the space's Assistant, or pass --space <space id> (or --everywhere).")
+        raise Fail("Which space? Run this as the space's Orchestrator, or pass --space <space id> (or --everywhere).")
     return bare(sp)
 
 
@@ -657,18 +657,18 @@ def deliver(space, a):
     if not k or k.get("state") != "live" or not agent_running(k):
         if now() - p["at"] > PENDING_MAX_MS:
             a.pop("pending")
-            log_wake(a, p["reasons"][0], "Missed: no Assistant was running")
+            log_wake(a, p["reasons"][0], "Missed: no Orchestrator was running")
             return "missed"
-        p["note"] = "Waiting for its Assistant to run"
+        p["note"] = "Waiting for its Orchestrator to run"
         return None
     if status_word(k) in ("working", "blocked"):
-        p["note"] = "Waiting for its Assistant to be idle" if status_word(k) == "working" else "Waiting: its Assistant asks you something"
+        p["note"] = "Waiting for its Orchestrator to be idle" if status_word(k) == "working" else "Waiting: its Orchestrator asks you something"
         return None
     if typing(to, k):
-        p["note"] = "Waiting: you're writing to its Assistant"
+        p["note"] = "Waiting: you're writing to its Orchestrator"
         return None
     if not news_send(to, message(space, a, p["reasons"]), check=False):
-        p["note"] = "Waiting: its Assistant couldn't take it yet"
+        p["note"] = "Waiting: its Orchestrator couldn't take it yet"
         return None
     a.pop("pending")
     a["inflight"] = {"at": now(), "reason": p["reasons"][0], "to": to, "turn": k.get("turn") or 0}
@@ -694,7 +694,7 @@ def settle(a):
         return
     a.pop("inflight")
     saved = (a.get("progress") or {}).get("at", 0) >= f["at"]
-    outcome = ("Assistant stopped" if gone else "Turn ended" if ended else "No turn end seen") + \
+    outcome = ("Orchestrator stopped" if gone else "Turn ended" if ended else "No turn end seen") + \
               (", progress saved" if saved else ", no progress saved")
     w = a.get("last_wake")
     if w and w.get("at") and w["at"] >= f["at"] - 1000 and w["outcome"] == "Delivered":
@@ -761,7 +761,7 @@ def any_on(d=None):
 
 # ---- commands -------------------------------------------------------------------------------
 
-PER_SPACE = "Autopilot is switched on per space, with the switch in its Assistant's header: pass --space."
+PER_SPACE = "Autopilot is switched on per space, with the switch in its Orchestrator's header: pass --space."
 
 
 def set_values(args):
@@ -818,7 +818,7 @@ def cmd_autopilot(args):
         return
     space = None if sub == "heartbeat" and not getattr(args, "space", None) else my_space(args)
     if space is None and sub in ("on", "off", "run-now"):
-        raise Fail(PER_SPACE if sub != "run-now" else "Run now wakes one space's Assistant: pass --space.")
+        raise Fail(PER_SPACE if sub != "run-now" else "Run now wakes one space's Orchestrator: pass --space.")
     msg = ""
     with state(write=sub not in ("show", "heartbeat")) as d:
         a = None
@@ -841,7 +841,7 @@ def cmd_autopilot(args):
                 # interval later, so the person sees it work at once.
                 queue(a, "switched on")
                 got = deliver(space, a)
-                msg += " Woke its Assistant." if got == "delivered" else f" First wake queued: {(a.get('pending') or {}).get('note') or 'it goes when its Assistant is idle'}."
+                msg += " Woke its Orchestrator." if got == "delivered" else f" First wake queued: {(a.get('pending') or {}).get('note') or 'it goes when its Orchestrator is idle'}."
         elif sub == "off":
             a["on"] = False
             sync(d)
@@ -859,7 +859,7 @@ def cmd_autopilot(args):
             settle(a)  # a wake whose turn has ended never holds this one back
             queue(a, "run now")
             got = deliver(space, a)
-            msg = "Woke its Assistant." if got == "delivered" else f"Queued: {(a.get('pending') or {}).get('note') or 'it goes when its Assistant is idle'}."
+            msg = "Woke its Orchestrator." if got == "delivered" else f"Queued: {(a.get('pending') or {}).get('note') or 'it goes when its Orchestrator is idle'}."
         elif sub == "heartbeat":
             ensure_heartbeat()
         v = everywhere_view(d) if space is None else view(d, space, a)
@@ -876,7 +876,7 @@ def cmd_progress(args):
     if not text:
         raise Fail("Say what was done and what's next.")
     if space is None:
-        raise Fail("Progress is a space's: run this as its Assistant, or pass --space.")
+        raise Fail("Progress is a space's: run this as its Orchestrator, or pass --space.")
     with state() as d:
         a = d["spaces"].get(space)
         if a is None:
@@ -892,7 +892,7 @@ def cmd_complete(args):
     if not args.evidence.strip():
         raise Fail("Give the evidence that the goal is met.")
     if space is None:
-        raise Fail("A goal is a space's: run this as its Assistant, or pass --space.")
+        raise Fail("A goal is a space's: run this as its Orchestrator, or pass --space.")
     with state() as d:
         a = d["spaces"].get(space)
         if a is None or not a.get("on"):

@@ -146,8 +146,8 @@ test("SHEP-105: one herdr-orchestrator voice for everything, never tied to the c
   expect(p).toContain("Speak the language the person speaks");
   // updates that come together are said as one; quiet notes stay quiet
   expect(batchLines([])).toEqual([]);
-  const one = batchLines([replyLine("the shop Assistant", "Fixed it.")]);
-  expect(one).toEqual([{ type: "user_message", text: expect.stringContaining("the shop Assistant replied") }]);
+  const one = batchLines([replyLine("the shop Orchestrator", "Fixed it.")]);
+  expect(one).toEqual([{ type: "user_message", text: expect.stringContaining("the shop Orchestrator replied") }]);
   const two = batchLines([{ type: "contextual_update", text: "[Update] x is working now." }, replyLine("the shop Assistant", "Fixed it."), needLine("TEST-7 is ready for review")]);
   expect(two.map((l) => l.type)).toEqual(["contextual_update", "user_message"]);
   expect(two[1].text).toContain("2 things came in together");
@@ -265,8 +265,8 @@ test("SHEP-173: the end chime is short, soft and ends in silence", () => {
 
 test("a long reply is said whole; past the limit it says it was cut and where the rest is (#785)", () => {
   const five = "Sentence. ".repeat(500) + "Last words.";
-  expect(replyLine("the shop Assistant", five).text).toContain("Last words.");
-  expect(replyLine("the shop Assistant", five).text).not.toContain("cut short");
+  expect(replyLine("the shop Orchestrator", five).text).toContain("Last words.");
+  expect(replyLine("the shop Orchestrator", five).text).not.toContain("cut short");
   const huge = replyLine("the shop Assistant", "y".repeat(REPLY_MAX + 10)).text;
   expect(huge).toContain("cut short here; the rest is in the chat");
   expect(huge).toContain("Tell the person what it says");

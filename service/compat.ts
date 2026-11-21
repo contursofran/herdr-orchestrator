@@ -25,7 +25,7 @@ import * as MNc from "../core/menus.js";
 import * as APc from "../core/autopilot.js";
 const { machineLabel } = MNc as any;
 import { HOME, appHome } from "./paths.ts";
-const { spaceName } = SPc as any;
+const { spaceName, orchestratorTabName } = SPc as any;
 import type { Where } from "./worktree.ts";
 import * as AGc from "../core/agents.js";
 const { current, rowFor, menuFor, modelName, levelName, NAMES } = AGc as any;
@@ -355,13 +355,13 @@ export class Compat {
       const ak: any = s.assistant ? (this as any).terminalsOf?.(s.assistant) : null;
       const atLabel = ak?.labels?.["herdr.coordinator.tab"] ?? ak?.labels?.["herdr.tab"];
       const own = (s.tabs ?? []).find((t: any) => (t.terminals ?? []).includes(s.assistant) || (atLabel && (t.id === atLabel || t.id === `${s.machine}/${atLabel}`)));
-      const assistantTab = { ...(own ? { id: own.id } : {}), name: named(own?.name) ? own.name : "Assistant", named: named(own?.name), state: s.assistant ? stateOf(ak) : "idle", live: !!s.assistant, ...(kindOfTerm(ak) ? { cli: kindOfTerm(ak) } : {}),
+      const assistantTab = { ...(own ? { id: own.id } : {}), name: orchestratorTabName(own?.name), named: named(own?.name), state: s.assistant ? stateOf(ak) : "idle", live: !!s.assistant, ...(kindOfTerm(ak) ? { cli: kindOfTerm(ak) } : {}),
         ...(agentIn(ak) || kindOfTerm(ak) ? { agent: agentIn(ak)?.key ?? kindOfTerm(ak) } : {}) };
       const name = spaceName(s, { home: s.machine ? null : HOME, repo: s.git?.name ?? null });
       // what 3.0's pane header says under it: "Assistant · Claude Code" (just "Assistant" until it has started), and the
       // folder it works in, home shortened to ~
       const kind = s.assistant ? kindOfTerm((this as any).terminalsOf?.(s.assistant)) : null;
-      const header = `Assistant${kind ? ` · ${CLI_NAMES[kind] ?? kind}` : ""}`;
+      const header = `Orchestrator${kind ? ` · ${CLI_NAMES[kind] ?? kind}` : ""}`;
       const where = s.machine ? s.folder : s.folder === HOME ? "~" : s.folder.startsWith(HOME + "/") ? `~${s.folder.slice(HOME.length)}` : s.folder;
       // the folder the header shows, as the window's (mods/pane-chat): where its Assistant works now, home as ~ (another
       // machine's too, as its own window shows it); the space's folder until it has one

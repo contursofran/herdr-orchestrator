@@ -1,5 +1,12 @@
 import { expect, test } from "bun:test";
-import { spacesFromDoc, spaceName, tilde, sharedNames, gitTail, inOrder, withOrder, keptOrder, machinesInOrder, byMachineOrder, withMachineOrder, machineOrderOf } from "./spaces.js";
+import { spacesFromDoc, spaceName, tilde, sharedNames, gitTail, inOrder, withOrder, keptOrder, machinesInOrder, byMachineOrder, withMachineOrder, machineOrderOf, orchestratorTabName } from "./spaces.js";
+
+test("Orchestrator tabs display the new default while keeping custom names", () => {
+  for (const name of [undefined, "", "Assistant", "tb42", "Orchestrator"]) {
+    expect(orchestratorTabName(name)).toBe("Orchestrator");
+  }
+  expect(orchestratorTabName("Release planning")).toBe("Release planning");
+});
 
 test("two spaces with one name on a machine each show their folder, from ~ (the sidebar's rows, both sides)", () => {
   // built, so the repo's no-home-paths rule has nothing to find

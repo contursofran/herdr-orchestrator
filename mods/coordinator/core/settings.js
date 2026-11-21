@@ -61,8 +61,8 @@ export const SAME_AS_ALL_MACHINES = "Inherited from all machines";
 
 // ---- Agents ----------------------------------------------------------------------------------------------------
 export const ROLES = [
-  { id: "coordinator", title: "Assistant", about: "Plans the work and starts a task for each part.", file: "assistant.md",
-    told: "What every Assistant is told first" },
+  { id: "coordinator", title: "Orchestrator", about: "Plans the work and starts a task for each part.", file: "assistant.md",
+    told: "What every Orchestrator is told first" },
   { id: "worker", title: "Workers", about: "Do one task each.", file: "worker.md", told: "What every worker is told first" },
   { id: "reviewer", title: "Reviewer", about: "Checks each task's work before it's ready.", file: "reviewer.md",
     told: "What every reviewer is told first" },
@@ -73,10 +73,10 @@ export const EDIT_INSTRUCTIONS = "Edit instructions";
 export const INSTRUCTIONS = {
   title: "Instructions", done: "Done", saved: "Saved.", notSaved: (why) => `Not saved: ${why}`,
   notes: {
-    coordinator: "Every Assistant uses this. Repo-specific rules go in the repo's AGENTS.md or CLAUDE.md. Changes apply when an Assistant restarts.",
+    coordinator: "Every Orchestrator uses this. Repo-specific rules go in the repo's AGENTS.md or CLAUDE.md. Changes apply when an Orchestrator restarts.",
     worker: "Every worker gets this first. Repo-specific rules go in the repo's AGENTS.md or CLAUDE.md. Changes apply to the next task that starts.",
     reviewer: "Every reviewer gets this first. Repo-specific rules go in the repo's AGENTS.md or CLAUDE.md. Changes apply to the next review.",
-    heartbeat: "Autopilot's heartbeat, plain text: an Assistant on Autopilot gets it on every wake. Changes apply from the next wake.",
+    heartbeat: "Autopilot's heartbeat, plain text: an Orchestrator on Autopilot gets it on every wake. Changes apply from the next wake.",
   },
 };
 export const USE_OTHER_CLI = "Use other CLI";
@@ -229,7 +229,7 @@ export function branchPattern(pattern) {
 }
 
 // ---- Notify ----------------------------------------------------------------------------------------------------
-export const NOTIFY_ABOUT = "What reaches you from a space's Assistant. Tasks always alert.";
+export const NOTIFY_ABOUT = "What reaches you from a space's Orchestrator. Tasks always alert.";
 export const notifyMachineAbout = (v) => `Its spaces use ${v}.`;
 
 // ---- Secrets ---------------------------------------------------------------------------------------------------
@@ -276,22 +276,22 @@ export const MACHINES = {
     { field: "start_load", title: "CPU busy above", about: "The 1-minute load, as a share of all its cores." },
     { field: "start_disk", title: "Disk busy above", about: "Its home or /tmp, whichever is fuller." },
   ],
-  low: { title: "Workers run at low priority", about: "Task agents start below the Assistant and your apps, and are ended first when memory runs out." },
+  low: { title: "Workers run at low priority", about: "Task agents start below the Orchestrator and your apps, and are ended first when memory runs out." },
   cap: { title: "Memory cap per worker", about: "A worker over it is slowed down, not ended. Applies to tasks started after a change." },
   own: { title: "Limits", about: "Same as all machines.", button: "Set its own" },
   old: { title: "Set before for its spaces", about: (names) => `${names.join(", ")}. These still apply to its spaces unless a space sets its own.` },
-  home: { title: "Home Assistant", make: "Make home space" },
+  home: { title: "Home Orchestrator", make: "Make home space" },
 };
 // What the old machine scope could hold, as the person knows it.
-export const OLD_NAMES = { coordinator: "Assistant", worker: "Workers", reviewer: "Reviewer", backup: "Backup agent",
+export const OLD_NAMES = { coordinator: "Orchestrator", worker: "Workers", reviewer: "Reviewer", backup: "Backup agent",
   automations: "Run automations", merge: "Merge", review_rounds: "Review", must_fix: "Must fix", proof: "Proof",
   max_running: "Tasks at once", archive_after: "Archive Done after", worktrees: "Worktrees",
   start_notes: "When a task starts", finish_notes: "When a task finishes", base: "Base branch", branch: "Branch names", agents: "Reactions" };
 // Home Assistant's line: on or off, and what herdr-task's home round last found there (~/.local/share/herdr-orchestrator/tasks/.home.json).
 export function homeAbout(on, st) {
   return !on ? "Off: nobody watches its disk, load and processes."
-    : st?.assistant ? "Its home space's Assistant watches its disk, load and processes."
-    : st?.space ? "Its home Assistant starts when you first write to it."
+    : st?.assistant ? "Its home space's Orchestrator watches its disk, load and processes."
+    : st?.space ? "Its home Orchestrator starts when you first write to it."
     : st?.error ? "Couldn't read it now. Trying again every minute."
     : "No home space there.";
 }
@@ -303,7 +303,7 @@ export const SWITCHES = [
     key: "tabbar.tabs" },
   { id: "worktrees", title: "Worktrees in the sidebar", about: "A repo's worktree spaces, listed under it.",
     key: "sidebar.worktrees" },
-  { id: "unread", title: "Bold unread spaces", about: "A space whose Assistant has something new shows bold and bright.",
+  { id: "unread", title: "Bold unread spaces", about: "A space whose Orchestrator has something new shows bold and bright.",
     key: "sidebar.unread" },
   { id: "counts", title: "Red counts", about: "What needs you, counted in red on spaces, tabs and Tasks.", key: "counts.red" },
   { id: "greens", title: "Green counts", about: "Tasks in Ready, counted in green on spaces, tabs and Tasks.", key: "counts.green" },
@@ -313,7 +313,7 @@ export const SWITCHES = [
     key: "tasks.place" },
   { id: "helpers", title: "Show subagents above the chat box", about: "The agent's own subagents at work, listed over the box.",
     key: "chat.helpers" },
-  { id: "assistant", title: "Assistant in new spaces", about: "A new space opens with its Assistant's chat, else a terminal.",
+  { id: "assistant", title: "Orchestrator in new spaces", about: "A new space opens with its Orchestrator's chat, else a terminal.",
     key: "coordinator.auto" },
 ];
 export const ADDONS = "Add-ons";

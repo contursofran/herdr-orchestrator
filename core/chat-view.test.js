@@ -41,7 +41,7 @@ describe("rows", () => {
     const terms = { t1: { labels: { "herdr.role": "reviewer" } }, t2: { labels: { "herdr.role": "coordinator" } }, "vm/t3": { name: "herd-12-fix" } };
     const find = (a) => terms[a] ?? null;
     expect(senderName("t1", "", { find })).toBe("Reviewer");
-    expect(senderName("t2", "", { find })).toBe("Assistant");
+    expect(senderName("t2", "", { find })).toBe("Orchestrator");
     expect(senderName("vm/t3", "", { find })).toBe("HERD-12 on vm");
     expect(senderName("t9 shep-7-web", "", { find, taskOf: () => null })).toBe("SHEP-7");
     expect(senderName("box/ppid:12", "From Coverage: hi")).toBe("Coverage");
@@ -52,16 +52,16 @@ describe("rows", () => {
     // the web service on m3 shows a chat on vm whose agent got a message from m3's Assistant
     const terms = { t75: { template: "herdr-assistant-mw3acvzz", labels: { "herdr.role": "coordinator" } }, t80: { name: "shep-4-fix" }, t81: {} };
     const find = (a) => terms[a] ?? null;
-    expect(senderName("m3/t75", "", { find, machine: "vm", here: "m3" })).toBe("Assistant on m3");
+    expect(senderName("m3/t75", "", { find, machine: "vm", here: "m3" })).toBe("Orchestrator on m3");
     expect(senderName("m3/t80", "", { find, machine: "vm", here: "m3" })).toBe("SHEP-4 on m3");
     expect(senderName("m3/t81", "", { find, machine: "vm", here: "m3", taskOf: (a) => (a === "t81" ? "SHEP-9" : null) })).toBe("SHEP-9 on m3");
     // its own chat: no "on"
-    expect(senderName("m3/t75", "", { find, machine: null, here: "m3" })).toBe("Assistant");
+    expect(senderName("m3/t75", "", { find, machine: null, here: "m3" })).toBe("Orchestrator");
     // an Assistant known only by its template
-    expect(senderName("t75", "", { find: () => ({ template: "herdr-assistant-x" }) })).toBe("Assistant");
+    expect(senderName("t75", "", { find: () => ({ template: "herdr-assistant-x" }) })).toBe("Orchestrator");
     // unknown here: "Another agent", unless it signed
     expect(senderName("box/t99", "", { find, machine: "vm", here: "m3" })).toBe("Another agent on box");
-    expect(senderName("box/t99", "From the person's Assistant on m3 (t10v): the key", { find, machine: "vm", here: "m3" })).toBe("Assistant on m3");
+    expect(senderName("box/t99", "From the person's Assistant on m3 (t10v): the key", { find, machine: "vm", here: "m3" })).toBe("Orchestrator on m3");
     expect(unsigned("From the person's Assistant on m3 (t10v): the key")).toBe("the key");
   });
   test("the band: each side the other's mirror, pills at the bubble's outer edge", () => {
@@ -171,23 +171,23 @@ describe("ownWords", () => {
 describe("agent to agent as a group chat (SHEP-27)", () => {
   test("another Assistant is named by its machine and space; this machine's unsaid", () => {
     const x = { from: "mac/t13", assistant: { machine: "mac", space: "Home" }, text: "hi" };
-    expect(fromName(x, () => "nope", { machineName: (m) => (m === "mac" ? "Mac mini" : null) })).toBe("Assistant on Mac mini · Home");
-    expect(fromName(x, () => "nope", { here: "mac" })).toBe("Assistant · Home");
+    expect(fromName(x, () => "nope", { machineName: (m) => (m === "mac" ? "Mac mini" : null) })).toBe("Orchestrator on Mac mini · Home");
+    expect(fromName(x, () => "nope", { here: "mac" })).toBe("Orchestrator · Home");
     expect(fromName({ from: "t3", text: "x" }, (f) => `name of ${f}`)).toBe("name of t3");
-    expect(briefLabel(x, 5, { machineName: () => "Mac mini" })).toBe("Message from Assistant on Mac mini · Home");
+    expect(briefLabel(x, 5, { machineName: () => "Mac mini" })).toBe("Message from Orchestrator on Mac mini · Home");
   });
   test("whom a sent message went to", () => {
     const sender = (a) => ({ t10s: "SHEP-4", "mac/t13": "Another agent on mac" }[a] ?? "Another agent");
     expect(sentTo({ to: "t10s", how: "hc" }, sender)).toBe("SHEP-4");
-    expect(sentTo({ to: "mac/t13", how: "assistant" }, sender)).toBe("Assistant on mac");
-    expect(sentTo({ to: "Home", how: "assistant" }, sender)).toBe("Assistant · Home");
+    expect(sentTo({ to: "mac/t13", how: "assistant" }, sender)).toBe("Orchestrator on mac");
+    expect(sentTo({ to: "Home", how: "assistant" }, sender)).toBe("Orchestrator · Home");
   });
   test("who the chat's own agent is, and initials", () => {
-    expect(selfName({ assistant: true })).toBe("Assistant");
+    expect(selfName({ assistant: true })).toBe("Orchestrator");
     expect(selfName({ task: "SHEP-4" })).toBe("SHEP-4");
     expect(selfName({ kind: "codex" })).toBe("Codex");
     expect(initialOf("SHEP-4")).toBe("S");
-    expect(initialOf("Assistant on Mac mini · Home")).toBe("A");
+    expect(initialOf("Orchestrator on Mac mini · Home")).toBe("O");
   });
 });
 

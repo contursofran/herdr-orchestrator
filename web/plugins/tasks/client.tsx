@@ -462,7 +462,7 @@ function TaskList(_: { placeId: string }) {
         {/* Automations: their own group, last */}
         {autoGroup}
         {/* nothing at all: said once, never "yet" (3.0's) */}
-        {loaded && nothing && !q ? <Empty className="pt-3 text-fg3">{here ? `Nothing in ${place.name}.` : snap.tasks.length ? 'Nothing to do.' : 'No tasks on any machine. Ask an Assistant to plan some.'}</Empty> : null}
+        {loaded && nothing && !q ? <Empty className="pt-3 text-fg3">{here ? `Nothing in ${place.name}.` : snap.tasks.length ? 'Nothing to do.' : 'No tasks on any machine. Ask an Orchestrator to plan some.'}</Empty> : null}
         {archivedGroup ? (
           <div key="archived">
             <GroupHeading label="Archived" count={archivedGroup.tasks.length} flip="group:archived" />

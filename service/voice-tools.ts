@@ -167,7 +167,7 @@ export function machineAliases(m: Snapshot["machines"][number]) {
   const out = [m.name, m.ownName ?? "", m.machine, ...(m.here ? ["this computer", "this machine"] : [])].filter(Boolean);
   return [...new Set(out)];
 }
-const FILLER = new Set(["the", "a", "an", "space", "spaces", "project", "on", "in", "at", "of", "my", "assistant", "s", "to", "switch", "go", "open", "show", "one", "please", "machine", "computer", "s"]);
+const FILLER = new Set(["the", "a", "an", "space", "spaces", "project", "on", "in", "at", "of", "my", "assistant", "orchestrator", "s", "to", "switch", "go", "open", "show", "one", "please", "machine", "computer", "s"]);
 const said = (s: unknown) => words(s).filter((w) => !FILLER.has(w));
 /** the machines named in the person's words, and the words left for the space: "Mac Mini Home" → the Mac mini, ["home"] */
 function machinesSaid(snap: Snapshot, id: unknown) {
@@ -270,7 +270,7 @@ function findChat(snap: Snapshot, id: unknown, where: Where): { key: string; nam
     return key ? { key, name: `${spoken(t.id)}'s agent` } : { error: `${spoken(t.id)} has no agent running (it is ${STATUS[t.status] ?? t.status}).` };
   }
   const p = findSpace(snap, id, where);
-  if (p) return { key: p.chat, name: `the ${p.name} Assistant` };
+  if (p) return { key: p.chat, name: `the ${p.name} Orchestrator` };
   return { error: `I can't find a space or task called "${cut(String(id), 60)}".` };
 }
 
@@ -278,7 +278,7 @@ export function chatName(snap: Snapshot, key: string) {
   const t = taskOfChat(snap, key);
   if (t) return `${spoken(t.id)}'s agent`;
   const p = placeOfChat(snap, key);
-  return p ? `the ${p.name} Assistant` : "this chat";
+  return p ? `the ${p.name} Orchestrator` : "this chat";
 }
 
 // ---- look ---------------------------------------------------------------------------------
@@ -448,7 +448,7 @@ export function evidenceWords(ev: any) {
 
 function lookNeeds(snap: Snapshot) {
   const out = snap.needs.map((n) => {
-    const who = n.task ? spoken(n.task) : `the ${placeName(snap, n.place) || "space"} Assistant`;
+    const who = n.task ? spoken(n.task) : `the ${placeName(snap, n.place) || "space"} Orchestrator`;
     if (n.question) return `${who} asks: ${cut(n.question.title, 160)}${n.question.choices?.length ? ` (choices: ${n.question.choices.slice(0, 4).map((c) => cut(c.label, 40)).join(", ")})` : ""}`;
     if (n.secret) return `${who} needs the secret ${n.secret.name}${n.secret.why ? `: ${cut(n.secret.why, 100)}` : ""}. It goes in the app's masked box, not by voice.`;
     return `${who} waits: ${cut(n.text ?? "for an answer", 160)}`;
@@ -692,9 +692,9 @@ function open(snap: Snapshot, where: Where, io: VoiceIO, what: string, id: strin
       if (id && !isHere(id)) {
         const hits = spacesSaid(snap, id, where);
         if (hits.length !== 1) return fail(hits.length ? `Which one: ${hits.slice(0, 6).map((p) => spaceSaid(snap, p)).join("; ")}? Ask the person.` : `I can't find a space called "${cut(id, 60)}".`);
-        return { ...showing(`the ${hits[0].name} space's ${what === "terminal" ? "Assistant terminal" : `${what} panel`}`, { kind: "space", place: hits[0].id }), then: { kind: "panel", panel: what } } as Answer;
+        return { ...showing(`the ${hits[0].name} space's ${what === "terminal" ? "Orchestrator terminal" : `${what} panel`}`, { kind: "space", place: hits[0].id }), then: { kind: "panel", panel: what } } as Answer;
       }
-      return showing(what === "terminal" ? "the space's Assistant terminal" : `the ${what[0].toUpperCase()}${what.slice(1)} panel`, { kind: "panel", panel: what as "artifacts" });
+      return showing(what === "terminal" ? "the space's Orchestrator terminal" : `the ${what[0].toUpperCase()}${what.slice(1)} panel`, { kind: "panel", panel: what as "artifacts" });
     }
     case "needs": return showing("what needs the person", { kind: "needs" });
     case "artifact": {
@@ -766,7 +766,7 @@ async function act(snap: Snapshot, where: Where, io: VoiceIO, p: any, id: string
     const sp = findSpace(snap, id, where);
     if (!sp) return fail(isHere(id) ? "Which space?" : `I can't find a space called "${cut(id, 60)}".`);
     switch (action) {
-      case "autopilot_on": ask = `Turn Autopilot on in ${sp.name}? Its Assistant then works on its own.`; body = { type: "mode", place: sp.id, mode: "autopilot" }; said = `Autopilot is on in ${sp.name}.`; break;
+      case "autopilot_on": ask = `Turn Autopilot on in ${sp.name}? Its Orchestrator then works on its own.`; body = { type: "mode", place: sp.id, mode: "autopilot" }; said = `Autopilot is on in ${sp.name}.`; break;
       case "autopilot_off": ask = `Turn Autopilot off in ${sp.name}?`; body = { type: "mode", place: sp.id, mode: "regular" }; said = `Autopilot is off in ${sp.name}.`; break;
       case "autopilot_run": ask = `Wake ${sp.name}'s Autopilot now?`; body = { type: "autopilot-run", place: sp.id }; said = `${sp.name}'s Autopilot wakes now.`; break;
       case "rename_space":
@@ -803,7 +803,7 @@ async function act(snap: Snapshot, where: Where, io: VoiceIO, p: any, id: string
     const a = isHere(id) && where.artifact ? snap.artifacts.find((x) => x.id === where.artifact) : snap.artifacts.find((x) => x.id === id) ?? (ws.length ? snap.artifacts.find((x) => ws.every((w) => x.title.toLowerCase().includes(w))) : null);
     if (!a) return fail(`I can't find an artifact like "${cut(id, 60)}".`);
     ask = `Delete the artifact "${cut(a.title, 80)}" and its versions?`; body = { type: "artifact-delete", place: a.place, artifact: a.id }; said = `Deleted "${cut(a.title, 80)}".`;
-  } else return fail(`act can do: ${["accept", "start", "schedule", "unschedule", "stop", "resume", "done", "reopen", "delete", "pin", "unpin", "autopilot_on", "autopilot_off", "autopilot_run", "rename_space", "remove_space", "setting", "forget_secret", "delete_artifact"].join(", ")}. Anything else goes to the space's Assistant with send.`);
+  } else return fail(`act can do: ${["accept", "start", "schedule", "unschedule", "stop", "resume", "done", "reopen", "delete", "pin", "unpin", "autopilot_on", "autopilot_off", "autopilot_run", "rename_space", "remove_space", "setting", "forget_secret", "delete_artifact"].join(", ")}. Anything else goes to the space's Orchestrator with send.`);
   if (!confirmed) return done(`Nothing changed yet. Ask the person: "${ask}" Only after a clear yes, call act again with confirmed true.`);
   const r = await io.action(body!);
   if (r && typeof r === "object" && r.ok === false) return fail(cut(String(r.error ?? "It didn't go through."), 300));

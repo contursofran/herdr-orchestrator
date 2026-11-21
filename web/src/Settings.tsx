@@ -409,7 +409,7 @@ function TriggerValue({ row, phone, onPick }: { row: SettingRow & { trigger: Non
           <Small className="text-pretty">{AP.CUSTOM_HINT}</Small>
         </div>
       ) : null}
-      {row.text ? null : <Small className="text-pretty">{row.key === 'heartbeat.on' ? 'Other news waits for the next heartbeat. ' : ''}Ask the Assistant for anything else.</Small>}
+      {row.text ? null : <Small className="text-pretty">{row.key === 'heartbeat.on' ? 'Other news waits for the next heartbeat. ' : ''}Ask the Orchestrator for anything else.</Small>}
     </div>
   )
 }

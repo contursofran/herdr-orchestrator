@@ -75,7 +75,7 @@ def request(s, task, head, used, rounds):
     s.dirty = True
     if used >= rounds:
         task["review_out"] = now()
-        reason = f"Out of review rounds for {head[:12]}. The Assistant can add a round."
+        reason = f"Out of review rounds for {head[:12]}. The Orchestrator can add a round."
         escalate(s, task, req, reason)
         return reason
     if any(r.get("head") == head and r.get("result") == "changes-requested" for r in task.get("reviews") or []):
@@ -190,10 +190,10 @@ def record(s, task, req, verdict, used, rounds):
         return
     if escalation or (prev and " ".join(prev["text"].casefold().split()) == " ".join(findings.casefold().split())):
         reason = {"conflict": "conflicting findings", "scope": "a scope decision", "repeated": "a repeated failure"}.get(escalation, "a repeated failure")
-        escalate(s, task, req, f"Independent review needs the Assistant for {reason}.")
+        escalate(s, task, req, f"Independent review needs the Orchestrator for {reason}.")
     elif used + 1 >= rounds:
         task["review_out"] = now()
-        escalate(s, task, req, "Out of review rounds. The Assistant can add a round for the follow-up commit.")
+        escalate(s, task, req, "Out of review rounds. The Orchestrator can add a round for the follow-up commit.")
 
 
 def tell_review(s, task, req, builders):
@@ -205,7 +205,7 @@ def tell_review(s, task, req, builders):
             escalate(s, task, req, "The builder stopped before receiving the review findings.")
         elif builder:
             next_step = ("Fix the findings, run checks, commit, and run herdr-task ready for the next review."
-                         if req["status"] == "changes-requested" else "Wait for the Assistant's decision on this escalation.")
+                         if req["status"] == "changes-requested" else "Wait for the Orchestrator's decision on this escalation.")
             if send_or_hold(builder, f"Independent review for {s.ref(task)} requested changes at {req['head'][:12]}."
                            f"{findings}\n\n{next_step}"):
                 req["builder_notified"] = True

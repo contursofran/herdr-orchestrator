@@ -18,7 +18,7 @@ export function spaceMenu({ unread = false, pinned = false, git = null, assistan
     // its Assistant's Notify, picked in place (the menu stays open), a quiet note under it
     { id: "notify", label: "Notify", setting: true, note: "Tasks alert either way." },
     sep,
-    ...(assistant ? [] : [{ id: "assistant", label: "Start Assistant", icon: "network" }]),
+    ...(assistant ? [] : [{ id: "assistant", label: "Start Orchestrator", icon: "network" }]),
     ...(unread ? [{ id: "read", label: "Mark as read", icon: "check-check" }] : []),
     pinned ? { id: "unpin", label: "Unpin", icon: "pin-off" } : { id: "pin", label: "Pin", icon: "pin" },
     { id: "rename", label: "Rename…", icon: "square-pen" },
@@ -97,7 +97,7 @@ export const NEW_MENU = {
 };
 // open: the space has its Assistant's tab (the row goes to it). On another machine's space too: its Assistant runs
 // there, from that machine's assistant template. Its key is C.
-export const assistantRow = ({ open = false } = {}) => ({ label: open ? "Show Assistant" : "Assistant", hint: open ? "" : "C", enabled: true });
+export const assistantRow = ({ open = false } = {}) => ({ label: open ? "Show Orchestrator" : "Orchestrator", hint: open ? "" : "C", enabled: true });
 // The installed agents (keys 1 to 9, in order), then at most two that aren't.
 export const agentChoices = (agents) => [...agents.filter((a) => a.installed), ...agents.filter((a) => !a.installed).slice(0, 2)];
 export const agentHint = (a, i) => (a.installed ? (i < 9 ? String(i + 1) : "") : NEW_MENU.notInstalled);

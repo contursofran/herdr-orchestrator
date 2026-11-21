@@ -268,7 +268,7 @@ test("SHEP-105: updates wait while the person talks, then come together; a send 
   await until(() => heard.slice(before).some((m) => m.type === "user_message"));
   const said = heard.slice(before).filter((m) => m.type === "user_message");
   expect(said).toHaveLength(1);
-  expect(said[0].text).toContain('the Home Assistant replied: """The build is green."""');
+  expect(said[0].text).toContain('the Home Orchestrator replied: """The build is green."""');
   c.end();
 }, 10000);
 

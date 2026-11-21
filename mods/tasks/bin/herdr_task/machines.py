@@ -894,7 +894,7 @@ def cmd_assistants(args):
         print(json.dumps(rows))
         return
     if not rows:
-        print("No live Assistants on any machine reachable from here.")
+        print("No live Orchestrators on any machine reachable from here.")
     for a in rows:
         print(f"{a['target']:<28} {a.get('space_name') or '?':<20} {a.get('folder') or ''}")
 
@@ -952,7 +952,7 @@ def _deliver(names, hows, address, text):
         if not typing(address, there=there):
             break
         if i == 11:
-            raise Fail("not sent: the person is writing to that Assistant right now; try again in a few minutes")
+            raise Fail("not sent: the person is writing to that Orchestrator right now; try again in a few minutes")
         time.sleep(5)
     if there(["hc", "send", address, text]).returncode != 0:
         return False
@@ -971,9 +971,9 @@ def tell(target, text, sender=None):
         d, rows = directory(refresh=True)
         hits = _find(rows, target)
     if not hits:
-        raise Fail(f"no live Assistant {target!r} reachable from here (herdr-task assistants lists them)")
+        raise Fail(f"no live Orchestrator {target!r} reachable from here (herdr-task assistants lists them)")
     if len(hits) > 1:
-        raise Fail(f"{target!r} is more than one Assistant: " + ", ".join(a["target"] for a in hits))
+        raise Fail(f"{target!r} is more than one Orchestrator: " + ", ".join(a["target"] for a in hits))
     to = hits[0]
     me = sender or os.environ.get("HC_TERMINAL_ID")
     graph = d["graph"]

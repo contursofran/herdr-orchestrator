@@ -28,7 +28,7 @@
         ]
       },
       "forms": {
-        "herdr": "Projects sidebar: Assistant and worker tree, machines, Pinned, sections, unread, red/green counts, icons, drag between sections",
+        "herdr": "Projects sidebar: Orchestrator and worker tree, machines, Pinned, sections, unread, red/green counts, icons, drag between sections",
         "desktop": "Left sidebar, resizable, drag to move",
         "tablet": "Drawer from the left (menu or edge swipe)",
         "phone": "Drawer (edge swipe); long-press then drag to move"
@@ -115,7 +115,7 @@
         ]
       },
       "forms": {
-        "herdr": "Tab bar: Assistant first, counts, dots, drag, rename, close, + menu",
+        "herdr": "Tab bar: Orchestrator first, counts, dots, drag, rename, close, + menu",
         "desktop": "Tab strip under the space header",
         "tablet": "Same, scrolls sideways",
         "phone": "Space title opens a tab switcher sheet"
@@ -555,7 +555,7 @@
     {
       "id": "assistant",
       "addon": "assistants",
-      "title": "Assistant per space",
+      "title": "Orchestrator per space",
       "core": [
         "spaces"
       ],
@@ -598,7 +598,7 @@
         ]
       },
       "forms": {
-        "herdr": "News lines in the Assistant chat; Review on Ready",
+        "herdr": "News lines in the Orchestrator chat; Review on Ready",
         "desktop": "Same lines, inline Review",
         "tablet": "Same",
         "phone": "Same; Review opens the sheet"
@@ -1037,7 +1037,7 @@
         ]
       },
       "forms": {
-        "herdr": "Call herdr-orchestrator itself (ElevenLabs) from the sidebar's Talk to herdr-orchestrator row or a chat's call button: one voice that sends to any Assistant or agent and says their replies and what needs you; the row becomes the call card (Mute, End; a green wave on the narrow rail); the voice agent reads and acts on the window's frame",
+        "herdr": "Call herdr-orchestrator itself (ElevenLabs) from the sidebar's Talk to herdr-orchestrator row or a chat's call button: one voice that sends to any Orchestrator or agent and says their replies and what needs you; the row becomes the call card (Mute, End; a green wave on the narrow rail); the voice agent reads and acts on the window's frame",
         "desktop": "Same, through the service",
         "tablet": "Same",
         "phone": "A voice button beside Search and a green Mute and End strip above the bar (at the top over a task or Settings); the sidebar's row in the drawer; Opened by voice tags; the voice agent reads and acts on the page"
@@ -1120,7 +1120,7 @@
         ]
       },
       "forms": {
-        "herdr": "Switch in the Assistant header; Settings › Autopilot",
+        "herdr": "Switch in the Orchestrator header; Settings › Autopilot",
         "desktop": "Same switch and page",
         "tablet": "Same",
         "phone": "Switch in the chat's menu; settings page"
@@ -1151,7 +1151,7 @@
         ]
       },
       "forms": {
-        "herdr": "Health meter, plan limits, home Assistant, Add machine, tools kept in step",
+        "herdr": "Health meter, plan limits, home Orchestrator, Add machine, tools kept in step",
         "desktop": "Machine headers in the sidebar; Add machine dialog (terminal for passwords)",
         "tablet": "Same",
         "phone": "Machine rows in the drawer; sheets"

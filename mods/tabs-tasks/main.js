@@ -13,6 +13,7 @@ import { on as addonOn } from "./addons.js";
 import { watchViews } from "./usage.js";
 // A tab's name (what runs in it while Herdr named it): core/menus.js, as the web app's tab bar names it.
 import { tabName } from "./core/menus.js";
+import { orchestratorTabName } from "./core/spaces.js";
 import { inRender } from "./live.js";
 import { dirsReady } from "./dirs.js";
 
@@ -153,7 +154,7 @@ export default class Tabs extends View {
     const tabsShown = shared("tabbar.tabs") !== false;
     const item = (c, i) => {
       const program = panes().find(p => p.tab === c.id && p.program?.agent)?.program ?? panes().find(p => p.tab === c.id)?.program;
-      const name = tabName(c.name, program?.name);
+      const name = isCoordinatorTab(c.id) ? orchestratorTabName(c.name) : tabName(c.name, program?.name);
       return h_flex().id(`tab-${c.id}`).h(H.sm).px(8).gap(6).rounded(RADIUS.control).items_center().flex_none().text_size(TEXT.body)
         .border(1).border_color(c.active ? t.border : t.chrome).bg(c.active ? t.raised : t.chrome).text_color(c.active ? t.foreground : t.muted)
         .cursor_pointer().hover(s => s.bg(t.hover))

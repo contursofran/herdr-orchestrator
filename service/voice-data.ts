@@ -37,7 +37,7 @@ export const NOT_DATA: Record<string, string> = {
   "api:action": "the actions themselves (act; their read ones are SOURCES)",
   "api:dictate": "dictation turns speech into text, nothing shown",
   "api:upload": "uploads a file to send",
-  "api:spaces": "makes a new space (a change, the space's Assistant or screen does it)",
+  "api:spaces": "makes a new space (a change, the space's Orchestrator or screen does it)",
   "api:file": "a picture or file sent in a chat, as bytes",
   "api:terminal": "a live terminal's raw screen: its agent's chat is look chat, and screen reads what the page shows",
   "api:browser": "a task's live browser video: screen reads what the page shows",

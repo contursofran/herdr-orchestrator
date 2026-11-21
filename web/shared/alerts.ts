@@ -147,7 +147,7 @@ export function watchTitle(title: string): string {
   const at = title.lastIndexOf(' · ')
   const what = at < 0 ? '' : title.slice(at + 3)
   if (!what || what.length > 18) return clip(title, WATCH_TITLE)
-  const who = title.slice(0, at).replace(/ Assistant$/, '')
+  const who = title.slice(0, at).replace(/ (?:Orchestrator|Assistant)$/, '')
   return `${who.length + what.length + 3 <= WATCH_TITLE ? who : clip(who, WATCH_TITLE - what.length - 3)} · ${what}`
 }
 
@@ -264,8 +264,8 @@ export const PUSH_TOPICS = [
   { id: 'needs', label: 'Needs you', about: 'Questions, permission prompts, an agent stuck or asking for help' },
   { id: 'ready', label: 'Ready for review', about: 'A task finished and waits for your Accept' },
   { id: 'done', label: 'Done', about: 'A task merged or closed' },
-  { id: 'assistant', label: 'Messages from the Assistant', about: "A space's Assistant wrote in its chat" },
-  { id: 'autopilot', label: 'Autopilot updates', about: 'What an Assistant did when its Autopilot woke it' },
+  { id: 'assistant', label: 'Messages from the Orchestrator', about: "A space's Orchestrator wrote in its chat" },
+  { id: 'autopilot', label: 'Autopilot updates', about: 'What an Orchestrator did when its Autopilot woke it' },
 ] as const
 export type PushTopic = (typeof PUSH_TOPICS)[number]['id']
 /** a device turned on now: what needs you (its questions among them) and a task ready for its Accept; never routine
