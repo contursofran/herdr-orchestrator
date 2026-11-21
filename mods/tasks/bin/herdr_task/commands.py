@@ -526,7 +526,7 @@ def review_refusal(s, t, wt):
         t["review_out"] = now()
         return (f"All {rounds} review rounds are used and {what} isn't reviewed. A fix made after the last round needs a round "
                 f"of its own: say why in your chat (what the fix changed), set your status line to it, and end your turn: only "
-                f"your Assistant can add a round (herdr-task review-more {ref}).")
+                f"your Orchestrator can add a round (herdr-task review-more {ref}).")
     return (f"Review is on and {what} isn't reviewed. Have it reviewed as your brief says, fix what must be fixed, record the "
             f"round with `{ht} reviewed {ref} --folder {folder} --report \"<findings, a line>\"` (on the commit you'd say "
             f"ready at), then run ready again. {rounds - rounds_used(t)} of {rounds} rounds left.")
@@ -581,7 +581,7 @@ def cmd_reviewed(args):
         used = rounds_used(t)
         if used >= rounds:
             raise Fail(f"All {rounds} review rounds of {s.ref(t)} are used. Say why in your chat and end your turn: only your "
-                       f"Assistant can add a round (herdr-task review-more {s.ref(t)}).")
+                       f"Orchestrator can add a round (herdr-task review-more {s.ref(t)}).")
         wt = t.get("worktree") if t.get("mode") == "worktree" else None
         head = None
         where = wt if wt and os.path.isdir(wt) else (s.loc["folder"] if s.loc["kind"] == "repo" else None)
@@ -618,7 +618,7 @@ def cmd_review_more(args):
     with open_store(args) as s:
         t = s.find(args.id)
         if labels.get("herdr.task") == s.key(t) or labels.get("herdr.role") == "reviewer":
-            raise Fail("A task's own agent can't add review rounds: say why in your chat and end your turn; your Assistant decides.")
+            raise Fail("A task's own agent can't add review rounds: say why in your chat and end your turn; your Orchestrator decides.")
         on, rounds = review_limits(s, t)
         if not on:
             raise Fail(f"Review is off for {s.ref(t)}.")
@@ -642,7 +642,7 @@ def cmd_review_more(args):
                 f"Have your final commit reviewed, record it with `{ht} reviewed {s.ref(t)} --folder {folder} "
                 f"--report \"<findings, a line>\"`, then run ready again.")
             r = send_or_hold(live[-1]["address"],
-                            f"Your Assistant added one review round to {s.ref(t)}: {rounds + 1} in all. {next_step}")
+                            f"Your Orchestrator added one review round to {s.ref(t)}: {rounds + 1} in all. {next_step}")
             told = live[-1]["address"] if r else None
         v = view(s, t)
     say(args, {**v, "rounds": rounds + 1, "told": told},

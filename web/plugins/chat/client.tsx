@@ -2885,7 +2885,7 @@ function StickToBottom({ chatKey, children }: { chatKey: string; children: React
 function placeholderOf(chatKey: string, chat: Chat | undefined, fallback: string) {
   // a card asks, or the agent asks in its terminal: words written here answer it
   if (chat?.blocked !== undefined || chat?.messages.some((m) => m.question && m.question.sent === undefined && !m.question.closed)) return WORDS.replyInstead
-  if (chatKey.startsWith('p:')) return 'Message the Assistant'
+  if (chatKey.startsWith('p:')) return 'Message the Orchestrator'
   const task = taskChatId(chatKey)
   if (task) return `Message ${task}`
   return chatKey.startsWith('t:') ? `Message ${({ claude: 'Claude Code', codex: 'Codex' } as Record<string, string>)[chat?.cli ?? ''] ?? 'the agent'}` : fallback

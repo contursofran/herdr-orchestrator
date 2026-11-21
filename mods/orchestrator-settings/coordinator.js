@@ -13,7 +13,7 @@ import { appHome, exec, hc, run, openOverlay, shared, setShared, home, machines,
 import { dirs } from "./dirs.js";
 import { isWorktreePath } from "./core/paths.js";
 import { terminals, panes, spaces as allSpaces } from "./live.js";
-import { chatPane, chatLabel } from "./core/spaces.js";
+import { chatPane, chatLabel, orchestratorTabName } from "./core/spaces.js";
 import { logSpace } from "./spacelog.js";
 import { toast, plainError } from "./ui.js";
 
@@ -179,7 +179,7 @@ function runningAssistant(space, ps = panes()) {
 export async function openCoordinator(space, show = true, settings = null) {
   if (space.machine && !machineReady(space.machine)) {
     setShared("coordinator.pending", { ...(shared("coordinator.pending") ?? {}), [space.id]: { settings, at: Date.now() } });
-    toast({ title: `${space.machine} is offline`, body: "Its Assistant starts when it's back." });
+    toast({ title: `${space.machine} is offline`, body: "Its Orchestrator starts when it's back." });
     return;
   }
   const folder = folderOf(space);
@@ -189,7 +189,7 @@ export async function openCoordinator(space, show = true, settings = null) {
   const was = focused();
   const running = runningAssistant(space);
   try {
-    const out = await app("tab.new", { space: space.id, name: "Assistant", mod: "chat",
+    const out = await app("tab.new", { space: space.id, name: orchestratorTabName(), mod: "chat",
       props: { role: "coordinator", template: "assistant", space: space.id, folder, slot, ...(settings ? { settings } : {}) } });
     const pane = out.pane ?? panes().find((p) => p.tab === out.tab && p.mod === "chat")?.pane ?? null;
     setShared("coordinator.slots", { ...liveSlots(), [slot]: { space: space.id, tab: out.tab, pane, folder } });
@@ -202,7 +202,7 @@ export async function openCoordinator(space, show = true, settings = null) {
       run("tab.select", { id: out.tab });
     } else if (was?.pane) run("pane.focus", { pane: was.pane }); // tab.new shows the new tab: back to where the person was.
   } catch (e) {
-    toast({ title: "Assistant didn't open", body: plainError(e), level: "error" });
+    toast({ title: "Orchestrator didn't open", body: plainError(e), level: "error" });
   }
 }
 
@@ -495,8 +495,9 @@ export function closeTab(tabId) {
 // Rename a tab: our prompt (mods/prompt-chat, the app's one dialog footer), its field holding the
 // name given (empty when nobody named it: it keeps its number).
 export function renameTab(tab) {
+  const name = tab?.id && isCoordinatorTab(tab.id) ? orchestratorTabName(tab.name) : tab?.name ?? "";
   openOverlay({ mod: "prompt-chat", kind: "dialog", width: 400, height: 196, props: { title: "Rename tab",
-    value: tab?.named ? tab.name : "", placeholder: tab?.name ?? "", command: { name: "tab.rename", args: { id: tab?.id } } } });
+    value: tab?.named ? name : "", placeholder: name, command: { name: "tab.rename", args: { id: tab?.id } } } });
 }
 
 // A space's Rename and Close, as its sidebar menu does them (mods/spaces-chat): the Rename dialog

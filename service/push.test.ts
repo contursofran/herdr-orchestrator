@@ -36,7 +36,9 @@ test("alerts say what the window's toasts say", () => {
     alerts: [{ id: "a1", title: "HERD-4 · Stuck", body: "why", notify: true }],
   });
   const a = [...alertsOf(snap()).values()];
-  expect(a.map((x) => x.title)).toEqual(["tt-repo Assistant · Needs you", "HERD-5 · Needs you", "HERD-4 · Finished", "HERD-4 · Stuck"]);
+  expect(a.map((x) => x.title)).toEqual(["tt-repo · Needs you", "HERD-5 · Needs you", "HERD-4 · Finished", "HERD-4 · Stuck"]);
+  const short = { ...snap(), places: [{ id: "sp1", name: "Shop", chat: "sp1" }] };
+  expect([...alertsOf(short).values()][0].title).toBe("Shop Orchestrator · Needs you");
   expect(a[0].body).toBe("Rerun CI?");
   // another machine's task by its machine's name, never its raw id ("m3:HERD-6")
   const far = { ...snap(), machines: [{ machine: "m3", name: "MacBook" }], needs: [{ id: "q3", chat: "m3:HERD-6/worker", place: "sp1", task: "m3:HERD-6" }], tasks: [], alerts: [] };
@@ -49,7 +51,7 @@ test("an agent's own alert, from its label", () => {
   const snap = { places: [{ id: "sp1", name: "tt-repo", chat: "sp1" }], tasks: [], settings: [] };
   const terms = [{ address: "t1", state: "live", labels: { "herdr.role": "coordinator", "herdr.alert": JSON.stringify({ id: "x", at: 5, title: "Can't wait", body: "Look now" }) } }];
   const out = agentAlerts(terms, snap, (a) => (a === "t1" ? "sp1" : null), "/nonexistent");
-  expect(out).toEqual([{ id: "x", at: 5, title: "tt-repo Assistant · Can't wait", body: "Look now", chat: "sp1", place: "sp1", notify: true }]);
+  expect(out).toEqual([{ id: "x", at: 5, title: "tt-repo Orchestrator · Can't wait", body: "Look now", chat: "sp1", place: "sp1", notify: true }]);
 });
 
 test("SHEP-255: an alert carries the task it is about: its chat's, or a task's helper's by its herdr.task label; a helper of no task's none", () => {

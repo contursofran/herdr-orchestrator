@@ -169,7 +169,7 @@ test("Agents and Tasks say the window's words: the model button, Other CLI, Must
   s.start();
   s.choices = C.choicesFrom({ claude: { model: "opus[1m]", effort: "high", per: {} }, codex: { models: [{ id: "gpt-5", label: "GPT-5", efforts: ["low", "high"] }] } });
   const agents = s.sections(null).find((x) => x.name === "Agents" && x.level === "all")!;
-  expect(agents.rows.map((r) => r.label)).toEqual(["Assistant", "Workers", "Reviewer", "Backup agent", "Reactions", "Suggested next message", "Feedback offers", "Feedback repo"]);
+  expect(agents.rows.map((r) => r.label)).toEqual(["Orchestrator", "Workers", "Reviewer", "Backup agent", "Reactions", "Suggested next message", "Feedback offers", "Feedback repo"]);
   expect(agents.rows[0].value).toBe("Opus 5.5 · 1M · High");
   expect(agents.rows[2]).toMatchObject({ value: "Other CLI (Codex)", agent: { unset: true, other: false } });
   const tasks = s.sections(null).find((x) => x.name === "Tasks" && x.level === "all")!;
@@ -188,7 +188,7 @@ test("Reactions: on by default for every agent, Everywhere's or a space's own", 
   const sp = { id: "sp7", name: "shop", machine: null, folder: "/shop" };
   const row = (level: string) => s.sections(null, [sp]).find((x) => x.name === "Agents" && x.level === level)!.rows;
   expect(row("all").find((r) => r.key === "agents.reactions")).toMatchObject({ key: "agents.reactions", label: "Reactions", value: "on", options: ["on", "off"], hint: CORE.REACTIONS.about });
-  expect(CORE.REACTIONS.about).not.toMatch(/Assistant/);
+  expect(CORE.REACTIONS.about).not.toMatch(/Orchestrator/);
   s.set("agents.reactions", "off", "all");
   let f = JSON.parse(readFileSync(file, "utf8"));
   expect(f.everywhere.agents).toEqual({ reactions: false });

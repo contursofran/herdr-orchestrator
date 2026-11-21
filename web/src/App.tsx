@@ -346,7 +346,7 @@ function SpaceColumn({ place, pane }: { place: Place; pane?: number }) {
         {pane === undefined ? null : <PaneButtons i={pane} />}
       </Head>
       {Chat ? (
-        tabChat ? <Chat key={tabChat} chatKey={tabChat} placeholder={`Message ${tab?.prog ?? 'the agent'}`} /> : <Chat chatKey={place.chat} placeholder="Message the Assistant" unreachable={unreachable(place, snap)} />
+        tabChat ? <Chat key={tabChat} chatKey={tabChat} placeholder={`Message ${tab?.prog ?? 'the agent'}`} /> : <Chat chatKey={place.chat} placeholder="Message the Orchestrator" unreachable={unreachable(place, snap)} />
       ) : null}
     </section>
   )
@@ -893,7 +893,7 @@ function PhoneHome({ snap }: { snap: Snapshot }) {
       ) : tab === 'chat' ? (
         <div className="flex min-h-0 flex-1 flex-col">
           {Chat ? (
-            tabChat ? <Chat key={tabChat} chatKey={tabChat} placeholder={`Message ${place.tabs?.find((t) => t.term === tabChat)?.prog ?? 'the agent'}`} /> : <Chat chatKey={place.chat} placeholder="Message the Assistant" unreachable={unreachable(place, snap)} />
+            tabChat ? <Chat key={tabChat} chatKey={tabChat} placeholder={`Message ${place.tabs?.find((t) => t.term === tabChat)?.prog ?? 'the agent'}`} /> : <Chat chatKey={place.chat} placeholder="Message the Orchestrator" unreachable={unreachable(place, snap)} />
           ) : null}
         </div>
       ) : (

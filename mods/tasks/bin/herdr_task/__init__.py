@@ -22,17 +22,17 @@ before it:
   output       Output: a task as JSON and as one line of text.
   scheduler    Keeps the scheduler (herdr-automations) running on this machine.
   commands     The task commands: add, start, status, ready, accept, merge and the rest.
-  news         News: what changed in a space's tasks, told to its Assistant.
+  news         News: what changed in a space's tasks, told to its Orchestrator.
   ghnews       GitHub news: a Ready task's pull request news to its agent, and its base branch
-               going red after merges, to the Assistant.
+               going red after merges, to the Orchestrator.
   tick         Tick: one pass over the tasks (start queued ones, finish merged ones, retry cut
                turns).
   backups      Backups of every machine's spaces, and restoring them.
   machines     Other machines: the task tools kept in step there (sync), the reach map hop by
-               hop, the Assistants on every reachable machine and messages between them.
+               hop, the Orchestrators on every reachable machine and messages between them.
   automations  Automations (a saved task added again by a time or an event), and the scheduler's
                loop.
-  autopilot    Autopilot: a space's Assistant woken on a schedule or by events, with its heartbeat
+  autopilot    Autopilot: a space's Orchestrator woken on a schedule or by events, with its heartbeat
                and saved progress.
   cli          The command line, and running herdr-task on another machine (--on).
 """

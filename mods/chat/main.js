@@ -878,7 +878,7 @@ export default class Chat extends View {
       this.workerAskEnded(ask, picked ? `${how}: ${picked}` : how);
     }
     cx.notify();
-    cx.spawn(async () => answerAsk(this.askDir, ask.id, text, howAnswered(ask, text, "in the Assistant's chat")));
+    cx.spawn(async () => answerAsk(this.askDir, ask.id, text, howAnswered(ask, text, "in the Orchestrator's chat")));
   }
 
   // A worker's ask closed: its quiet line here, with its task.
@@ -1092,7 +1092,7 @@ export default class Chat extends View {
         const pane = this.myPane();
         if (!mine || !pane) return;
         // herdr-task would resume the same gone session again: its task starts it anew.
-        if (t.labels?.["herdr.task"]) throw new Error("ask the Assistant to resume its task.");
+        if (t.labels?.["herdr.task"]) throw new Error("ask the Orchestrator to resume its task.");
         this.swapping = true;
         const next = await agent.restart(t, { argv: [...fresh, msg], resume: true, base: fresh }, pane);
         this.follow_to(next);
@@ -1352,7 +1352,7 @@ export default class Chat extends View {
             if (lost.length) {
               this.pending = this.pending.filter((p) => !lost.includes(p));
               if (!this.box.value().trim()) this.box.set_value(lost.map((p) => p.msg?.text ?? p.text).filter(Boolean).join("\n\n"));
-              toast({ title: `The ${this.role === "coordinator" ? "Assistant" : this.role} ended before it started`, body: `${why || "It exited before it was ready."} Your message is back in the box.`, level: "error" });
+              toast({ title: `The ${this.role === "coordinator" ? "Orchestrator" : this.role} ended before it started`, body: `${why || "It exited before it was ready."} Your message is back in the box.`, level: "error" });
             }
             cx.notify();
             return;
@@ -1702,7 +1702,7 @@ export default class Chat extends View {
   // message as its task; then the chat follows it as usual.
   startAgent(msg, cx, thenTerminal = false) {
     const pane = this.slotPane();
-    if (!pane) { toast({ title: "Couldn't start the Assistant", body: "This chat hasn't found its pane. Try again in a moment.", level: "error" }); return; }
+    if (!pane) { toast({ title: "Couldn't start the Orchestrator", body: "This chat hasn't found its pane. Try again in a moment.", level: "error" }); return; }
     const rec = this.slotRec();
     const space = spaces().find((x) => x.id === (props()?.space ?? rec?.space));
     const machine = space?.machine ?? null;
@@ -1722,7 +1722,7 @@ export default class Chat extends View {
     // back (adoptSlot); nothing is lost meanwhile.
     if (machine && !online(machine)) {
       if (msg) Object.assign(p, { waiting: WORDS.offline(machine), machine, msg });
-      else toast({ title: `${machine} is offline`, body: "Its Assistant starts when it's back." });
+      else toast({ title: `${machine} is offline`, body: "Its Orchestrator starts when it's back." });
       cx.notify();
       return;
     }
@@ -1777,7 +1777,7 @@ export default class Chat extends View {
       if (out.address && out.first_message?.sent === false && words) this.firstSend = [words, task].filter(Boolean).join("\n\n");
       if (r.code !== 0 && !late || !out.address) {
         p.failed = (r.stderr || r.stdout || "It didn't start.").trim();
-        toast({ title: `The ${this.role === "coordinator" ? "Assistant" : this.role} didn't start`, body: msg ? `${p.failed} Your message is back in the box.` : p.failed, level: "error" });
+        toast({ title: `The ${this.role === "coordinator" ? "Orchestrator" : this.role} didn't start`, body: msg ? `${p.failed} Your message is back in the box.` : p.failed, level: "error" });
         // the fresh chat shows no pending rows: the message goes back in the box rather than vanish (GitHub #839)
         if (msg) { this.pending = this.pending.filter((x) => x !== p); if (!this.box.value().trim()) this.box.set_value(msg.text); }
         this.phase = "fresh";
@@ -2167,7 +2167,7 @@ export default class Chat extends View {
         const r = await hc(["get", this.addr, "--json"]);
         let t = null;
         try { t = JSON.parse(r.stdout || "null"); } catch {}
-        if (!t || t.error) throw new Error("Its old terminal is gone. Start a new Assistant instead.");
+        if (!t || t.error) throw new Error("Its old terminal is gone. Start a new Orchestrator instead.");
         const argv = agent.resumeArgv(this.kind, this.argv ?? t.argv ?? [this.kind], agent.sessionOf(this.kind, this.path));
         this.swapping = true;
         const next = await agent.restart(t, { argv, resume: true, base: argv }, mine);
@@ -2177,7 +2177,7 @@ export default class Chat extends View {
         cx.timer.after(6000, (cx) => { this.note = null; cx.notify(); });
         cx.spawn(async (cx) => this.follow(cx));
       } catch (e) {
-        toast({ title: "The Assistant didn't restart", body: plainError(e), level: "error" });
+        toast({ title: "The Orchestrator didn't restart", body: plainError(e), level: "error" });
       }
       this.swapping = false;
       this.restarting = false;
@@ -2633,7 +2633,7 @@ export default class Chat extends View {
     const no = (why) => ({ ok: false, why });
     if (nav.kind === "screen") return (this.callScreen ??= new CallScreen(this)).act(nav);
     if (nav.kind === "panel") {
-      if (nav.panel === "terminal" || nav.panel === "chat") return no("the window switches an Assistant between Chat and Terminal on its own tab, which a call can't reach yet");
+      if (nav.panel === "terminal" || nav.panel === "chat") return no("the window switches an Orchestrator between Chat and Terminal on its own tab, which a call can't reach yet");
       run("layout.select", { stack: "panel-body", child: nav.panel === "artifacts" ? "artifacts" : nav.panel });
       run("layout.show", { id: "panel" });
       return { ok: true };
@@ -3194,7 +3194,7 @@ export default class Chat extends View {
 
   // The empty box's words: whom it writes to.
   placeholder() {
-    if (this.role === "coordinator" || assistant(this.t)) return "Message the Assistant";
+    if (this.role === "coordinator" || assistant(this.t)) return "Message the Orchestrator";
     if (this.thread && this.taskRef) return `Message ${this.taskRef}`;
     return `Message ${agent.NAMES[this.kind] ?? "the agent"}`;
   }
@@ -3599,7 +3599,7 @@ export default class Chat extends View {
     if ((this.phase === "starting" || this.phase === "finding") && this.role && this.pending.length) {
       return h_flex().id("chat-status").flex_none().w_full().max_w(COLUMN + 36).mx_auto().h(30).px(18).gap(8).items_center().text_size(12).text_color(t.muted)
         .child(svg("mods/workspace-chrome/spinner.svg").size(12).flex_none().text_color(t.working).spin(900))
-        .child(div().flex_1().min_w(0).truncate().child(`Starting the ${this.role === "coordinator" ? "Assistant" : this.role}…`));
+        .child(div().flex_1().min_w(0).truncate().child(`Starting the ${this.role === "coordinator" ? "Orchestrator" : this.role}…`));
     }
     if (st === "working") {
       // What it is doing, in plain words, for how long, and Stop. The line has the composer box's
@@ -4520,7 +4520,7 @@ export default class Chat extends View {
       ...(this.taskKey ? [this.button("chat-resume", this.resuming ? WORDS.resuming : "Resume",null, "primary", t, (cx) => this.resumeTask(cx))] : []),
       this.button("chat-close", this.inner ? "Back to tasks" : "Close", null, "secondary", t, () => this.closeSelf())]));
     if (this.phase === "ended" && !this.swapping && this.endedAssistant) return root.child(this.notice(t, WORDS.assistantEnded, WORDS.assistantEndedBody, [
-      this.button("chat-restart-assistant", this.restarting ? WORDS.restarting : "Restart Assistant", null, "primary", t, (cx) => this.restartAssistant(cx)),
+      this.button("chat-restart-assistant", this.restarting ? WORDS.restarting : "Restart Orchestrator", null, "primary", t, (cx) => this.restartAssistant(cx)),
       this.role
         ? this.button("chat-new-assistant", "Start a new one", null, "secondary", t, (cx) => { this.startFresh(); cx.notify(); })
         : this.button("chat-close", "Close chat", null, "secondary", t, () => this.closeSelf())]));

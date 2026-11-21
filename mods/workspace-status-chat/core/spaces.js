@@ -14,6 +14,8 @@ export const machineOf = (address) => (String(address).includes("/") ? String(ad
 export const CHAT = "herdr.chat";
 // What goes in herdr.chat for a chat pane (an app id: "<machine>/<pane>" for another machine's).
 export const chatLabel = (pane) => (pane ? String(pane).split("/").pop() : "");
+// Existing coordinator tabs can still have the original default in their saved layout.
+export const orchestratorTabName = (name) => !name || name === "Assistant" || /^tb\d+$/.test(name) ? "Orchestrator" : name;
 // The chat pane a terminal is parked behind, as this window's app id (null: none). A label an earlier version
 // wrote with a machine in front reads the same.
 export function chatPane(k) {

@@ -554,10 +554,10 @@ def cmd_home(args):
     if args.json:
         print(json.dumps(out))
         return
-    role = ("the lead machine's home Assistant: this machine, plus every machine's overview" if out["main"]
-            else f"this machine's home Assistant ({lead} keeps the overview)" if home and lead else
-            "this machine's home Assistant" if home else
-            "not a home Assistant" + ("" if out["on"] else " (Home Assistant is off for this machine in Settings)"))
+    role = ("the lead machine's home Orchestrator: this machine, plus every machine's overview" if out["main"]
+            else f"this machine's home Orchestrator ({lead} keeps the overview)" if home and lead else
+            "this machine's home Orchestrator" if home else
+            "not a home Orchestrator" + ("" if out["on"] else " (Home Orchestrator is off for this machine in Settings)"))
     print(f"You are {role}.")
     print(f"Now: {meters_words(rep['health'])}")
     for k, v in rep["top"].items():

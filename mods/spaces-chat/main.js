@@ -293,7 +293,7 @@ export default class Spaces extends View {
     const tab = sp ? coordinatorTab(sp, undefined, ps) : null;
     const chatIn = (id) => ps.find((p) => p.mod === "chat" && p.tab === id)?.pane ?? null;
     const at = tab && chatIn(tab.id) ? tab.id : (sp?.tabs ?? []).map((t) => t.id).find((id) => chatIn(id)) ?? null;
-    if (!at) return toast({ title: "Voice call", body: "This space has no chat to run the call from: open its Assistant first.", level: "info" });
+    if (!at) return toast({ title: "Voice call", body: "This space has no chat to run the call from: open its Orchestrator first.", level: "info" });
     if (!sp.tabs.some((t) => t.id === at && t.active)) run("tab.select", { id: at });
     setShared("chat.callreq", { pane: chatIn(at), at: Date.now(), action: "start" });
   }

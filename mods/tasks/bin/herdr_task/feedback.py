@@ -51,7 +51,7 @@ STOP = set("a an and are as at be but by can could did do does doesnt dont for f
 AGENT_NOTE = ("Feedback for herdr-orchestrator (on in Settings): when herdr-orchestrator itself misbehaves, not the project's own code (a herdr-orchestrator, "
               "herdr-task, web app or window feature that doesn't work as meant, a Herdr command failing like a bug, the person "
               "frustrated with herdr-orchestrator), run herdr-task feedback \"<one line>\" --details \"<goal, what was tried, what went wrong, "
-              "expected, suggested fix>\" once per problem and carry on: it returns at once and the space's Assistant asks the "
+              "expected, suggested fix>\" once per problem and carry on: it returns at once and the space's Orchestrator asks the "
               "person whether to file it. Never file an issue yourself; no secrets, private paths or whole logs.")
 
 
@@ -369,8 +369,8 @@ def cmd_feedback(args):
     if not line and not args.key:
         raise Fail("Say the problem in one line: herdr-task feedback \"Ready refused a reviewed commit\" --details \"…\"")
     if (args.file or args.no or args.later) and not assistant:
-        raise Fail("Only an Assistant asks the person and files feedback: run herdr-task feedback \"<one line>\" --details \"…\" "
-                   "and your Assistant offers it. Carry on with your work.")
+        raise Fail("Only an Orchestrator asks the person and files feedback: run herdr-task feedback \"<one line>\" --details \"…\" "
+                   "and your Orchestrator offers it. Carry on with your work.")
     key = args.key or key_of(line)
     on = feedback_on(space, d)
     with problems() as ps:
@@ -413,7 +413,7 @@ def offer_or_tell(args, ps, key, p, line, k, addr, labels, assistant, space):
     from .output import say
     state = (p or {}).get("state")
     if state == "filing" and now() - (p.get("at") or 0) < FILING_MS:
-        return say(args, {"key": key, "sent": False, "why": "filing"}, "Your Assistant is filing this one right now: nothing to do. Carry on.")
+        return say(args, {"key": key, "sent": False, "why": "filing"}, "Your Orchestrator is filing this one right now: nothing to do. Carry on.")
     if state == "declined":
         return say(args, {"key": key, "sent": False, "why": "declined"}, "The person said no to this before: nothing to do. Carry on.")
     if state == "filed":
@@ -431,16 +431,16 @@ def offer_or_tell(args, ps, key, p, line, k, addr, labels, assistant, space):
         ps[key] = {**entry, "state": "offered"}
         return say(args, {"key": key, "offer": True}, offer_words(line, key))
     if state in ("told", "offered", "later") and recent(p):
-        return say(args, {"key": key, "sent": False, "why": "told"}, "Your Assistant already has this one: nothing sent. Carry on.")
+        return say(args, {"key": key, "sent": False, "why": "told"}, "Your Orchestrator already has this one: nothing sent. Carry on.")
     to = coordinator_in(space)
     if not to:
         return say(args, {"key": key, "sent": False, "why": "no-assistant"},
-                   "No Assistant runs here to offer it: nothing sent. Say it in one line in your final message. Carry on.")
+                   "No Orchestrator runs here to offer it: nothing sent. Say it in one line in your final message. Carry on.")
     ref, title = task_ref(labels) or (k.get("name") or addr or "Agent", None)
     queue_news(to, news_line(ref, title, line, args.details, key))
     ps[key] = {**entry, "state": "told", "by": ref}
     return say(args, {"key": key, "sent": True, "to": to},
-               "Sent to your Assistant: it asks the person whether to file it. Carry on with your work.")
+               "Sent to your Orchestrator: it asks the person whether to file it. Carry on with your work.")
 
 
 def file_it(args, key, p, line, d, agent):

@@ -108,7 +108,7 @@ export class AgentWatch {
         if (r.code !== 0) throw new Error((r.stderr ?? "").trim() || "It didn't go through.");
       } else {
         // herdr-task would resume the same gone session again: its task starts it anew
-        if (t.labels?.["herdr.task"]) throw new Error("ask the Assistant to resume its task.");
+        if (t.labels?.["herdr.task"]) throw new Error("ask the Orchestrator to resume its task.");
         const pane = t.labels?.["herdr.chat"];
         const script = layoutScript("restart.sh");
         if (!pane || !script) throw new Error("its chat isn't open in the Herdr window.");

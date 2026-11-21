@@ -27,11 +27,11 @@ export const WORDS = {
   notNow: "It couldn't take it now",
   ended: "This task's agent has ended.",
   resuming: "Resuming…",
-  emptyTitle: "What should the Assistant do?",
+  emptyTitle: "What should the Orchestrator do?",
   emptyBody: "It plans the work, starts a task for each part and keeps you posted.",
   late: "Not in the conversation. Check the terminal.",
   // an Assistant asked for on a machine that's offline: its first message waits for it
-  offline: (machine) => `${machine} is offline. The Assistant starts when it's back.`,
+  offline: (machine) => `${machine} is offline. The Orchestrator starts when it's back.`,
   publishing: "Publishing an artifact…",
   stopping: "Stopping…",
   working: "Working",
@@ -44,7 +44,7 @@ export const WORDS = {
   opening: "Opening the conversation…",
   restarting: "Restarting the agent…",
   agentEnded: "This agent has ended",
-  assistantEnded: "The Assistant has ended",
+  assistantEnded: "The Orchestrator has ended",
   assistantEndedBody: "Restart it to carry on the same conversation here.",
   taskEnded: "This task's agent has ended",
   unsupported: "No chat for this agent",
@@ -53,7 +53,7 @@ export const WORDS = {
   notFoundBody: "Chat reads the agent's own session log, and Herdr can't tell which one this agent writes. Rather than show the wrong one, it shows none.",
   noAgent: "No agent to show",
   noAgentBody: "This chat pane isn't tied to an agent.",
-  startingAssistant: "Starting the Assistant…",
+  startingAssistant: "Starting the Orchestrator…",
   sessionGone: "Earlier session was gone, starting a new one…",
 };
 
@@ -176,7 +176,7 @@ export function ownWords(users, pending, matches) {
 //   the name people read for a machine ("Mac mini"), else null (its key then).
 export function senderName(from, text = null, { find = () => null, machine = null, taskOf = () => null, here = null, machineName = () => null } = {}) {
   const [addr, ...rest] = String(from ?? "").trim().split(/\s+/);
-  const signed = signedBy(text);
+  const signed = signedBy(text)?.replace(/^Assistant(?=$| on )/, "Orchestrator");
   if (addr === "person") return "You";
   if (outsideTerminal(addr)) return signed || "Another agent";
   if (!/^([\w.-]+\/)?t\d[0-9a-z]*$/.test(addr ?? "")) return String(from);
@@ -189,7 +189,7 @@ export function senderName(from, text = null, { find = () => null, machine = nul
   const at = local ? null : full.includes("/") ? full.split("/")[0] : null;
   const away = at !== machine && (at ?? here) ? ` on ${machineName(at ?? here) || (at ?? here)}` : "";
   if (l["herdr.role"] === "reviewer" || /\breview/i.test(name)) return "Reviewer";
-  if (l["herdr.role"] === "coordinator" || /^(herdr-)?(assistant|coordinator)\b/.test(k?.template ?? "") || /^coord/i.test(name)) return `Assistant${away}`;
+  if (l["herdr.role"] === "coordinator" || /^(herdr-)?(assistant|coordinator)\b/.test(k?.template ?? "") || /^coord/i.test(name)) return `Orchestrator${away}`;
   const task = taskOf(full) ?? (local ? taskOf(local) : null) ?? /^([a-z][a-z0-9]*)-(\d+)(?:-|$)/i.exec(name)?.slice(1, 3).join("-").toUpperCase();
   if (task) return `${task}${away}`;
   if (!name && signed && / on /.test(signed)) return signed;
@@ -205,7 +205,7 @@ export function fromName(x, sender = (f) => f, { machineName = (m) => m, here = 
   const a = x?.assistant;
   if (!a) return sender(x?.from, x?.text);
   const m = a.machine && a.machine !== here ? machineName(a.machine) || a.machine : null;
-  return `Assistant${m ? ` on ${m}` : ""}${a.space ? ` · ${a.space}` : ""}`;
+  return `Orchestrator${m ? ` on ${m}` : ""}${a.space ? ` · ${a.space}` : ""}`;
 }
 
 // Whom a message the chat's agent sent went to (a "sent" item: { to, how }): a terminal by senderName ("SHEP-4",
@@ -215,14 +215,14 @@ export function sentTo(x, sender = (f) => f) {
   const to = String(x?.to ?? "");
   const address = /^([\w.>-]+\/)?t\d[0-9a-z]*$/.test(to);
   if (x?.how !== "assistant") return address ? sender(to.split(">").pop()) : to;
-  if (!address) return `Assistant · ${to}`;
-  return String(sender(to.split(">").pop())).replace(/^(Another agent|t\d[0-9a-z]*)\b/, "Assistant");
+  if (!address) return `Orchestrator · ${to}`;
+  return String(sender(to.split(">").pop())).replace(/^(Another agent|t\d[0-9a-z]*)\b/, "Orchestrator");
 }
 
 // Who the chat's own agent is in its group chat: "Assistant" for a space's, its task's ref for a task's worker, else
 // its CLI's name ("Claude").
 export function selfName({ assistant = false, task = null, kind = null } = {}) {
-  if (assistant) return "Assistant";
+  if (assistant) return "Orchestrator";
   if (task) return task;
   return { claude: "Claude", codex: "Codex" }[kind] ?? "Agent";
 }

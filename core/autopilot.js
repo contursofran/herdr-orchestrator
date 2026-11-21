@@ -11,7 +11,7 @@
 // Shared core: the source is core/autopilot.js; bin/sync-shared copies it into the mods in lib/COPIES.
 
 export const TITLE = "Autopilot";
-export const ABOUT = "Turn it on in a space with the switch in its Assistant's header: its Assistant then wakes on a schedule "
+export const ABOUT = "Turn it on in a space with the switch in its Orchestrator's header: its Orchestrator then wakes on a schedule "
   + "or when something happens to its tasks. By default it unblocks and checks what's open, then adds and starts the next "
   + "most useful tasks to push the project forward, toward the space's Direction (none: what the project itself shows). "
   + "It acts on its own and makes the calls itself, never asking you; it only alerts you for something critical "
@@ -24,7 +24,7 @@ export const ROWS = {
   direction: { label: "Direction", about: "One line it steers toward in this space. Empty: it works out what matters most from the project itself." },
   heartbeat: { label: "Heartbeat", about: "What it works from: direction, priorities, limits and when to stop." },
   every: { label: "Schedule", about: "When it wakes by itself." },
-  events: { label: "Events", about: "These wake a space's Assistant at once when they happen to its tasks." },
+  events: { label: "Events", about: "These wake a space's Orchestrator at once when they happen to its tasks." },
 };
 
 // The schedule's picks (herdr-task's --every words); anything else is Custom.

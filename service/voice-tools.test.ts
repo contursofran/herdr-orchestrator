@@ -95,7 +95,7 @@ test("look chat with a query searches it, and reads further back when it has to"
 test("look chat of another space's Assistant that isn't running says so", async () => {
   const a = await voiceTool("look", { what: "chat", id: "gtm" }, web, io());
   expect(a.error).toBe(true);
-  expect(a.result).toContain("the gtm Assistant");
+  expect(a.result).toContain("the gtm Orchestrator");
 });
 
 test("look tasks: open ones by state first; filters by state, space and machine", async () => {

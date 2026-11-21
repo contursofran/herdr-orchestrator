@@ -32,7 +32,7 @@ export const FINISHED = "Finished";
 export const toastTitle = (who, what) => `${who} · ${what}`;
 // Who an Assistant is, by its space's name ("tt-repo Assistant"); a task's agent is its task's ref ("HERD-4"), on
 // another machine with that machine's name, as the chat names an agent there (core/chat-view.js): "HERD-4 on vm".
-export const assistantWho = (spaceName) => (spaceName ? `${spaceName} Assistant` : "Assistant");
+export const assistantWho = (spaceName) => (spaceName ? `${spaceName} Orchestrator` : "Orchestrator");
 export const taskWho = (ref, machine) => (machine ? `${ref} on ${machine}` : ref);
 
 // Several toasts at once, in one line (a phone shows one toast): "2 tasks need you" when each is a task needing

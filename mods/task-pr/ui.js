@@ -213,7 +213,7 @@ export function toastWho(k, task = null) {
   if (l["herdr.role"] === "coordinator") {
     const id = l["herdr.coordinator.space"] ?? l["herdr.space"];
     const name = id && spaces().find((s) => s.id === (m ? `${m}/${id}` : id))?.name;
-    return name ? `${name} Assistant` : "Assistant";
+    return name ? `${name} Orchestrator` : "Orchestrator";
   }
   return k?.program?.name ?? "Agent";
 }

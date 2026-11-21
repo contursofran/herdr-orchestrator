@@ -549,7 +549,7 @@ def closing_line(s, task, parent=None, argv=None):
     if on and task.get("signed_reviews"):
         text += (f" Review is on: ready queues an independent reviewer for this exact commit (at most {rounds} rounds). "
                  "End your turn after submitting. The engine advances an approval and sends you any findings to fix. "
-                 "After a fix, run checks, commit, and submit ready again. The Assistant handles an escalation.")
+                 "After a fix, run checks, commit, and submit ready again. The Orchestrator handles an escalation.")
     elif on:
         text += (f" Review is on: after each review round, record it on the commit it reviewed with `{ht} reviewed {s.ref(task)} "
                  f"--folder {shlex.quote(s.loc['folder'])} --report \"<its findings in a line>\"` (add `--commit <sha>` if you committed fixes since; at most {rounds} rounds); "
@@ -563,7 +563,7 @@ def closing_line(s, task, parent=None, argv=None):
     from .feedback import feedback_on
     if feedback_on(task.get("space")):
         text += (f" A problem in herdr-orchestrator itself, not this task's code: `{ht} feedback \"<one line>\" --details \"<goal, what was "
-                 f"tried, what went wrong, expected, suggested fix>\"` returns at once and your Assistant offers the person to file "
+                 f"tried, what went wrong, expected, suggested fix>\"` returns at once and your Orchestrator offers the person to file "
                  f"it; carry on.")
     text += (f" Your herdr-task command is {ht}: write that full path each time (never the bare name), as one plain command; "
              f"then its {', '.join(OWN)} commands run without asking.")

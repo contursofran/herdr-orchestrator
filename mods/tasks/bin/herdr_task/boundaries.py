@@ -92,7 +92,7 @@ def check(s, task, head, base, *, pull_request=False):
             shown = ", ".join(repr(path) for path in outside[:8])
             if len(outside) > 8:
                 shown += f" and {len(outside) - 8} more"
-            raise Fail(f"Outside its Boundary: {shown}. Fix the commit or ask the Assistant about scope.")
+            raise Fail(f"Outside its Boundary: {shown}. Fix the commit or ask the Orchestrator about scope.")
     except (Fail, OSError, RecursionError) as e:
         return f"{HOLD}: {e}"
     return None

@@ -532,7 +532,7 @@ class Autopilot(unittest.TestCase):
         # its agent quit (a shell left) or its terminal gone
         self.wake(5000)
         self.assertEqual(self.settled({"foreground": {"name": "bash"}, "turn": 3})["last_wake"]["outcome"],
-                         "Assistant stopped, no progress saved")
+                         "Orchestrator stopped, no progress saved")
 
     def test_switching_on_wakes_at_once(self):
         """SHEP-5: switched on, its first wake goes now (not one interval later); already on, no second one."""
@@ -5438,7 +5438,7 @@ class Feedback(unittest.TestCase):
     def test_only_an_assistant_files(self):
         code, out = self.say("Ready refuses a reviewed commit", "--file")
         self.assertEqual(code, 1)
-        self.assertIn("Only an Assistant", out)
+        self.assertIn("Only an Orchestrator", out)
         self.assertEqual(self.gh, [])
 
     def test_a_duplicate_is_offered_before_filing(self):
@@ -5565,8 +5565,8 @@ class Feedback(unittest.TestCase):
         for words in ("## Feedback for herdr-orchestrator", "Leave feedback for herdr-orchestrator about", "--no", "--later", "duplicate", "--comment", "in the middle of something urgent"):
             self.assertIn(words, a)
         with open(os.path.join(ROOT, "templates", "worker.md")) as f:
-            self.assertIn(templates.FEEDBACK_RULE.strip(), f.read())
-        self.assertIn(templates.FEEDBACK_RULE, templates.WORKER_MD)
+            self.assertIn(templates.FEEDBACK_RULE.strip().replace("Assistant", "Orchestrator"), f.read())
+        self.assertIn(templates.FEEDBACK_RULE.replace("Assistant", "Orchestrator"), templates.WORKER_MD)
         self.assertIn(templates.WORKER_MD_BEFORE_FEEDBACK, templates.OLD_WORKERS)
         with open(os.path.join(ROOT, "templates", "reviewer.md")) as f:
             self.assertIn(templates.REVIEWER_FEEDBACK.strip(), f.read())

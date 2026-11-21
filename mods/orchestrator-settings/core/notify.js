@@ -12,9 +12,9 @@
 export const NOTIFY = ["All", "Needs me", "Off"];
 export const NOTIFY_DEFAULT = "Needs me";
 export const NOTIFY_HINT = {
-  All: "Every new message from its Assistant.",
-  "Needs me": "Its Assistant's questions and alerts.",
-  Off: "Nothing from its Assistant. Its row stays quiet.",
+  All: "Every new message from its Orchestrator.",
+  "Needs me": "Its Orchestrator's questions and alerts.",
+  Off: "Nothing from its Orchestrator. Its row stays quiet.",
 };
 
 const valid = (v) => (NOTIFY.includes(v) ? v : null);
