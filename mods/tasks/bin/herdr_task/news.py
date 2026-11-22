@@ -108,6 +108,12 @@ def news_pass(report, folder=None):
         state = {}
     seen, outbox, quiet = state.setdefault("seen", {}), state.setdefault("outbox", []), state.setdefault("quiet", {})
     current = {}  # key -> (status, stall mark), to check queued lines against
+    # Give existing messages priority over new nudges, even if the core has not yet reported a new turn.
+    try:
+        held_addresses = held_pass(report) or ()
+    except (Fail, OSError) as e:
+        report["held_error"] = str(e)
+        held_addresses = ()
     for path in store_files(folder):
         d = read_list(path)
         if not d or not os.path.isdir(d.get("folder") or ""):
@@ -122,7 +128,7 @@ def news_pass(report, folder=None):
                 key = f"{s.slug}#{t['id']}"
                 live = [k for k in map(detail, live_agents(s.key(t))) if agent_running(k)] if t["state"] in ("running", "ready") else []
                 try:
-                    recovery.advance(s, t, live)
+                    recovery.advance(s, t, live, held_addresses)
                 except (Fail, OSError) as e:
                     report.setdefault("quiet_errors", []).append(f"{s.ref(t)}: {e}")
                 v, event, stall = news_state(s, t, live)
@@ -234,7 +240,6 @@ def news_pass(report, folder=None):
     except Exception as e:  # never stops the news
         report["reactions_error"] = str(e)
     news_read(quiet)
-    held_pass(report)
     tmp = f"{NEWS}.{os.getpid()}.tmp"
     with open(tmp, "w") as f:
         json.dump(state, f)
@@ -420,16 +425,27 @@ def held_messages():
     os.makedirs(STORE, exist_ok=True)
     with open(HELD + ".lock", "a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
-        try:
-            with open(HELD) as f:
-                held = json.load(f)
-        except (OSError, ValueError):
-            held = {}
+        held = read_held()
         yield held
         tmp = f"{HELD}.{os.getpid()}.tmp"
         with open(tmp, "w") as f:
             json.dump(held, f)
         os.replace(tmp, HELD)
+
+
+def read_held():
+    try:
+        with open(HELD) as f:
+            held = json.load(f)
+        return held if isinstance(held, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def has_held(address):
+    """A pending message, from an atomic snapshot of the queue."""
+    at = now()
+    return any(at - (item.get("at") or 0) < NEWS_KEEP_MS for item in read_held().get(address) or ())
 
 
 def hold(address, text, how="send"):
@@ -452,9 +468,10 @@ def send_or_hold(address, text, how="send"):
 
 def held_pass(report):
     """Sends what was held for agents the person no longer writes to, one message per agent and
-    kind. Dropped once its agent has ended, or after NEWS_KEEP_MS."""
+    kind. Returns live addresses whose messages were pending or sent in this pass."""
+    busy = set()
     if not os.path.exists(HELD):
-        return
+        return busy
     with held_messages() as held:
         for addr, items in list(held.items()):
             items[:] = [x for x in items if now() - (x.get("at") or 0) < NEWS_KEEP_MS]
@@ -462,6 +479,7 @@ def held_pass(report):
             if not k or k.get("state") != "live":
                 held.pop(addr)
                 continue
+            busy.add(addr)
             if typing(addr, k):
                 continue
             for how in ("news", "send"):
@@ -475,3 +493,4 @@ def held_pass(report):
                     report.setdefault("held", []).append({"to": addr, "messages": len(batch)})
             if not items:
                 held.pop(addr)
+    return busy

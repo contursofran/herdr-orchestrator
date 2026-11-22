@@ -420,9 +420,14 @@ def task_facts(s, t):
     """How a task is now, as events read it. Another machine's come this way too (`auto feed`)."""
     live = [k for k in live_agents(s.key(t))] if t["state"] in ("running", "ready") else []
     working_ones = [k for k in live if agent_running(k)]
+    _, needs, why = task_status(t, working_ones)
+    recovery = t.get("quiet_recovery") or {}
+    escalation = (recovery.get("attempted_at") or recovery["reason"]) if (
+        needs == "attention" and not t.get("attention") and recovery.get("reason") == why and why) else None
     return {"id": t["id"], "ref": s.ref(t), "title": t["title"], "branch": t.get("branch"), "state": t["state"],
             "status": status_of(t, working_ones) if t["state"] == "running" else t["state"],
-            "needs": task_status(t, working_ones)[1], "attention": t.get("attention"), "merged": bool(t.get("merged")),
+            "needs": needs, "attention": t.get("attention"), "merged": bool(t.get("merged")),
+            **({"quiet_escalation": escalation} if escalation is not None else {}),
             "automation": t.get("automation"), "starting": bool(t["state"] == "running" and starting(t))}
 
 
@@ -436,8 +441,12 @@ def diff_events(facts, seen):
         key = str(f["id"])
         prev = seen.get(key)
         status, needs = f["status"], f["needs"]
+        escalation, last_escalation = f.get("quiet_escalation"), (prev or {}).get("quiet_escalation")
+        new_escalation = escalation is not None and escalation != last_escalation and not first
         cur = {"state": f["state"], "status": status, "needs": needs, "attention": f.get("attention"),
                "quiet": (prev or {}).get("quiet"), "stalled": (prev or {}).get("stalled")}
+        if escalation is not None or last_escalation is not None:
+            cur["quiet_escalation"] = escalation if escalation is not None else last_escalation
         # Quiet since: a running task whose agents aren't working.
         cur["quiet"] = None if status in ("working",) or f["state"] != "running" else (cur["quiet"] or now())
         if prev is None:
@@ -454,7 +463,7 @@ def diff_events(facts, seen):
                 out.append(("ready", f))
             if f["state"] == "done" and prev["state"] != "done" and f.get("merged"):
                 out.append(("merged", f))
-            if f.get("attention") and f.get("attention") != prev.get("attention"):
+            if not new_escalation and f.get("attention") and f.get("attention") != prev.get("attention"):
                 out.append(("failed", f))
             # Needs you: its agent asks something, or waits for a reply (the status people see).
             if needs in ("asks", "reply") and prev.get("needs") not in ("asks", "reply"):
@@ -463,6 +472,8 @@ def diff_events(facts, seen):
             if stalled and not prev.get("stalled"):
                 out.append(("stalled", f))
             cur["stalled"] = bool(stalled)
+        if new_escalation:
+            out.extend((("failed", f), ("needs-you", f)))
         seen[key] = cur
     return out
 

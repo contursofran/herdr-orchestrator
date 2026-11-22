@@ -405,15 +405,17 @@ def log_lines(log, size=262144):
 def log_tail(log, size=262144):
     """The last lines of an agent's session log (Claude Code's or Codex's JSONL), parsed; [] when
     it can't be read. A first line cut in half is left out."""
-    out = []
-    for raw in log_lines(log, size):
+    return list(log_records(log_lines(log, size)))
+
+
+def log_records(lines):
+    for raw in lines:
         try:
             d = json.loads(raw)
         except ValueError:
             continue
         if isinstance(d, dict):
-            out.append(d)
-    return out
+            yield d
 
 
 def agent_log(task, address=None):
@@ -476,33 +478,45 @@ def asking_sentence(text):
     return ""
 
 
-def last_question(task, address=None):
-    """Why an agent that ended its turn without saying ready waits: the question its last message
-    asks, cut to LINE_MAX (herdr-orchestrator: a "?" anywhere in its last words), "Waits for your reply" when
-    no sentence can be told, or None when it didn't ask. Only the log's tail is read."""
-    for d in reversed(log_tail(agent_log(task, address), 65536)):
+def last_reply(task, address=None, *, size=65536):
+    """The worker's last spoken reply after the latest prompt, without display truncation."""
+    for d in reversed(log_tail(agent_log(task, address), size)):
         if from_person(d) is not None:
-            return None  # the person wrote after it: no open question
-        text = spoken(said(d))
-        if not text:
-            continue
-        if not re.search(r"\?(?=[\s*_`\"')\]]|$)", text):
-            return None
+            break
+        if text := spoken(said(d)):
+            return text
+    return ""
+
+
+def question_in(text):
+    if re.search(r"\?(?=[\s*_`\"')\]]|$)", text):
         q = asking_sentence(text)
         return fit(q) if q else REASONS["reply"]
     return None
 
 
-def turn_input(task, address=None):
-    """The most recent prompt and when it was written, if the log says."""
-    for d in reversed(log_tail(agent_log(task, address), 131072)):
-        text = from_person(d)
-        if text is not None:
-            try:
-                at = int(datetime.datetime.fromisoformat(str(d.get("timestamp")).replace("Z", "+00:00")).timestamp() * 1000)
-            except ValueError:
-                at = None
-            return at, text
+def last_question(task, address=None):
+    """The question its last reply asks, as one display line, or None."""
+    return question_in(last_reply(task, address))
+
+
+def turn_input(task, address=None, *, after=None):
+    """The latest prompt and its timestamp. With a byte offset, scan new log records from there."""
+    log = agent_log(task, address)
+    if log and after is not None:
+        recent = (None, "")
+        try:
+            with open(log, "rb") as f:
+                f.seek(after)
+                for d in log_records(f):
+                    if (text := from_person(d)) is not None:
+                        recent = (_ms(d.get("timestamp")), text)
+        except OSError:
+            pass
+        return recent
+    for d in reversed(log_tail(log, 131072)):
+        if (text := from_person(d)) is not None:
+            return _ms(d.get("timestamp")), text
     return None, ""
 
 
@@ -511,10 +525,8 @@ def turn_began(task, address=None):
     return turn_input(task, address)[0]
 
 
-def own_line(task, address=None):
-    """The agent's own words for why it waits: its latest status line (herdr-task status), when it
-    set one since its turn began. Agents set it before they ask or stop to wait; what Herdr
-    works out (its question, its last sentence) is only for when it didn't."""
+def own_status_text(task, address=None):
+    """The full status text the worker set this turn instead of a display line."""
     p = task.get("progress") or {}
     # Herdr's own words ("Working again": back_to_work()) are never the agent's reason (SHEP-133).
     if not p.get("text") or p.get("by"):
@@ -522,30 +534,31 @@ def own_line(task, address=None):
     began = turn_began(task, address)
     if began and (p.get("set") or p.get("at") or 0) < began:
         return None
-    text = fit(p["text"])
-    return text[:1].upper() + text[1:]
+    return p["text"]
+
+
+def own_line(task, address=None):
+    """The worker's current status, as one display line."""
+    text = own_status_text(task, address)
+    if text:
+        text = fit(text)
+        return text[:1].upper() + text[1:]
+    return None
 
 
 def last_words(task, address=None, *, default=REASONS["reply"]):
     """Why an agent that ended its turn without saying ready waits: the question its last message
     asks, else that message's last sentence, cut to LINE_MAX at a word ("Waiting for your go on
     the screenshot…"), else "Waits for your reply" (nothing said since the person last wrote)."""
-    for d in reversed(log_tail(agent_log(task, address), 65536)):
-        if from_person(d) is not None:
-            break
-        text = spoken(said(d))
-        if not text:
-            continue
-        q = last_question(task, address)
-        if q:
-            return q
-        text = re.sub(r"```.*?(```|$)", "", text, flags=re.S)
-        lines = [x.strip(" *_`>-#|") for x in text.split("\n") if x.strip(" *_`>-#|")]
-        for ln in reversed(lines):
-            parts = [x.strip(" *_`") for x in re.split(r"(?<=[.!?])\s+", ln) if x.strip(" *_`")]
-            if parts:
-                return fit(parts[-1])
-        break
+    text = last_reply(task, address)
+    if q := question_in(text):
+        return q
+    text = re.sub(r"```.*?(```|$)", "", text, flags=re.S)
+    lines = [x.strip(" *_`>-#|") for x in text.split("\n") if x.strip(" *_`>-#|")]
+    for ln in reversed(lines):
+        parts = [x.strip(" *_`") for x in re.split(r"(?<=[.!?])\s+", ln) if x.strip(" *_`")]
+        if parts:
+            return fit(parts[-1])
     return default
 
 
@@ -699,7 +712,7 @@ CODEX_CELL = re.compile(r"Script running with cell ID (\d+)")
 CODEX_CELL_ARG = re.compile(r'"cell_id"\s*:\s*"?(\d+)')
 CODEX_SESSION_ARG = re.compile(r"session_id[\"']?\s*:\s*[\"']?(\d+)[\"']?\s*(?=[,}])")
 CODEX_HOST = "codex-code-mode-host"  # Codex's code-mode process: no job of its own
-WAITS_ON = re.compile(r"\b(wait\w*|watch\w*|polling)\b.*\b(ci|checks?|reviews?|reviewer|build|tests?|background|jobs?|deploy\w*|"
+WAITS_ON = re.compile(r"\b(a?wait\w*|watch\w*|polling)\b.*\b(ci|checks?|reviews?|reviewer|build|tests?|background|jobs?|deploy\w*|"
                       r"release|github|pipeline|actions?|run|workflow)\b|\breviewing\b", re.I)
 WAITS_ON_PERSON = re.compile(r"\b(you|your|yours|person|human|answer|reply|approv\w*|decid\w*|decision|confirm\w*|ok|okay|"
                              r"input|accept\w*|sign(?:ed)?[- ]?in|login|a go|go-ahead)\b", re.I)
