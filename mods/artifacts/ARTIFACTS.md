@@ -1,9 +1,20 @@
 # Artifacts: show the person something
 
-An artifact is a recipe you write: a `recipe.json` (blocks of headings, text, tables, charts,
-pictures, forms) and its pictures beside it, in one folder. Herdr draws it natively twice from
-that one file: in the window, and in the web app on the person's phone. The person finds it in
-the Artifacts tab of the right sidebar and in your chat.
+Publish an image, video, or self-contained HTML page to show it in the Artifacts sidebar and your chat.
+Use a recipe folder with `recipe.json` when you need to put several visuals together or add captions,
+charts, test output, or a form.
+
+```sh
+herdr-artifact publish ./after.png --title "Updated sidebar"
+herdr-artifact publish ./walkthrough.mp4 --title "Booking a table"
+herdr-artifact publish ./dashboard.html --title "Weekly dashboard"
+herdr-artifact update <id> ./revised-dashboard.html --note "Updated the chart"
+```
+
+A standalone file uses its filename without the extension when you omit `--title`. Images open in the
+Herdr window and the web app. Videos play and HTML renders in the web app, with an **Open in browser**
+button in the Herdr window. HTML supports inline CSS, inline SVG, and embedded data URLs, with scripts
+and network resources disabled. Put any graphics or styles the page needs in the HTML file.
 
 ```sh
 herdr-artifact new ./my-report          # writes a starting recipe.json
@@ -53,6 +64,7 @@ Blocks, top to bottom (each may carry an `"id"`; the person's notes point at blo
 | `stats` | `items` [{ `label`, `value`, `note` }]: a row of big numbers |
 | `image` | `src` (a picture beside recipe.json), `caption`, `w`, `h` |
 | `video` | `src` (a clip beside it: mp4, webm or mov), `poster` (a picture beside it, optional), `caption`, `autoplay`, `loop`, `muted` |
+| `html` | `src` (a self-contained `.html` or `.htm` file beside it), `caption` |
 | `audio` | `src` (a sound beside it: mp3, m4a, wav or ogg), `caption` |
 | `pdf` | `src` (a PDF beside it), `caption`: shown inline, with a link to open it whole |
 | `pair` | `before` and `after`, each { `src`, `caption` } (a picture, or a clip with an optional `poster`): side by side, stacked on a phone; two clips play together |
@@ -96,16 +108,14 @@ Blocks, top to bottom (each may carry an `"id"`; the person's notes point at blo
 - Don't repeat the title inside it: the viewer shows it right above. Start with the content (a
   one-line summary, the numbers, the picture). No emojis. Data goes in the recipe; it isn't read
   live.
-- Only `.json`, pictures, clips, sounds and PDFs (plus `.txt`, `.md`, `.csv`), within the sizes above.
+- Recipes can include `.json`, pictures, clips, HTML, sounds, PDFs, and text files within the sizes above.
 
 ## A task's proof
 
-A proof is a recipe, always (the person accepts tasks from their phone too): titled "<the task's
-full title> · Proof"; a `text` block saying what changed in one to three plain lines; then each
-proof as an `image`, `video` (a short clip of a flow beats a GIF), `pair`, `code` or `pdf` block with a one-line `caption`
-(or a `text` line above it);
-then a `heading` "Not proven" and a `list`. `herdr-artifact publish` refuses a proof that isn't a
-recipe.
+Publish one image, video, or HTML page titled "<the task's full title> · Proof" when it shows the evidence
+the person needs. In the task summary or details, say what you verified and what is still unverified.
+For several pieces of evidence, use a recipe with a short summary, captions for the evidence blocks,
+and a "Not proven" list. Attach the artifact ID with `herdr-task ready --proof <id>`.
 
 ## A custom panel, only when a recipe truly can't
 

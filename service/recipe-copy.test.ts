@@ -11,7 +11,14 @@ import { fakeHerdr } from "./fake-herdr";
 import { built, byId, dispatch, element, fakeGpuiBase, fakeGpuiKit } from "./fake-gpui";
 
 const theme = new Proxy({}, { get: () => "#000000" });
-mock.module("herdr", () => fakeHerdr({ theme: () => theme }));
+const openCalls: string[][] = [];
+mock.module("herdr", () => fakeHerdr({
+  theme: () => theme,
+  exec: async (bin: string, args: string[]) => {
+    openCalls.push([bin, ...args]);
+    return { code: 0, stdout: JSON.stringify({ link: "http://127.0.0.1:8877/?artifact=demo&v=4" }) };
+  },
+}));
 mock.module("gpui-kit", () => fakeGpuiKit());
 const TextView = Object.assign(() => element("TextView"), { markdown: (_id: string, md: string) => element(`TextView:${md}`) });
 mock.module("gpui-base", () => fakeGpuiBase({ TextView }));
@@ -24,6 +31,7 @@ const RECIPE = {
     { type: "list", id: "l", items: ["Plain step", "Then:\n  ```\n  git pull --rebase\n  ```"] },
     { type: "callout", id: "c", tone: "warn", title: "Before you go", md: "~~~\nexport A=1\necho $A\n~~~" },
     { type: "text", id: "p", md: "Just words, with `inline code`." },
+    { type: "html", id: "page", src: "report.html" },
   ],
 };
 
@@ -31,7 +39,7 @@ const dir = mkdtempSync(join(tmpdir(), "recipe-copy-"));
 copyFileSync(join(import.meta.dir, "../mods/artifacts/recipe-view.js"), join(dir, "recipe-view.js"));
 copyFileSync(join(import.meta.dir, "../mods/artifacts/core/recipe.js"), join(dir, "recipe.js"));
 writeFileSync(join(dir, "recipe-data.js"), `export default ${JSON.stringify(RECIPE)};\n`);
-writeFileSync(join(dir, "artifact.js"), "export const asset = (s) => s; export const reply = async () => true;\n");
+writeFileSync(join(dir, "artifact.js"), 'export const asset = (s) => s, reply = async () => true, id = "demo", machine = null, version = 4;\n');
 const { default: RecipeView } = await import(join(dir, "recipe-view.js"));
 
 let clipboard: string[] = [];
@@ -86,5 +94,19 @@ describe("Copy buttons on code in the window's recipe view (SHEP-228)", () => {
     timers[0][1](cx);
     draw(v);
     expect(label("copy-c-c0")).toBe("Copied");
+  });
+
+  test("opens the selected version of an HTML artifact in the browser", async () => {
+    let task: Promise<unknown> | undefined;
+    const opened: string[] = [];
+    const context = new Proxy({
+      spawn: (run: (cx: any) => Promise<unknown>) => { task = run(context); },
+      open_url: (url: string) => opened.push(url),
+    }, { get: (target, key) => Reflect.get(target, key) ?? (() => {}) });
+    openCalls.length = 0;
+    dispatch(byId("visual-page")!, "on_click", context);
+    await task;
+    expect(openCalls[0]?.slice(1)).toEqual(["preview", "demo", "--version", "4", "--json"]);
+    expect(opened).toEqual(["http://127.0.0.1:8877/?artifact=demo&v=4"]);
   });
 });

@@ -232,6 +232,13 @@ export function Recipe({ recipe, asset, reply }: Props) {
       case 'video': return <Clip src={b.src} poster={b.poster} caption={b.caption} loop={b.loop} muted={b.muted} autoplay={b.autoplay} asset={asset} />
       case 'audio': return <Sound src={b.src} caption={b.caption} asset={asset} />
       case 'pdf': return <Pdf src={b.src} caption={b.caption} asset={asset} />
+      case 'html': return (
+        <figure className="flex min-w-0 flex-col gap-1.5">
+          <iframe src={asset(b.src)} title={b.caption ?? 'HTML artifact'} sandbox="" referrerPolicy="no-referrer"
+            className="h-[65dvh] min-h-[280px] w-full rounded-box bg-white shadow-box" />
+          {b.caption ? <figcaption className="text-fg2">{b.caption}</figcaption> : null}
+        </figure>
+      )
       case 'pair': return <Pair b={b} asset={asset} />
       case 'code': return <pre data-selectable className="overflow-x-auto rounded-box bg-well p-3 font-mono text-[0.8125rem] shadow-soft"><code>{b.text}</code></pre>
       case 'callout': return <div className={clsx('rounded-box p-3.5', TONE[b.tone ?? 'info'])}>{b.title ? <p className="font-medium">{b.title}</p> : null}{b.md ? <Markdown text={b.md} /> : null}</div>

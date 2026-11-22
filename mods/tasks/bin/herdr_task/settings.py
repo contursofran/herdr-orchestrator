@@ -263,8 +263,9 @@ SET_KEYS = {"review": "review", "brief.review": "review", "merge": "merge", "bri
             "reviewer_effort": "reviewer_effort", "reviewer-effort": "reviewer_effort",
             "proof": "proof", "brief.proof": "proof"}
 # The Proof line (as herdr-orchestrator's skill asks of its task agents), on and off.
-PROOF_WORDS = {"on": "show verifiable proof in one recipe artifact: each proof with a one-line caption, real and from this work now, "
-                     "plus a \"Not proven\" list; then say ready with --proof <its id>",
+PROOF_WORDS = {"on": "publish one artifact with real evidence from this run (an image, video, HTML page, or recipe). "
+                     "Say what you verified and what is still unverified in the artifact or task details. "
+                     "Run ready with --proof <its id>.",
                "off": "not needed for this task: no proof artifact; say in your summary how you checked it"}
 MERGE_VALUES = {"ask": "ask", "ask me first": "ask", "ask first": "ask", "ask the person first": "ask", "wait": "ask",
                 "checks": "checks", "after checks": "checks", "after github checks": "checks", "after checks pass": "checks",

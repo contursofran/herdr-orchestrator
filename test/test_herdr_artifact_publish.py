@@ -98,6 +98,39 @@ class Publish(unittest.TestCase):
         except FileNotFoundError:
             return []
 
+    def test_visual_files_publish_directly_and_update_through_the_same_artifact(self):
+        for name, kind, content in (
+            ("Sidebar.PNG", "image", b"fake png"),
+            ("Walkthrough.mp4", "video", b"fake clip"),
+            ("Layout.htm", "html", b"<!doctype html><h1>Layout</h1>"),
+        ):
+            with self.subTest(name=name):
+                source = os.path.join(self.dir, name)
+                with open(source, "wb") as f:
+                    f.write(content)
+                first = self.publish(source, title=None, task="DEMO-1")
+                stem, ext = os.path.splitext(name)
+                self.assertEqual(first["title"], f"DEMO-1: {stem}")
+                target = "visual" + ext.lower()
+                folders = os.path.join(A.FILES, first["id"])
+                with open(os.path.join(folders, "v1", "recipe.json")) as f:
+                    self.assertEqual(json.load(f)["blocks"], [{"type": kind, "src": target}])
+                with open(os.path.join(folders, "v1", target), "rb") as f:
+                    self.assertEqual(f.read(), content)
+                self.assertFalse(os.path.exists(os.path.join(self.dir, "recipe.json")))
+                second = self.publish(source, id=first["id"], title=None, folder=None, note="Update")
+                self.assertEqual((second["id"], second["version"], second["task"]), (first["id"], 2, "DEMO-1"))
+                self.assertEqual(second["title"], first["title"])
+
+    def test_html_recipe_block_needs_an_html_asset(self):
+        src = self.recipe()
+        with open(os.path.join(src, "recipe.json"), "w") as f:
+            json.dump({"recipe": 1, "blocks": [{"type": "html", "src": "report.png"}]}, f)
+        with open(os.path.join(src, "report.png"), "wb") as f:
+            f.write(b"fake picture")
+        with self.assertRaisesRegex(A.Fail, "report.png must be html"):
+            self.publish(src)
+
     def test_a_read_only_install_publishes(self):
         """#749: the installed recipe view, its core and Mark up are read-only (a Nix store): staging still rewrites them."""
         ro = os.path.join(self.dir, "nix-store")

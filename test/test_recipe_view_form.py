@@ -30,7 +30,8 @@ export const InputState = { new: (o) => {
   if (rendering) throw new Error("InputState.new(...) cannot run during render");
   const s = { o, value: () => "" }; made.push(s); return s; } };
 export const theme = () => new Proxy({}, { get: () => "#000" });
-export const asset = (x) => x, reply = async () => true;
+export const appHome = () => "/app", exec = async () => ({ code: 0, stdout: "" });
+export const asset = (x) => x, reply = async () => true, id = "demo", machine = null, version = 1;
 """
 
 HARNESS = r"""
