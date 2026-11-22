@@ -4451,6 +4451,8 @@ class QuietWorkerRecovery(unittest.TestCase):
             (quiet, "hc_json", lambda *_: self.live if self.fresh is None else self.fresh),
             (quiet, "run", send),
             (news, "typing", lambda *_: self.draft),
+            (news, "HELD", os.path.join(self.tmp, "held.json")),
+            (news, "STORE", self.store_mod.STORE),
         ):
             patch = mock.patch.object(mod, name, replacement)
             patch.start()
@@ -4523,6 +4525,39 @@ class QuietWorkerRecovery(unittest.TestCase):
         for word in (self.created["ref"], "Finish the change", "t1", "automatic nudge"):
             self.assertIn(word, line)
 
+    def test_escalation_emits_both_automation_events_once_per_episode(self):
+        from unittest import mock
+        from herdr_task import automations
+        seen = {}
+
+        def events():
+            with self.store_mod.Store(self.store_mod.locate(self.folder), write=False) as s:
+                return [ev for ev, _ in automations.events_in(s, seen)]
+
+        with mock.patch.object(automations, "live_agents", return_value=[self.live]):
+            self.nudge()
+            self.assertEqual(events(), [])
+            self.clock += self.quiet.ESCALATE_AFTER_MS
+            self.step()
+            self.assertNotIn("attention", self.task("1"))
+            self.assertCountEqual(events(), ["needs-you", "failed"])
+            self.assertEqual(events(), [])
+            # A temporarily hidden escalation from the same recovery attempt is already known.
+            self.draft = "chat"
+            self.step()
+            events()
+            self.draft = None
+            self.step()
+            self.assertEqual(events(), [])
+            # Even identical escalation text can belong to a new attempt.
+            self.clock += 1000
+            self.log_line("user", "Please take a fresh look at the task.")
+            self.live["turn"] += 1
+            self.nudge()
+            self.clock += self.quiet.ESCALATE_AFTER_MS
+            self.step()
+            self.assertCountEqual(events(), ["needs-you", "failed"])
+
     def test_scheduler_news_delivers_one_escalation_to_the_space_assistant(self):
         from contextlib import ExitStack
         from unittest import mock
@@ -4578,6 +4613,7 @@ class QuietWorkerRecovery(unittest.TestCase):
         situations = [
             {"state": "ready", "pr": {"wait": "Checks running"}},
             {"review_request": {"status": "reviewing"}},
+            {"review_request": {"status": "changes-requested"}},
             {"review_out": self.clock},
             {"retry": {"address": "t1", "reason": "Provider busy"}},
             {"progress": {"text": "Waiting for CI", "set": self.clock, "at": self.clock}},
@@ -4605,6 +4641,20 @@ class QuietWorkerRecovery(unittest.TestCase):
         self.assertIsNone(self.step())
         self.assertEqual(self.sent, [])
 
+    def test_full_reply_and_status_protect_explicit_waits(self):
+        prefix = "I finished the initial work and checked that the implementation behaves as expected. "
+        self.change(progress={"text": "Implementing the change", "at": self.clock})
+        for reply in ("I am waiting for your confirmation.", "I will wait for CI to finish.", "I am awaiting the review."):
+            with self.subTest(reply=reply):
+                self.log_line("assistant", prefix + reply + " The summary is above.")
+                self.assertIsNone(self.step())
+                self.clock += self.quiet.NUDGE_AFTER_MS
+                self.assertIsNone(self.step())
+        self.log_line("assistant", "The initial work is complete.")
+        self.change(progress={"text": prefix + "I need an approval before continuing.", "at": self.clock})
+        self.assertIsNone(self.step())
+        self.assertEqual(self.sent, [])
+
     def test_live_worker_is_checked_again_and_drafts_are_respected(self):
         self.step()
         self.clock += self.quiet.NUDGE_AFTER_MS
@@ -4616,9 +4666,82 @@ class QuietWorkerRecovery(unittest.TestCase):
         self.fresh = None
         self.draft = "chat"
         self.assertNotIn("attempted_at", self.step())
+        self.clock += self.quiet.NUDGE_AFTER_MS
+        self.assertNotIn("since", self.step())
         self.draft = None
+        self.assertNotIn("attempted_at", self.step())
+        self.clock += self.quiet.NUDGE_AFTER_MS
         self.assertIn("attempted_at", self.step())
         self.assertEqual(len(self.sent), 1)
+
+    def test_held_findings_go_first_and_restart_the_quiet_timer(self):
+        from contextlib import ExitStack
+        from unittest import mock
+        from herdr_task import assistant_settings, reactions
+        sent = []
+        self.step()
+        self.news.hold("t1", "Please address the review findings.")
+        self.assertNotIn("since", self.step())
+        self.clock += self.quiet.NUDGE_AFTER_MS
+        with ExitStack() as stack:
+            for mod, name, value in (
+                (self.news, "NEWS", os.path.join(self.tmp, "news.json")),
+                (self.news, "live_agents", lambda *_: [self.live]),
+                (self.news, "detail", lambda k: k),
+                (self.news, "hc_json", lambda *_: self.live),
+                (self.news, "run", lambda cmd: sent.append(cmd) or subprocess.CompletedProcess(cmd, 0, "", "")),
+                (assistant_settings, "settings_pass", lambda *_: None),
+                (reactions, "reactions_pass", lambda *_: None),
+            ):
+                stack.enter_context(mock.patch.object(mod, name, value))
+            self.news.news_pass({})
+        self.assertEqual(sent, [["hc", "send", "t1", "Please address the review findings."]])
+        self.assertFalse(self.news.has_held("t1"))
+        self.assertEqual(self.step()["since"], self.clock)
+        self.assertEqual(self.sent, [])
+
+    def test_send_failure_escalates_now_and_a_new_long_turn_ends_the_episode(self):
+        from unittest import mock
+        with mock.patch.object(self.quiet, "run", return_value=subprocess.CompletedProcess([], 1, "", "failed")):
+            failed = self.nudge()
+        self.assertTrue(failed["failed"])
+        self.assertIn("couldn't deliver", failed["reason"])
+        self.assertEqual(self.agents.task_status(self.task("1"), [self.live])[:2], ("needs", "attention"))
+        self.assertEqual(self.step()["attempted_at"], failed["attempted_at"])
+        self.clock += 1000
+        self.log_line("user", "Try again with this extra context.")
+        self.log_line("assistant", "x" * 150000)
+        self.live["turn"] += 1
+        self.assertNotIn("attempted_at", self.step())
+
+    def test_long_turn_distinguishes_the_nudge_from_a_new_request(self):
+        self.nudge()
+        self.clock += 1000
+        self.log_line("user", self.quiet.NUDGE)
+        self.log_line("assistant", "x" * 150000)
+        self.live["turn"] += 1
+        self.assertIn("attempted_at", self.step())
+        self.clock += self.quiet.ESCALATE_AFTER_MS
+        self.assertIn("after one automatic nudge", self.step()["reason"])
+        self.assertEqual(len(self.sent), 1)
+
+    def test_long_reply_to_a_new_request_can_start_a_new_episode(self):
+        self.nudge()
+        self.clock += 1000
+        self.log_line("user", "Please read my updated requirements.")
+        self.log_line("assistant", "x" * 150000)
+        self.live["turn"] += 1
+        self.assertNotIn("attempted_at", self.step())
+
+    def test_new_commit_in_a_here_task_restarts_the_episode(self):
+        self.change(mode="here")
+        before = self.nudge()["progress"][-1]
+        subprocess.run(["git", "-C", self.folder, "-c", "user.name=T", "-c", "user.email=t@example.com",
+                        "commit", "--allow-empty", "-qm", "Progress in the shared folder"], check=True)
+        after = self.step()
+        self.assertTrue(before)
+        self.assertNotEqual(after["progress"][-1], before)
+        self.assertNotIn("attempted_at", after)
 
 
 if __name__ == "__main__":
