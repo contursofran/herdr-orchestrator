@@ -3,6 +3,7 @@ import home_guard  # noqa: F401  (first: every test on a throwaway home)
 import copy
 import fcntl
 import json
+import os
 import runpy
 import shutil
 import subprocess
@@ -11,7 +12,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from subprocess import CompletedProcess
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 from test_install import tree, run
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -34,6 +35,86 @@ class LegacyService(unittest.TestCase):
         self.assertEqual(run_service.call_args_list[-1].args, (
             "launchctl", "bootstrap", target, "/install/Library/LaunchAgents/dev.shepherdr.service.plist",
         ))
+
+    def test_inactive_linux_service_needs_no_user_bus_for_rollback(self):
+        commands = Mock(side_effect=FileNotFoundError("systemctl"))
+        with patch.object(sys, "platform", "linux"), patch.object(subprocess, "run", commands):
+            state = LEGACY["service_state"]("shepherdr")
+            self.assertEqual(state, {"active": False, "enabled": False})
+            commands.reset_mock()
+            LEGACY["restore_service"](Path("/install"), state)
+            commands.assert_not_called()
+
+    def test_stops_destination_service_and_scheduler_and_uses_live_port_without_receipt(self):
+        port_of = runpy.run_path(str(ROOT / "bin/herdr-orchestrator"))["our_port"]
+        operations = Mock()
+        state = {"active": True, "enabled": True}
+        operations.service_state.return_value = state
+        context = LEGACY["stop_destination"].__globals__
+        replacements = {name: getattr(operations, name)
+                        for name in ("service_state", "stop_service", "stop_scheduler", "remove_share")}
+        with tempfile.TemporaryDirectory() as folder, patch.dict(context, replacements):
+            root = Path(folder).resolve()
+            unit = root / LEGACY["unit"]("herdr-orchestrator")
+            unit.parent.mkdir(parents=True)
+            unit.touch()
+            service = root / ".herdr/herdr-orchestrator/service.json"
+            service.parent.mkdir(parents=True)
+            service.write_text('{"port":9219}')
+            self.assertFalse((root / LEGACY["NEW_RECORD"]).exists())
+            LEGACY["stop_destination"](root, True, port_of)
+        self.assertEqual(operations.mock_calls, [
+            call.service_state("herdr-orchestrator"),
+            call.stop_service("herdr-orchestrator", state),
+            call.stop_scheduler(root),
+            call.remove_share("herdr-orchestrator", 9219),
+        ])
+
+    def test_stop_scheduler_only_targets_the_installed_local_scheduler(self):
+        runpy.run_path(str(ROOT / "bin/herdr-orchestrator"))["layout_mod"]()
+        from herdr_task import base
+        root = Path("/install")
+        entry = str(root / LEGACY["APP"] / "mods/tasks/bin/herdr-task")
+        scheduler = {"state": "live", "address": "t4", "foreground": {"argv": [sys.executable, entry, "scheduler"]}}
+        with patch.object(shutil, "which", return_value="/fake/hc"), patch.object(base, "run") as run_hc, \
+                patch.object(base, "hc_json") as get:
+            for terminal in (
+                scheduler,
+                {**scheduler, "address": "server/t4"},
+                {**scheduler, "state": "dead"},
+                {**scheduler, "foreground": {"argv": ["sleep", "scheduler"]}},
+                {**scheduler, "foreground": {"argv": ["python3", "/elsewhere/herdr-task", "scheduler"]}},
+            ):
+                get.return_value = terminal
+                LEGACY["stop_scheduler"](root)
+        get.assert_called_with("get", "herdr-automations")
+        run_hc.assert_called_once_with(["hc", "kill", "t4"])
+
+    def test_rollback_stops_destination_before_locking_the_linked_task_store(self):
+        context = LEGACY["rollback"].__globals__
+        with tempfile.TemporaryDirectory() as folder:
+            top = Path(folder).resolve()
+            root, store = top / "root", top / "tasks"
+            store.mkdir()
+            (root / LEGACY["BACKUPS"]).mkdir(parents=True)
+            (root / "tasks").symlink_to(store)
+            backup = root / LEGACY["BACKUPS"] / "test"
+            backup.mkdir()
+            manifest = backup / "manifest.json"
+            manifest.write_text(json.dumps({"root": str(root), "state": "complete", "tasks": "tasks",
+                                            "entries": [["tasks", False]], "service": {"active": False}}))
+            with (store / ".scheduler.lock").open("wb") as held:
+                fcntl.flock(held, fcntl.LOCK_EX)
+                stop = Mock(side_effect=lambda *_: fcntl.flock(held, fcntl.LOCK_UN))
+                replacements = {"stop_destination": stop, "restore_service": Mock()}
+                with patch.dict(context, replacements):
+                    port_of = Mock()
+                    LEGACY["rollback"](root, backup, True, port_of)
+                    stop.assert_called_once_with(root, True, port_of)
+            self.assertEqual(json.loads(manifest.read_text())["state"], "rolled-back")
+            self.assertFalse((root / "tasks").is_symlink())
+            self.assertTrue((store / ".scheduler.lock").is_file())
+            self.assertFalse((backup.parent / "legacy-in-progress").exists())
 
     def test_tailscale_removes_only_the_owned_route(self):
         web = {"Web": {
@@ -107,6 +188,12 @@ class InstalledMove(unittest.TestCase):
         return run(*args, "--root", str(self.root), **kwargs)
 
     def test_move_and_rollback(self):
+        recoveries = ("vault.json.moved-20261001T120000", "vault.json.before-move-20261001T120000")
+        for name in recoveries:
+            path = f".local/share/shepherdr/secrets/{name}"
+            self.save(path, {"secrets": [{"name": "RECOVERY", "value": "fake"}]})
+            (self.root / path).chmod(0o644)
+        self.before = tree(self.root)
         no = self.invoke("install", "--yes", "--adopt", ok=False)
         self.assertNotEqual(no.returncode, 0)
         self.assertIn("--migrate-legacy", no.stderr)
@@ -130,6 +217,11 @@ class InstalledMove(unittest.TestCase):
             (".config/herdr-app/data/shepherdr-settings/window.json", ".config/herdr-app/data/orchestrator-settings/window.json"),
         ):
             self.assertEqual((self.root / current).read_bytes(), self.before[previous])
+        for name in recoveries:
+            path = self.root / ".local/share/herdr-orchestrator/secrets" / name
+            self.assertEqual(path.read_bytes(), self.before[f".local/share/shepherdr/secrets/{name}"])
+            self.assertEqual(path.stat().st_mode & 0o777, 0o600)
+            self.assertEqual(path.parent.stat().st_mode & 0o777, 0o700)
         self.assertEqual((self.root / ".herdr/tasks").resolve(), self.root.resolve() / ".local/share/herdr-orchestrator/tasks")
         layout = self.load(".config/herdr-app/layouts/herdr-orchestrator.json")
         self.assertEqual(layout["children"][0]["size"]["px"], 353)
@@ -150,6 +242,48 @@ class InstalledMove(unittest.TestCase):
         self.invoke("rollback-install", "--backup", str(backup))
         self.assert_restored()
         self.assertTrue(any(b'After' in f.read_bytes() for f in backup.glob("after-*/files/*/tasks/shop.json")))
+
+    def test_move_and_rollback_keep_linked_data_in_place(self):
+        root = self.root.resolve()
+        with tempfile.TemporaryDirectory() as disk:
+            external = Path(disk).resolve() / "artifacts"
+            artifacts = root / ".local/share/shepherdr/artifacts"
+            # The storage is a sibling on this test filesystem. Use a relative link as a user might.
+            artifacts.rename(external)
+            artifacts.symlink_to(os.path.relpath(external, artifacts.parent))
+            tasks = root / ".local/share/shepherdr/tasks"
+            old_tasks = root / ".herdr/tasks"
+            old_tasks.unlink()
+            tasks.rename(old_tasks)
+            tasks.symlink_to(old_tasks)  # the previous layout left the physical store at its compatibility path
+            self.before = tree(root)
+            result = self.invoke("install", "--migrate-legacy", "--yes")
+            line = next(line for line in result.stdout.splitlines() if "installation backup:" in line)
+            backup = line.split("installation backup: ", 1)[1]
+            for name, storage in (("artifacts", external), ("tasks", old_tasks)):
+                target = root / ".local/share/herdr-orchestrator" / name
+                self.assertTrue(target.is_symlink())
+                self.assertEqual(target.resolve(), storage)
+            new_artifact = external / "after.json"
+            new_artifact.write_text("{}")
+            self.invoke("rollback-install", "--backup", backup)
+            self.assert_restored()
+            self.assertEqual(new_artifact.read_text(), "{}")
+
+    def test_uninstall_reclaims_migrated_default_keys_and_keeps_custom_keys(self):
+        path = ".config/herdr-app/keys.json"
+        keys = self.load(path)
+        # A coincidentally identical key in the new layout belongs to the user.
+        keys["layout:herdr-orchestrator"] = {"ctrl-shift-n": "tabs-tasks.newspace"}
+        self.save(path, keys)
+        self.invoke("install", "--migrate-legacy", "--yes")
+        self.invoke("uninstall")
+        keys = self.load(path)
+        self.assertEqual(keys["layout:herdr-orchestrator"], {
+            "f2": "my.custom-key", "ctrl-shift-n": "tabs-tasks.newspace",
+        })
+        self.assertEqual(keys["global"]["alt-1"], "my.other-key")
+        self.assertNotIn("alt-2", keys["global"])
 
     def assert_restored(self):
         restored = tree(self.root)

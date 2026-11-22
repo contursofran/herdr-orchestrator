@@ -110,6 +110,8 @@ def service_command(*args, check=False):
     try:
         result = subprocess.run(args, text=True, capture_output=True, timeout=20)
     except (OSError, subprocess.TimeoutExpired) as error:
+        if isinstance(error, FileNotFoundError) and not check:
+            return False
         raise MigrationError(f"{args[0]}: {error}") from error
     if check and result.returncode:
         raise MigrationError(result.stderr.strip() or f"{' '.join(args)} failed")
@@ -143,7 +145,7 @@ def restore_service(root, state):
     if sys.platform == "darwin":
         if state["active"]:
             service_command("launchctl", "bootstrap", f"gui/{os.getuid()}", str(root / unit(OLD)), check=True)
-    else:
+    elif state["active"] or state["enabled"]:
         service_command("systemctl", "--user", "daemon-reload", check=True)
         if state["enabled"]:
             service_command("systemctl", "--user", "enable", OLD + ".service", check=True)
@@ -248,28 +250,53 @@ def migration_lock(root):
 
 
 @contextmanager
-def task_locks(tasks):
+def task_locks(tasks, wait=0):
+    deadline = time.monotonic() + wait
     with ExitStack() as locks:
         if tasks and tasks.is_dir():
             for path in (*tasks.glob(".*.json.lock"), tasks / ".scheduler.lock", tasks / ".tick.lock"):
                 if not path.is_file():
                     continue
                 stream = locks.enter_context(path.open("rb"))
-                try:
-                    fcntl.flock(stream, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                except BlockingIOError as error:
-                    raise MigrationError("pause task agents and stop herdr-automations before moving the install") from error
+                while True:
+                    try:
+                        fcntl.flock(stream, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                        break
+                    except BlockingIOError as error:
+                        if time.monotonic() >= deadline:
+                            raise MigrationError("pause task agents and stop herdr-automations before moving the install") from error
+                        time.sleep(0.1)
         yield
 
 
-def stop_destination(root, home):
-    if home and (root / unit(NEW)).exists():
+def stop_scheduler(root):
+    if not shutil.which("hc"):
+        return
+    from herdr_task import base
+    from herdr_task.scheduler import SCHEDULER
+    try:
+        terminal = base.hc_json("get", SCHEDULER) or {}
+        address = terminal.get("address", "")
+        argv = (terminal.get("foreground") or {}).get("argv") or terminal.get("argv") or []
+        entries = {(root / p / "mods/tasks/bin/herdr-task").resolve() for p in (APP, NEW_SHARE)}
+        if (terminal.get("state") == "live" and not terminal.get("machine")
+                and address and address.isalnum()
+                and len(argv) >= 2 and argv[-1] == "scheduler" and Path(argv[-2]).resolve() in entries):
+            # Lock acquisition below verifies exit, including when a kill races with natural exit.
+            base.run(["hc", "kill", address])
+    except base.Fail as error:
+        raise MigrationError(str(error)) from error
+
+
+def stop_destination(root, home, port_of):
+    if home and ((root / unit(NEW)).exists() or (root / NEW_RECORD).exists()):
+        port = port_of(root)
         stop_service(NEW, service_state(NEW))
-        remove_share(NEW, json_dict(root / NEW_RECORD).get("port") or 7789)
+        stop_scheduler(root)
+        remove_share(NEW, port)
 
 
 def restore_install(root, backup, home, state):
-    stop_destination(root, home)
     restore(root, backup / "before", state["entries"])
     if home:
         if state["service"]["active"] and service_state(OLD)["active"]:
@@ -277,7 +304,7 @@ def restore_install(root, backup, home, state):
         restore_service(root, state["service"])
 
 
-def rollback(root, backup, home):
+def rollback(root, backup, home, port_of):
     root, backup = Path(root), Path(backup).resolve()
     if backup.parent != (root / BACKUPS).resolve():
         raise MigrationError("use the backup directory printed by the move")
@@ -294,13 +321,13 @@ def rollback(root, backup, home):
             return str(backup)
         if state.get("state") not in ("moving", "complete", "restoring"):
             raise MigrationError(f"{backup} has no active move for this root")
-        tasks = root / state["tasks"]
-        if not within(tasks.resolve(), root):
+        relative = Path(state["tasks"])
+        tasks = root / relative
+        if relative.is_absolute() or ".." in relative.parts or not relative.parts or not within(tasks.parent.resolve(), root):
             raise MigrationError("the backup's task store is outside the install root")
-        with task_locks(tasks):
+        stop_destination(root, home, port_of)
+        with task_locks(tasks, wait=10):
             if state["state"] != "restoring":
-                # Stop the new service before preserving changes made since the move.
-                stop_destination(root, home)
                 if (root / NEW_RECORD).exists():
                     after = Path(tempfile.mkdtemp(prefix="after-", dir=backup))
                     entries = snapshot(root, after / "files", [Path(name) for name, _ in state["entries"]])
@@ -316,8 +343,9 @@ def rollback(root, backup, home):
 
 
 class Move:
-    def __init__(self, root, home, where, kinds, read_hash, move_layout):
+    def __init__(self, root, home, where, kinds, read_hash, move_layout, port_of):
         self.root, self.home, self.where = Path(root), home, where
+        self.port_of = port_of
         self.marker = self.root / BACKUPS / "legacy-in-progress"
         self.backup = None
         self.state = None
@@ -352,15 +380,23 @@ class Move:
             if old_alias.exists() and modern.exists() and old_alias.resolve() != modern.resolve():
                 raise MigrationError(f"two copies of {kind} exist: reconcile {old_alias} and {modern} before moving")
             self.old_entries.update((old_alias, new_alias))
-            source = next((p.resolve() for p in (modern, old_alias) if p.exists()), None)
+            source = next((p for p in (modern, old_alias) if p.exists()), None)
             if source is None:
                 continue
             if kind == "service":
                 for name in ("usage.jsonl", "usage.1.jsonl", "usage.deleted", "https-port"):
                     if (source / name).is_file():
-                        self.sources[Path(where.new(kind)) / name] = (source / name).resolve()
+                        self.sources[Path(where.new(kind)) / name] = source / name
             else:
                 self.sources[Path(where.new(kind))] = source
+
+        self.vault_backups = {}
+        secrets = roots["data"] / "secrets"
+        self.new_secrets = Path(where.new("vault")).parent
+        if secrets.is_dir():
+            for source in secrets.iterdir():
+                if source.name.startswith(("vault.json.moved-", "vault.json.before-move-")) and source.is_file():
+                    self.vault_backups[self.new_secrets / source.name] = source
 
         self.old_entries.update(self.root / ".herdr" / name for name in (".layout-rollback", "sync-hold"))
         self.old_mod_data = {}
@@ -385,10 +421,20 @@ class Move:
                 raise MigrationError(f"invalid mod ID in the old install record: {name}")
         self.keys = json_dict(self.root / KEYS)
         old_keys, new_keys = f"layout:{OLD}", f"layout:{NEW}"
+        destination_keys = self.keys.get(new_keys, {})
         if old_keys in self.keys:
-            if not isinstance(self.keys[old_keys], dict) or not isinstance(self.keys.get(new_keys, {}), dict):
+            if not isinstance(self.keys[old_keys], dict) or not isinstance(destination_keys, dict):
                 raise MigrationError("the layout's key bindings must be JSON objects")
-            self.keys[new_keys] = {**self.keys.pop(old_keys), **self.keys.get(new_keys, {})}
+            self.keys[new_keys] = {**self.keys.pop(old_keys), **destination_keys}
+        key_owners = {}
+        for name, owner in self.record.get("keys", {}).items():
+            if name.startswith(old_keys + " "):
+                key = name.split(" ", 1)[1]
+                if key in destination_keys:
+                    continue
+                name = f"{new_keys} {key}"
+            key_owners[name] = owner
+        self.previous["keys"] = key_owners
         self.shared = json_dict(self.root / SHARED)
         for path in HOOKS:
             json_dict(self.root / path)
@@ -407,18 +453,23 @@ class Move:
 
     @contextmanager
     def transaction(self):
-        tasks = self.sources.get(Path(self.where.new("tasks")))
-        with migration_lock(self.root), task_locks(tasks):
-            if not detected(self.root):
-                raise MigrationError("the old install is no longer there")
+        tasks = Path(self.where.new("tasks"))
+        with migration_lock(self.root):
             try:
-                yield
+                with task_locks(self.sources.get(tasks)):
+                    if not detected(self.root):
+                        raise MigrationError("the old install is no longer there")
+                    yield
             except (Exception, KeyboardInterrupt):
                 if self.state:
-                    restore_install(self.root, self.backup, self.home, self.state)
-                    self.state["state"] = "rolled-back"
-                    write_json(self.backup / "manifest.json", self.state)
-                    self.marker.unlink()
+                    stop_destination(self.root, self.home, self.port_of)
+                    with task_locks(tasks, wait=10):
+                        self.state["state"] = "restoring"
+                        write_json(self.backup / "manifest.json", self.state)
+                        restore_install(self.root, self.backup, self.home, self.state)
+                        self.state["state"] = "rolled-back"
+                        write_json(self.backup / "manifest.json", self.state)
+                        self.marker.unlink()
                 raise
 
     def begin(self, mods, items):
@@ -431,6 +482,11 @@ class Move:
                     if child.name == "worktrees" and child.is_dir() and any(child.iterdir()):
                         continue
                     old_entries.add(child)
+        data = {**self.sources, **self.vault_backups}
+        linked_targets = {source.resolve() for source in data.values() if source.is_symlink()}
+        # A cross-disk move may already link back to data in the old layout.
+        old_entries = {path for path in old_entries
+                       if path.is_symlink() or not any(within(target, path) for target in linked_targets)}
         obsolete = {
             root / OLD_RECORD.parent, root / OLD_LAYOUT, root / unit(OLD),
             root / ".local/bin" / OLD, root / APP / f".{OLD}-backup",
@@ -462,7 +518,17 @@ class Move:
         if self.home:
             stop_service(OLD, state["service"])
             remove_share(OLD, self.old_port)
-        for target, source in {**self.sources, **self.old_mod_data}.items():
+        if self.vault_backups:
+            self.new_secrets.mkdir(parents=True, mode=0o700, exist_ok=True)
+        for target, source in data.items():
+            if source.is_symlink():
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.symlink_to(source.resolve())
+            else:
+                copy(source, target)
+                if target in self.vault_backups:
+                    target.chmod(0o600)
+        for target, source in self.old_mod_data.items():
             copy(source, target)
         for path in old_entries | obsolete:
             remove(path)

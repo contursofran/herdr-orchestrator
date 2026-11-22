@@ -13,7 +13,8 @@ herdr-orchestrator doctor
 ```
 
 The move records a private backup before replacing the old service, mods and helper links. It copies tasks, settings,
-artifacts, the vault and browser profiles into the new data directories. Existing git worktrees keep their absolute paths.
+artifacts, the vault and its recovery backups, and browser profiles into the new data directories. Data already stored
+through a symlink stays at its original location. Existing git worktrees keep their absolute paths.
 Customized layouts and keys move to the new layout name, and the installer keeps unrelated Claude Code and Codex hooks.
 The installer removes the old service's tailnet route when it points to that service. Update bookmarks to the link shown
 by `herdr-orchestrator web status`.
@@ -25,9 +26,10 @@ herdr-orchestrator checkout:
 bin/herdr-orchestrator rollback-install --backup "/path/to/the/printed/backup"
 ```
 
-Rollback restores the original installation and restarts its service if it was running. Changes made after the move
-are saved in an `after-*` directory inside that backup. Its `manifest.json` maps the numbered copies to their original
-paths. If the move was interrupted, run rollback with the printed backup path before retrying.
+Rollback stops the new service and its scheduler before locking the task store. It restores the original installation
+and restarts its service if it was running. Changes to migrated files are saved in an `after-*` directory inside that
+backup. Its `manifest.json` maps the numbered copies to their original paths. If the move was interrupted, run rollback
+with the printed backup path before retrying.
 
 ## Updating herdr-orchestrator
 
