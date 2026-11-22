@@ -1314,7 +1314,7 @@ def install_or_move(a, update=False, web=False):
     home = root == os.path.realpath(real_home())
     api = legacy_api()
     try:
-        legacy = api["Move"](root, home, where_for(root), layout_mod().KINDS, fsha, move_layout_blocks)
+        legacy = api["Move"](root, home, where_for(root), layout_mod().KINDS, fsha, move_layout_blocks, our_port)
         if a.dry_run:
             say("  would back up the upstream install, copy its data, replace its service and move its layout keys")
             return cmd_install(a, legacy=legacy)
@@ -2345,7 +2345,7 @@ def main(argv):
             root = os.path.realpath(a.root or real_home())
             api = legacy_api()
             try:
-                backup = api["rollback"](root, a.backup, root == os.path.realpath(real_home()))
+                backup = api["rollback"](root, a.backup, root == os.path.realpath(real_home()), our_port)
             except (api["MigrationError"], OSError) as error:
                 raise Stop(str(error)) from error
             say(f"Restored the upstream installation. Backup and any archived changes: {backup}")
