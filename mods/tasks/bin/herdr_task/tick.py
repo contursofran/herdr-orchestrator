@@ -76,6 +76,9 @@ def queue_pass(s, t, v, report):
             and not pr_problem(v) and not reviews.merge_problem(s, t, head)):
         if problem := boundaries.check_pr(s, t, v, pr_view):
             boundaries.hold(s, t, problem)
+            # Stop automatic merges here. The ordinary merge path would bypass queue_pass's retry limit.
+            t.pop("auto_merge", None)
+            s.dirty = True
             report["attention"].append(t["id"])
             return
         ok, err = queue_merge(t, head)

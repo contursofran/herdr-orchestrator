@@ -11,13 +11,28 @@ from .base import Fail, git, now
 from .github import remote_of
 
 
-LINE = re.compile(r"^\s*(?:[-*]\s+)?Boundary:[ \t]*(.*)$", re.IGNORECASE | re.MULTILINE)
+LINE = re.compile(r"Boundary:[ \t]*(.*)", re.IGNORECASE)
+FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})(.*)$")
 OID = re.compile(r"(?:[a-f0-9]{40}|[a-f0-9]{64})")
 HOLD = "Task boundary blocked the merge"
 
 
+def directives(task):
+    """Only standalone directives outside fenced examples define the task's scope."""
+    fence = None
+    for line in (task.get("prompt") or "").splitlines():
+        if mark := FENCE.match(line):
+            run, rest = mark.groups()
+            if fence is None and (run[0] == "~" or "`" not in rest):
+                fence = run
+            elif fence and run[0] == fence[0] and len(run) >= len(fence) and not rest.strip(" \t"):
+                fence = None
+        elif fence is None and (directive := LINE.fullmatch(line)):
+            yield directive[1]
+
+
 def globs(task):
-    lines = LINE.findall(task.get("prompt") or "")
+    lines = list(directives(task))
     if not lines and not task.get("require_boundary"):
         return []
     try:
@@ -26,13 +41,15 @@ def globs(task):
         raise Fail("Fix the quoting on the Boundary line in the task brief.")
     if not patterns:
         raise Fail("Add a Boundary line with allowed paths to the task brief.")
+    if any(pattern.startswith("!") for pattern in patterns):
+        raise Fail("Boundary lines only accept allowed paths. Replace exclusions with explicit allowed paths or globs.")
     if any(any(part in ("", ".", "..") for part in pattern.split("/")) for pattern in patterns):
         raise Fail("Use repository-relative paths or globs on the Boundary line, such as src/**.")
     return [tuple(pattern.split("/")) for pattern in patterns]
 
 
 def enabled(task):
-    return task.get("require_boundary") or LINE.search(task.get("prompt") or "") is not None
+    return task.get("require_boundary") or next(directives(task), None) is not None
 
 
 def matches(path, pattern):
@@ -43,6 +60,8 @@ def matches(path, pattern):
         if j == len(pattern):
             return i == len(parts)
         if pattern[j] == "**":
+            if j == len(pattern) - 1:
+                return i < len(parts)  # src/** covers descendants, including files directly inside src.
             return visit(i, j + 1) or (i < len(parts) and visit(i + 1, j))
         return i < len(parts) and fnmatch.fnmatchcase(parts[i], pattern[j]) and visit(i + 1, j + 1)
 
@@ -118,3 +137,10 @@ def hold(s, task, problem):
         task.update(attention=problem, attention_at=now())
         s.dirty = True
     return problem
+
+
+def clear_hold(s, task):
+    if (task.get("attention") or "").startswith(HOLD):
+        task.pop("attention")
+        task.pop("attention_at", None)
+        s.dirty = True

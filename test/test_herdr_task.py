@@ -4124,6 +4124,13 @@ class MergeBoundaries(unittest.TestCase):
         self.task.update(state="ready", prompt="Boundary: src/**")
         return self.main
 
+    def edit(self, **changes):
+        from unittest import mock
+        fields = dict(id="1", json=True, title=None, prompt=None, prompt_file=None, base=None, after=None,
+                      at=None, in_=None, here=False, worktree=False)
+        with mock.patch.object(self.commands, "view", return_value={"status": "ready"}):
+            self.commands.cmd_edit(self.argparse.Namespace(**{**fields, **changes}))
+
     def test_local_accept_blocks_outside_paths_and_rechecks_after_a_scope_edit(self):
         from unittest import mock
         main = self.local()
@@ -4138,7 +4145,14 @@ class MergeBoundaries(unittest.TestCase):
                 self.commands.cmd_accept(args)
             self.assertIn("other.txt", self.task["attention"])
             self.assertEqual(self.git(main, "rev-parse", "HEAD"), self.task["start"])
-            self.task["prompt"] = "Boundary: src/** other.txt"
+            prompt_file = os.path.join(self.root, "brief.md")
+            with open(prompt_file, "w") as f:
+                f.write("Boundary: src/** other.txt\n")
+            with mock.patch.object(self.commands, "caller_labels", return_value={"herdr.role": "coordinator"}):
+                self.edit(prompt_file=prompt_file)
+            self.assertNotIn("attention", self.task)
+            self.assertNotIn("attention_at", self.task)
+            self.assertEqual(self.task["state"], "ready")
             self.commands.cmd_accept(args)
         tell.assert_not_called()
         self.assertEqual(self.git(main, "rev-parse", "HEAD"), self.task["head"])
@@ -4149,7 +4163,7 @@ class MergeBoundaries(unittest.TestCase):
         from herdr_task import boundaries
         self.local()
         self.task["head"] = self.commit_file(self.wt, "src/allowed.txt", "one\n")
-        for prompt in ("Do the thing", "Boundary:"):
+        for prompt in ("Do the thing", "Boundary:", "```text\nBoundary: src/**\n```"):
             self.task.update(prompt=prompt, require_boundary=True)
             self.assertFalse(self.commands.ff_merge(self.store, self.task))
             self.assertIn("Add a Boundary line", self.task["attention"])
@@ -4158,6 +4172,56 @@ class MergeBoundaries(unittest.TestCase):
             self.assertFalse(self.commands.ff_merge(self.store, self.task))
             self.assertIn("fixture failure", self.task["attention"])
         self.assertTrue(self.commands.ff_merge(self.store, self.task))
+
+    def test_boundary_examples_are_ignored_and_exclusions_block_the_merge(self):
+        from herdr_task import boundaries
+        main = self.local()
+        examples = ("- Boundary: prose describing the task\n    Boundary: examples/**\n"
+                    "````markdown\n```\nBoundary: examples/**\n````\n"
+                    "~~~text\nBoundary: examples/**\n~~~\n")
+        self.assertFalse(boundaries.enabled({"prompt": examples}))
+        self.assertEqual(boundaries.globs({"prompt": examples}), [])
+        self.task.update(head=self.commit_file(self.wt, "examples/item.txt", "one\n"), prompt=examples + "Boundary: src/**")
+        self.assertFalse(self.commands.ff_merge(self.store, self.task))
+        self.assertIn("Outside its Boundary", self.task["attention"])
+        self.task["prompt"] = "Boundary: examples/** !examples/item.txt"
+        self.assertFalse(self.commands.ff_merge(self.store, self.task))
+        self.assertIn("exclusions", self.task["attention"])
+        self.assertEqual(self.git(main, "rev-parse", "HEAD"), self.task["start"])
+
+    def test_a_descendant_glob_leaves_the_parent_path_out_of_scope(self):
+        from herdr_task import boundaries
+        self.local()
+        self.task["head"] = self.commit_file(self.wt, "src", "one\n")
+        self.assertFalse(self.commands.ff_merge(self.store, self.task))
+        self.assertIn("Outside its Boundary: 'src'", self.task["attention"])
+        self.assertTrue(boundaries.matches("src/file.ts", ("src", "**")))
+
+    def test_worker_and_reviewer_cannot_change_their_task_scope(self):
+        from unittest import mock
+        self.local()
+        self.task["agents"] = [{"address": "t1"}]
+        original = dict(self.task)
+        fields = ({"prompt": "Updated brief"}, {"prompt_file": "unused.md"}, {"require_boundary": False},
+                  {"set": ["proof=off"]}, {"lock": ["test-device"]})
+        for address, labels in (("t1", {"herdr.task": self.store.key(self.task)}),
+                                ("t2", {"herdr.role": "reviewer"}), ("t1", {"herdr.agent": "codex"})):
+            with mock.patch.object(self.commands, "caller_labels", return_value=labels), \
+                    mock.patch.dict(os.environ, HC_TERMINAL_ID=address):
+                for change in fields:
+                    with self.subTest(address=address, labels=labels, change=change):
+                        with self.assertRaisesRegex(self.commands.Fail, "Ask the Orchestrator"):
+                            self.edit(**change)
+                        self.assertEqual(self.task, original)
+
+    def test_scope_edit_preserves_unrelated_attention(self):
+        from unittest import mock
+        self.local()
+        self.task.update(attention="Checks failing", attention_at=10, require_boundary=True)
+        with mock.patch.object(self.commands, "caller_labels", return_value={"herdr.role": "coordinator"}):
+            self.edit(require_boundary=False)
+        self.assertFalse(self.task["require_boundary"])
+        self.assertEqual((self.task["attention"], self.task["attention_at"]), ("Checks failing", 10))
 
     def test_checks_both_sides_of_a_rename_and_segment_matching(self):
         from herdr_task import boundaries
@@ -4239,14 +4303,26 @@ class MergeBoundaries(unittest.TestCase):
         from herdr_task import base, tick
         self.local()
         head = self.commit_file(self.wt, "outside.txt", "one\n")
-        self.task.update(head=head, pr={"number": 1, "repo": "demo/example"}, merge_queued=base.now() - 300000)
-        pr = {"state": "OPEN", "headRefOid": head, "baseRefOid": self.task["start"], "baseRefName": "main"}
+        self.task.update(head=head, pr={"number": 1, "repo": "demo/example"}, merge_queued=base.now() - 300000,
+                         auto_merge="checks")
+        pr = {"state": "OPEN", "headRefOid": head, "baseRefOid": self.task["start"], "baseRefName": "main",
+              "mergeable": "MERGEABLE", "statusCheckRollup": [{"status": "COMPLETED", "conclusion": "SUCCESS"}]}
         queue = {"in": False, "auto": False, "reason": "CHECKS_TIMED_OUT"}
+        report = {"done": [], "attention": []}
         with mock.patch.object(tick, "queue_entry", return_value=queue), \
-                mock.patch.object(tick, "queue_merge") as retry:
-            tick.queue_pass(self.store, self.task, pr, {"attention": []})
+                mock.patch.object(tick, "queue_merge") as retry, mock.patch.object(tick, "merge_now") as merge, \
+                mock.patch.object(tick, "pr_view", return_value=pr), mock.patch.object(tick, "back_pass"), \
+                mock.patch.object(tick, "expected_checks", return_value=[]), mock.patch.object(tick, "checks_since"), \
+                mock.patch.object(tick, "note_checks"), mock.patch.object(tick, "pr_news"):
+            tick.tick_store(self.store, report)
+            self.task["pr"]["checked"] = 0
+            tick.tick_store(self.store, report)
         retry.assert_not_called()
+        merge.assert_not_called()
         self.assertIn("outside.txt", self.task["attention"])
+        self.assertNotIn("merge_queued", self.task)
+        self.assertNotIn("requeued", self.task)
+        self.assertEqual(report["attention"], [self.task["id"]])
 
 
 class TaskResourceLocks(unittest.TestCase):
@@ -4310,6 +4386,27 @@ class TaskResourceLocks(unittest.TestCase):
                 with resources.activate(store, store.find("2")):
                     self.assertEqual(store.find("2")["state"], "running")
         self.assertEqual(self.task("1")["state"], "todo")
+
+    def test_ready_reserves_a_queued_tasks_resource_before_activating_it(self):
+        from unittest import mock
+        from herdr_task import resources
+        self.add("Holder", here=True, lock=["test-device"])
+        self.add("Waiting", here=True, lock=["test-device"])
+        with self.store_mod.Store(self.store_mod.locate(self.folder)) as store:
+            store.find("1")["state"] = "running"
+            store.find("2")["state"] = "queued"
+            store.dirty = True
+        args = dict(id="2", summary="Completed checks", details=None, agents_md=None)
+        with mock.patch.object(resources, "STORE", self.store_mod.STORE):
+            with self.assertRaisesRegex(resources.Busy, "Resource test-device is held by"):
+                self.run_cmd(self.commands.cmd_ready, **args)
+            self.assertEqual(self.task("2")["state"], "queued")
+            self.assertNotIn("summary", self.task("2"))
+            with self.store_mod.Store(self.store_mod.locate(self.folder)) as store:
+                store.find("1")["state"] = "done"
+                store.dirty = True
+            self.run_cmd(self.commands.cmd_ready, **args)
+        self.assertEqual(self.task("2")["state"], "ready")
 
     def task_at(self, folder, ref):
         with self.store_mod.Store(self.store_mod.locate(folder), write=False) as store:

@@ -82,11 +82,12 @@ task values a machine set before (the old machine scope) still apply there until
 
 ## Task file boundaries and resource locks
 
-Add a line such as `Boundary: src/login/** tests/login.test.ts` to a worktree task's brief. Herdr checks the
-proposed changes at merge time, including both paths of a rename. Use whitespace-separated paths or globs,
-and quote names that contain spaces. `*` matches within one path segment and `**` matches across directories.
-`herdr-task add --require-boundary` also blocks merging if the line is missing. Use `herdr-task edit --prompt-file`
-to update the brief when the agreed scope changes.
+Add an unindented line such as `Boundary: src/login/** tests/login.test.ts` outside code blocks and lists in a
+worktree task's brief. Herdr checks the proposed changes at merge time, including both paths of a rename. Use
+whitespace-separated allowed paths or globs, and quote names that contain spaces. `*` matches within one path
+segment. `**` matches across directories, and `src/**` covers paths inside `src`. Exclusion patterns such as
+`!path` block the merge. `herdr-task add --require-boundary` also blocks merging if the line is missing. The
+Orchestrator can use `herdr-task edit --prompt-file` to update the brief when the agreed scope changes.
 
 Use `herdr-task add --lock test-device` for a resource shared on the same machine. Repeat `--lock` to request
 more than one. A running or ready task holds its resources until it is done or removed. Tasks with overlapping
