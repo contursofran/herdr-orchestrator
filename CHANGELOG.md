@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2
+
+- Open **Changelog** from the sidebar’s **Settings** menu to see your installed version and what changed in each release. Release notes are available offline.
+
 ## 0.1.1
 
 First published release of herdr-orchestrator.
