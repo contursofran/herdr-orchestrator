@@ -351,6 +351,7 @@ def source_items(src):
         if not os.path.isdir(top):
             raise Stop(f"lib/addons.json names mods/{m}, which isn't in {src}")
         items += [(m, f"{APP}/mods/{m}/{f}", os.path.join(top, f)) for f in walk_files(top)]
+    items.append(("orchestrator-settings", f"{APP}/mods/orchestrator-settings/CHANGELOG.md", os.path.join(src, "CHANGELOG.md")))
     for name in manifest["core"]["layouts"]:
         items.append(("layout", f"{APP}/layouts/{name}.json", os.path.join(src, "layouts", f"{name}.json")))
     for f in walk_files(os.path.join(src, "lib")):
