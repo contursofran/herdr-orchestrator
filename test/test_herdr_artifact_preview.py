@@ -71,6 +71,25 @@ class Preview(unittest.TestCase):
         self.assertEqual(out.returncode, 0, out.stderr + out.stdout)
         return json.loads(out.stdout)["link"]
 
+    def test_html_artifact_is_served_in_a_static_sandbox(self):
+        source = os.path.join(self.dir, "dashboard.html")
+        html = b"<!doctype html><style>h1 {color: teal}</style><h1>Dashboard</h1>"
+        with open(source, "wb") as f:
+            f.write(html)
+        out = self.run_tool("publish", source, "--folder", self.folder, "--json")
+        self.assertEqual(out.returncode, 0, out.stderr + out.stdout)
+        self.aid = json.loads(out.stdout)["id"]
+        base = self.preview().split("/?")[0]
+        code, _, body = get(f"{base}/api/artifacts/{self.aid}/recipe?v=1")
+        self.assertEqual((code, json.loads(body)["blocks"]), (200, [{"type": "html", "src": "visual.html"}]))
+        code, headers, body = get(f"{base}/api/artifacts/{self.aid}/file/visual.html?v=1")
+        self.assertEqual((code, headers["content-type"], body), (200, "text/html; charset=utf-8", html))
+        csp = headers["content-security-policy"]
+        self.assertTrue(csp.startswith("sandbox; default-src 'none';"))
+        self.assertIn("img-src data:", csp)
+        self.assertIn("form-action 'none'", csp)
+        self.assertEqual(headers["x-content-type-options"], "nosniff")
+
     def test_serves_the_viewer_and_the_artifact_on_loopback_only(self):
         # A loopback preview must also start when reverse DNS is unavailable.
         with open(os.path.join(self.dir, "sitecustomize.py"), "w") as f:

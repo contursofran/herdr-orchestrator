@@ -10,6 +10,7 @@
 //   chart    { kind: bar | line | pie, labels: [], series: [{ name, values: [] }] }
 //   stats    { items: [{ label, value, note }] }        image    { src, caption, w, h }  (src: a file beside it)
 //   video    { src, poster, caption, loop, muted, autoplay }   a clip: mp4, webm or mov (poster: a picture beside it)
+//   html     { src, caption }                           a self-contained HTML page, shown in a sandbox
 //   audio    { src, caption }                           a sound: mp3, m4a, wav or ogg
 //   pdf      { src, caption }                           a PDF, shown inline (on a phone: its first page and a link)
 //   pair     { before: { src, caption }, after: { src, caption } }   a picture or a video each; videos play together
@@ -25,16 +26,17 @@
 // Shared core: the source is core/recipe.js; bin/sync-shared copies it into the mods in lib/COPIES.
 
 export const RECIPE = 1;
-export const TYPES = ["heading", "text", "list", "table", "chart", "stats", "image", "video", "audio", "pdf", "pair", "code", "callout", "columns", "tabs", "details", "divider", "choice", "form", "button", "buttons"];
+export const TYPES = ["heading", "text", "list", "table", "chart", "stats", "image", "video", "html", "audio", "pdf", "pair", "code", "callout", "columns", "tabs", "details", "divider", "choice", "form", "button", "buttons"];
 // The files a block can show, by extension (what the browser plays or draws; a .mov the browser can't play is still
 // served, and the web app says so and offers the file).
 export const PICTURES = ["png", "jpg", "jpeg", "gif", "webp", "svg"];
 export const VIDEOS = ["mp4", "m4v", "webm", "mov"];
 export const AUDIOS = ["mp3", "m4a", "wav", "ogg"];
 export const DOCUMENTS = ["pdf"];
-// What a file is, from its name: "image", "video", "audio", "pdf", or null when none of them.
+// What a recipe file can show, from its extension.
 export const mediaKind = (src) => {
   const e = typeof src === "string" ? (src.match(/\.([a-z0-9]+)$/i)?.[1] ?? "").toLowerCase() : "";
+  if (e === "html" || e === "htm") return "html";
   return PICTURES.includes(e) ? "image" : VIDEOS.includes(e) ? "video" : AUDIOS.includes(e) ? "audio" : DOCUMENTS.includes(e) ? "pdf" : null;
 };
 export const TONES = ["info", "good", "warn", "bad"];
@@ -71,6 +73,7 @@ export function problems(recipe, files = null) {
       case "stats": need(arr(b.items) && b.items.every((x) => x && "label" in x && "value" in x), "items need a label and a value"); break;
       case "image": pic(b.src); need(!b.src || mediaKind(b.src) === "image", "src must be a picture (png, jpg, gif, webp or svg): a clip, a sound or a PDF has its own block"); break;
       case "video": file(b.src, ["video"], "src must be a clip (mp4, webm or mov)"); if (b.poster != null) file(b.poster, ["image"], "poster must be a picture beside it"); need(b.caption == null || str(b.caption), "caption must be words"); break;
+      case "html": file(b.src, ["html"], "src must be an HTML file beside it"); break;
       case "audio": file(b.src, ["audio"], "src must be a sound (mp3, m4a, wav or ogg)"); break;
       case "pdf": file(b.src, ["pdf"], "src must be a PDF beside it"); break;
       case "pair": for (const x of [b.before, b.after]) { file(x?.src, ["image", "video"], "a side's src must be a picture or a clip"); if (x?.poster != null) file(x.poster, ["image"], "a side's poster must be a picture beside it"); } break;

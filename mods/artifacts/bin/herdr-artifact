@@ -71,7 +71,7 @@ MARKUP_HELPERS = ("dirs.js", os.path.join("core", "paths.js"))
 # A recipe artifact (recipe.json, herdr-orchestrator 3.1) is drawn by the shared recipe view: copied into its installed mod.
 RECIPE_VIEW = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "recipe-view.js")
 RECIPE_CORE = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "core", "recipe.js")
-RECIPE_TYPES = {"heading", "text", "list", "table", "chart", "stats", "image", "video", "audio", "pdf", "pair", "code", "callout",
+RECIPE_TYPES = {"heading", "text", "list", "table", "chart", "stats", "image", "video", "html", "audio", "pdf", "pair", "code", "callout",
                 "columns", "tabs", "details", "divider", "choice", "form", "button", "buttons"}
 NOTES = os.path.join(STORE, "notes")
 # A custom artifact's picture, as the window last showed it (a version's folder; the web shows it in its place).
@@ -93,7 +93,7 @@ MEDIA_MAX = {"video": 40 * MB, "audio": 20 * MB, "pdf": 25 * MB}
 BROWSER_VIDEO = ("h264", "vp8", "vp9", "av1")
 BROWSER_AUDIO = ("aac", "mp3", "opus", "vorbis", "flac", "pcm_s16le", "pcm_s24le", "pcm_f32le")
 # What a mod folder may hold: code, text, pictures and media. No node_modules.
-ALLOWED = {".js", ".mjs", ".json", ".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".md", ".txt", ".csv", ".ttf", ".otf",
+ALLOWED = {".js", ".mjs", ".json", ".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".html", ".htm", ".md", ".txt", ".csv", ".ttf", ".otf",
            *(f".{e}" for kind in MEDIA for e in MEDIA[kind])}
 SKIP = {"jsconfig.json", "gpui-kit.d.ts", "herdr.d.ts", "artifact.js", "artifact-main.js", "artifact-markup.js", ".version"}
 
@@ -295,7 +295,7 @@ def gather(src):
             if n.startswith(".") or n in SKIP or n.endswith(".error"):
                 continue
             if os.path.splitext(n)[1].lower() not in ALLOWED:
-                raise Fail(f"{rel}: an artifact holds only .js, .json, .svg, pictures, videos, sounds, PDFs, fonts and text.")
+                raise Fail(f"{rel}: an artifact holds only .js, .json, .svg, pictures, videos, HTML, sounds, PDFs, fonts and text.")
             n_bytes = os.path.getsize(os.path.join(root, n))
             kind = kind_of(n)
             if n_bytes > MEDIA_MAX.get(kind, MAX_FILE):
@@ -324,14 +324,18 @@ NOT_RECIPE = ("{src} is a custom panel (main.js): only the Herdr window runs it,
               "`herdr-artifact guide`). Only when a recipe truly can't do it (a game, a live tool), publish it with --custom.")
 
 
-MEDIA_BLOCKS = {"image": ("image",), "video": ("video",), "audio": ("audio",), "pdf": ("pdf",), "pair": ("image", "video")}
+MEDIA_BLOCKS = {"image": ("image",), "video": ("video",), "html": ("html",), "audio": ("audio",), "pdf": ("pdf",), "pair": ("image", "video")}
 PICTURE_EXT = ("png", "jpg", "jpeg", "gif", "webp", "svg")
+HTML_EXT = ("html", "htm")
 
 
 def file_kind(name):
-    """What a recipe's file is: "image", "video", "audio", "pdf", or None."""
-    if os.path.splitext(name)[1].lower().lstrip(".") in PICTURE_EXT:
+    """What a recipe's file can show."""
+    ext = os.path.splitext(name)[1].lower().lstrip(".")
+    if ext in PICTURE_EXT:
         return "image"
+    if ext in HTML_EXT:
+        return "html"
     return kind_of(name)
 
 
@@ -356,13 +360,13 @@ def recipe_problems(src, files):
                 out.append(f"block {where}: type must be one of {', '.join(sorted(RECIPE_TYPES))}.")
                 continue
             want = MEDIA_BLOCKS.get(b["type"])
-            sides = [b] if b["type"] in ("image", "video", "audio", "pdf") else [b.get(k) or {} for k in ("before", "after")] if b["type"] == "pair" else []
+            sides = [b.get(k) or {} for k in ("before", "after")] if b["type"] == "pair" else [b]
             for side in sides if want else []:
                 x = side.get("src")
                 if not isinstance(x, str) or x not in files:
                     out.append(f"block {where} ({b['type']}): {x!r} isn't a file beside recipe.json.")
                 elif file_kind(x) not in want:
-                    out.append(f"block {where} ({b['type']}): {x} must be {' or '.join(want)} (png, jpg, gif, webp or svg for a picture; mp4, webm or mov for a clip; mp3, m4a, wav or ogg for a sound; pdf for a PDF).")
+                    out.append(f"block {where} ({b['type']}): {x} must be {' or '.join(want)}.")
                 if b["type"] == "video" and side.get("poster") is not None and side.get("poster") not in files:
                     out.append(f"block {where} (video): poster {side.get('poster')!r} isn't a file beside recipe.json.")
                 elif side.get("poster") is not None and file_kind(str(side.get("poster"))) != "image":
@@ -941,7 +945,26 @@ def public(a):
 
 
 def cmd_publish(o):
-    src, files = gather(o.dir)
+    path = os.path.expanduser(o.dir)
+    if not os.path.isfile(path) or os.path.basename(os.path.realpath(path)) == "main.js":
+        return publish(o, *gather(path))
+    kind = file_kind(path)
+    if kind not in ("image", "video", "html") or getattr(o, "custom", False):
+        raise Fail("Publish an image, video, self-contained HTML file, or a folder with recipe.json.")
+    size = os.path.getsize(path)
+    if size > MEDIA_MAX.get(kind, MAX_FILE):
+        raise Fail(too_big(path, size, kind if kind == "video" else None))
+    title, ext = os.path.splitext(os.path.basename(path))
+    # Put files through the same checks, version store, and proof links as a recipe.
+    with tempfile.TemporaryDirectory(prefix="herdr-visual-") as stage:
+        name = "visual" + ext.lower()
+        shutil.copyfile(path, os.path.join(stage, name))
+        with open(os.path.join(stage, "recipe.json"), "w") as f:
+            json.dump({"recipe": 1, "blocks": [{"type": kind, "src": name}]}, f)
+        return publish(o, *gather(stage), default_title=title)
+
+
+def publish(o, src, files, default_title=None):
     custom = not is_recipe(files)
     if custom and not getattr(o, "custom", False):
         raise Fail(NOT_RECIPE.format(src=src))
@@ -957,9 +980,9 @@ def cmd_publish(o):
     if art:
         title = o.title or art["title"]
     else:
-        if not o.title:
+        title = o.title or default_title
+        if not title:
             raise Fail("Give it a title: --title \"Coverage by package\".")
-        title = o.title
         base = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")[:24].strip("-") or "artifact"
         os.makedirs(FILES, exist_ok=True)
         while True:  # its files' folder, made now: the id is this publish's (another can't pick it meanwhile)
@@ -1968,6 +1991,7 @@ PREVIEW_IDLE = 1800
 PREVIEW_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".webp": "image/webp",
                  ".svg": "image/svg+xml", ".json": "application/json", ".txt": "text/plain; charset=utf-8",
                  ".md": "text/plain; charset=utf-8", ".csv": "text/plain; charset=utf-8",
+                 ".html": "text/html; charset=utf-8", ".htm": "text/html; charset=utf-8",
                  ".mp4": "video/mp4", ".m4v": "video/mp4", ".webm": "video/webm", ".mov": "video/quicktime",
                  ".mp3": "audio/mpeg", ".m4a": "audio/mp4", ".wav": "audio/wav", ".ogg": "audio/ogg", ".pdf": "application/pdf"}
 # the page: its own inline script and styles, its fonts inside; it asks only this server (its clips, sounds and PDFs too)
@@ -1976,6 +2000,8 @@ VIEWER_CSP = ("default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe
               "frame-ancestors 'none'")
 # an artifact's own file, as the service sends it (service/artifacts.ts)
 FILE_CSP = "sandbox; default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'"
+HTML_CSP = ("sandbox; default-src 'none'; img-src data:; media-src data:; font-src data:; "
+            "style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'")
 
 
 def span(header, size):
@@ -2164,7 +2190,8 @@ def serve_preview(idle=PREVIEW_IDLE):
             with open(p, "rb") as f:
                 f.seek(start)
                 body = f.read(end - start + 1)
-            self.send(206 if part else 200, body, ctype, FILE_CSP, {"accept-ranges": "bytes", "content-range": f"bytes {start}-{end}/{size}"} if part else {"accept-ranges": "bytes"})
+            csp = HTML_CSP if ctype.startswith("text/html") else FILE_CSP
+            self.send(206 if part else 200, body, ctype, csp, {"accept-ranges": "bytes", "content-range": f"bytes {start}-{end}/{size}"} if part else {"accept-ranges": "bytes"})
             return None
 
     srv = PreviewServer(("127.0.0.1", 0), H)
@@ -2342,7 +2369,7 @@ def main():
     if argv[:1] == ["_serve"]:
         return serve_preview()
 
-    p = argparse.ArgumentParser(prog="herdr-artifact", description="Herdr's artifacts: recipes an agent writes to show the person something, drawn in the window and on the web.",
+    p = argparse.ArgumentParser(prog="herdr-artifact", description="Publish visual artifacts in Herdr: images, videos, HTML, and recipes.",
                                 epilog="`herdr-artifact guide` explains how to write one. Another machine's folder: herdr-artifact --on <machine> <command> ...")
     sub = p.add_subparsers(dest="cmd")
 
@@ -2352,9 +2379,9 @@ def main():
         c.set_defaults(fn=fn)
         return c
 
-    c = cmd("publish", cmd_publish, "check a recipe folder and publish it (a new artifact, or with --id a new version)")
-    c.add_argument("dir", help="the folder with recipe.json (a custom panel: main.js, with --custom)")
-    c.add_argument("--title", help="what it is, for people (needed for a new one)")
+    c = cmd("publish", cmd_publish, "publish an image, video, HTML file or recipe folder (or update with --id)")
+    c.add_argument("dir", metavar="source", help="a visual file or a folder with recipe.json (or main.js with --custom)")
+    c.add_argument("--title", help="what it is, for people (defaults to the name when publishing a visual file)")
     c.add_argument("--id", help="an artifact's id: publish a new version of it")
     c.add_argument("--folder", help="the folder it belongs to (default: here)")
     c.add_argument("--task", help="the task it's for (default: this agent's task)")
@@ -2362,7 +2389,7 @@ def main():
     c.add_argument("--custom", action="store_true", help="a custom GPUI panel (main.js), only when a recipe truly can't: the web shows only its picture")
     c = cmd("update", cmd_publish, "publish a new version of an artifact (publish --id)")
     c.add_argument("id")
-    c.add_argument("dir")
+    c.add_argument("dir", metavar="source")
     c.add_argument("--title")
     c.add_argument("--note")
     c.add_argument("--custom", action="store_true", help="a custom GPUI panel (main.js), only when a recipe truly can't")

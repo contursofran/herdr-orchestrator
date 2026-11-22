@@ -6,8 +6,8 @@
 import { View, div } from "gpui-kit";
 import { v_flex, h_flex, TextView, InputState, Input } from "gpui-base";
 import { image } from "gpui-kit";
-import { theme } from "herdr";
-import { asset, reply } from "./artifact.js";
+import { appHome, exec, theme } from "herdr";
+import { asset, id, machine, reply, version } from "./artifact.js";
 import data from "./recipe-data.js";
 import { chartShapes, choiceReply, formReply, isLink, mdParts, mediaKind, withIds } from "./recipe.js";
 
@@ -17,6 +17,7 @@ export default class RecipeView extends View {
   init() {
     this.recipe = null;
     this.error = null;
+    this.visualErrors = new Map();
     this.tab = new Map();      // a tabs block's picked tab
     this.open = new Set();     // details blocks unfolded
     this.sent = new Map();     // a choice's or form's words, once sent
@@ -109,13 +110,39 @@ export default class RecipeView extends View {
 
   // A clip, a sound or a PDF: the window's player can't play them, so it shows the clip's poster (or a tile) and says
   // where to play it: the web app (the same artifact on the phone and in a browser plays it).
-  media(b, t, mark, what, poster) {
+  media(b, t, mark, what, poster, browser = false) {
     return v_flex().w_full().min_w(0).gap(4)
       .child(poster ? image(asset(poster)).w_full().rounded(6).border_1().border_color(t.border)
         : v_flex().w_full().h(96).rounded(6).bg(t.surface).items_center().justify_center().gap(2)
           .child(div().text_size(17).text_color(t.muted).child(mark))
           .child(div().text_size(12).text_color(t.muted).child(what)))
-      .child(div().text_size(12).text_color(t.muted).whitespace_normal().child(`${String(b.caption ?? b.src ?? what)} · plays in the web app`));
+      .when(!browser || !!b.caption, (e) => e.child(div().text_size(12).text_color(t.muted).whitespace_normal()
+        .child(browser ? b.caption : `${String(b.caption ?? b.src ?? what)} · plays in the web app`)))
+      .when(browser, (e) => e.child(this.browserButton(b, t)));
+  }
+
+  browserButton(b, t) {
+    const error = this.visualErrors.get(b.id);
+    return v_flex().gap(4)
+      .child(div().id(`visual-${b.id}`).self_start().px(9).py(4).rounded(6).border_1().border_color(t.border)
+        .text_size(12).cursor_pointer().on_click((_e, cx) => cx.spawn(async (cx) => {
+          try {
+            const args = machine ? ["link", id, "--from", machine] : ["preview", id, "--version", String(version)];
+            const result = await exec(`${appHome()}/mods/artifacts/bin/herdr-artifact`, [...args, "--json"]);
+            const out = JSON.parse(result.stdout);
+            if (result.code !== 0 || !out.link) throw new Error(out.error || "Couldn't open the artifact.");
+            const path = b.src.split("/").map(encodeURIComponent).join("/");
+            const link = machine
+              ? new URL(`api/artifacts/${encodeURIComponent(id)}/file/${path}?v=${version}&on=${encodeURIComponent(machine)}`, out.link).href
+              : out.link;
+            this.visualErrors.delete(b.id);
+            cx.open_url(link);
+          } catch (error) {
+            this.visualErrors.set(b.id, error.message || "Couldn't open the artifact.");
+          }
+          cx.notify();
+        })).child("Open in browser ↗"))
+      .when(!!error, (e) => e.child(div().text_size(12).text_color(t.blocked).whitespace_normal().child(error)));
   }
 
   block(b, t, cx) {
@@ -135,7 +162,8 @@ export default class RecipeView extends View {
         .child(div().text_size(12).text_color(t.muted).child(String(x.label)))
         .child(div().text_size(17).font_semibold().child(String(x.value)))
         .when(!!x.note, (e) => e.child(div().text_size(12).text_color(t.dim).child(String(x.note))))));
-      case "video": return this.media(b, t, "▶", "Video", b.poster ? b.poster : null);
+      case "video": return this.media(b, t, "▶", "Video", b.poster ?? null, true);
+      case "html": return this.media(b, t, "HTML", "Web page", null, true);
       case "audio": return this.media(b, t, "♪", "Sound", null);
       case "pdf": return this.media(b, t, "PDF", "PDF", null);
       case "image": return v_flex().gap(4)
