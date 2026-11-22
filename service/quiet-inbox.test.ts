@@ -18,7 +18,8 @@ mock.module("herdr", () => fakeHerdr({
 mock.module("gpui-kit", () => fakeGpuiKit());
 mock.module("gpui-base", () => fakeGpuiBase());
 
-const { startInbox, items, countsByTab, reasonOf } = await import("../mods/tabs-tasks/inbox.js");
+// This copy uses its own dirs.js cache. local.test.ts sets up the tab bar's cache with a real test home.
+const { startInbox, items, countsByTab, reasonOf } = await import("../mods/workspace-status-chat/inbox.js");
 
 test("a quiet worker escalation reaches Needs you and the tab count", async () => {
   const jobs: (() => Promise<void>)[] = [];
