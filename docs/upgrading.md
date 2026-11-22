@@ -4,7 +4,8 @@
 
 Close the Herdr window, pause agents that can write tasks or artifacts, and stop the `herdr-automations` terminal in
 Herdr Core. Do the move on each machine from its own checkout. The backup and restore cover data roots under that
-machine's home directory.
+machine's home directory. If one of those machines serves the web app, move it first so its shared settings are available
+as the other machines move.
 
 ```bash
 ./install.sh --migrate-legacy --dry-run
@@ -16,6 +17,8 @@ The move records a private backup before replacing the old service, mods and hel
 artifacts, the vault and its recovery backups, and browser profiles into the new data directories. Data already stored
 through a symlink stays at its original location. Existing git worktrees keep their absolute paths.
 Customized layouts and keys move to the new layout name, and the installer keeps unrelated Claude Code and Codex hooks.
+On each machine, the move copies the shared settings, web host, and secrets host documents within the local Herdr Core.
+Existing values in the destination take precedence. Task lists keep their repository IDs so they still follow renamed repos.
 The installer removes the old service's tailnet route when it points to that service. Update bookmarks to the link shown
 by `herdr-orchestrator web status`.
 
@@ -27,9 +30,9 @@ bin/herdr-orchestrator rollback-install --backup "/path/to/the/printed/backup"
 ```
 
 Rollback stops the new service and its scheduler before locking the task store. It restores the original installation
-and restarts its service if it was running. Changes to migrated files are saved in an `after-*` directory inside that
-backup. Its `manifest.json` maps the numbered copies to their original paths. If the move was interrupted, run rollback
-with the printed backup path before retrying.
+and restarts its service if it was running. It also reverts document writes from the move that have not changed since.
+Changes to migrated files are saved in an `after-*` directory inside that backup. Its `manifest.json` maps the numbered
+copies to their original paths. If the move was interrupted, run rollback with the printed backup path before retrying.
 
 ## Updating herdr-orchestrator
 

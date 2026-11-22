@@ -721,6 +721,21 @@ def legacy_api():
     return runpy.run_path(migration)
 
 
+def legacy_core_docs(action, journal, old, new):
+    bun, hc = bun_path(), shutil.which("hc")
+    if not bun or not hc:
+        raise Stop("the document migration needs Bun and Herdr Core (hc)")
+    layout_mod()
+    from herdr_task import base
+    if (why := base.not_real()):
+        raise Stop(f"the document migration must run in the default local Herdr Core: {why}")
+    source = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    script = os.path.join(source, "service", "migrate-legacy-docs.ts")
+    result = subprocess.run([bun, script, action, str(journal), old, new, hc], capture_output=True, text=True)
+    if result.returncode:
+        raise Stop(f"couldn't {action} Herdr Core documents: {result.stderr.strip() or 'the helper exited unexpectedly'}")
+
+
 def move_layout_blocks(text, name):
     """Apply layout block moves and mod ID renames, keeping the person's layout."""
     moves = [m for m in LAYOUT_MOVES if m[0] == name]
@@ -1314,9 +1329,10 @@ def install_or_move(a, update=False, web=False):
     home = root == os.path.realpath(real_home())
     api = legacy_api()
     try:
-        legacy = api["Move"](root, home, where_for(root), layout_mod().KINDS, fsha, move_layout_blocks, our_port)
+        legacy = api["Move"](root, home, where_for(root), layout_mod().KINDS,
+                             fsha, move_layout_blocks, our_port, legacy_core_docs)
         if a.dry_run:
-            say("  would back up the upstream install, copy its data, replace its service and move its layout keys")
+            say("  would back up the upstream install, copy its data and Herdr Core documents, replace its service and move its layout keys")
             return cmd_install(a, legacy=legacy)
         with legacy.transaction():
             return cmd_install(a, legacy=legacy)
@@ -2345,7 +2361,7 @@ def main(argv):
             root = os.path.realpath(a.root or real_home())
             api = legacy_api()
             try:
-                backup = api["rollback"](root, a.backup, root == os.path.realpath(real_home()), our_port)
+                backup = api["rollback"](root, a.backup, root == os.path.realpath(real_home()), our_port, legacy_core_docs)
             except (api["MigrationError"], OSError) as error:
                 raise Stop(str(error)) from error
             say(f"Restored the upstream installation. Backup and any archived changes: {backup}")

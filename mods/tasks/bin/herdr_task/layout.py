@@ -77,6 +77,7 @@ KINDS = {
 }
 PRIVATE = {"vault", "secret-remote", "secret-drop", "secret-served", "service", "browser"}  # 0700 folders
 LEGACY_WORKTREES = ".herdr/worktrees"
+UPSTREAM = "shepherdr"
 
 
 # ---- where ----------------------------------------------------------------------------------
@@ -148,8 +149,15 @@ class Where:
         return os.path.join(self.roots["data"], "worktrees") if self.migrated else os.path.join(self.home, LEGACY_WORKTREES)
 
     def worktree_roots(self, setting=None):
-        """Every root task worktrees may be in (the old one drains as its tasks finish)."""
-        out = [self.worktrees(setting), os.path.join(self.roots["data"], "worktrees"), os.path.join(self.home, LEGACY_WORKTREES)]
+        """Every root task worktrees may be in, including the upstream installation's preserved roots."""
+        default_data = os.path.join(self.home, ".local", "share")
+        upstream_data = _abs(self.env.get("XDG_DATA_HOME")) or default_data
+        out = [self.worktrees(setting), os.path.join(self.roots["data"], "worktrees"),
+               os.path.join(self.home, LEGACY_WORKTREES), os.path.join(default_data, UPSTREAM, "worktrees"),
+               os.path.join(upstream_data, UPSTREAM, "worktrees")]
+        upstream_home = _abs(self.env.get(f"{UPSTREAM.upper()}_HOME"))
+        if upstream_home:
+            out.append(os.path.join(upstream_home, "data", "worktrees"))
         return list(dict.fromkeys(out))
 
 

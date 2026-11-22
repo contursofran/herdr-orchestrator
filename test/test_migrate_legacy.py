@@ -103,14 +103,21 @@ class LegacyService(unittest.TestCase):
             manifest = backup / "manifest.json"
             manifest.write_text(json.dumps({"root": str(root), "state": "complete", "tasks": "tasks",
                                             "entries": [["tasks", False]], "service": {"active": False}}))
+            journal = backup / LEGACY["CORE_JOURNAL"]
+            journal.touch()
             with (store / ".scheduler.lock").open("wb") as held:
                 fcntl.flock(held, fcntl.LOCK_EX)
                 stop = Mock(side_effect=lambda *_: fcntl.flock(held, fcntl.LOCK_UN))
-                replacements = {"stop_destination": stop, "restore_service": Mock()}
+                operations = Mock()
+                replacements = {"stop_destination": stop, "restore_service": operations.restore_service}
                 with patch.dict(context, replacements):
                     port_of = Mock()
-                    LEGACY["rollback"](root, backup, True, port_of)
+                    LEGACY["rollback"](root, backup, True, port_of, operations.core_docs)
                     stop.assert_called_once_with(root, True, port_of)
+                self.assertEqual(operations.mock_calls, [
+                    call.core_docs("restore", journal, "shepherdr", "herdr-orchestrator"),
+                    call.restore_service(root, {"active": False}),
+                ])
             self.assertEqual(json.loads(manifest.read_text())["state"], "rolled-back")
             self.assertFalse((root / "tasks").is_symlink())
             self.assertTrue((store / ".scheduler.lock").is_file())

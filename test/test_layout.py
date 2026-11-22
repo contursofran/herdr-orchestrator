@@ -16,7 +16,7 @@ import sys
 import tempfile
 import unittest
 from unittest import mock
-from test_migrate_legacy import OLD_INSTALL
+from test_migrate_legacy import LEGACY, OLD_INSTALL
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "mods", "tasks", "bin"))
@@ -644,6 +644,48 @@ class ProjectId(unittest.TestCase):
             os.makedirs(other)
             git(other, "init", "-q", "-b", "main")
             self.assertNotEqual(store.store_path(store.locate(other)["folder"])[1], s.path)
+
+    def test_upstream_project_id_finds_the_list_before_backfilling(self):
+        from herdr_task import store
+        old_key = f"{LEGACY['OLD']}.id"
+        new_key = "herdr-orchestrator.id"
+        with tempfile.TemporaryDirectory(prefix="orch-old-project-") as tmp:
+            repo = os.path.join(tmp, "shop")
+            os.makedirs(repo)
+            git(repo, "init", "-q", "-b", "main")
+            with mock.patch.object(store, "STORE", os.path.join(tmp, "tasks")):
+                with store.Store(store.locate(repo)) as original:
+                    original.new("Cart")
+                pid = git(repo, "config", "--local", "--get", new_key)
+                git(repo, "config", "--local", old_key, pid)
+                git(repo, "config", "--local", "--unset", new_key)
+                renamed = os.path.join(tmp, "shop-renamed")
+                os.rename(repo, renamed)
+                with store.Store(store.locate(renamed), write=False) as read_only:
+                    self.assertEqual(read_only.path, original.path)
+                    self.assertEqual([t["title"] for t in read_only.data["tasks"]], ["Cart"])
+                self.assertEqual(git(renamed, "config", "--local", "--name-only", "--list").splitlines().count(new_key), 0)
+                with store.Store(store.locate(renamed)) as writable:
+                    self.assertEqual(writable.data["project_id"], pid)
+                self.assertEqual(git(renamed, "config", "--local", "--get", new_key), pid)
+                self.assertEqual(git(renamed, "config", "--local", "--get", old_key), pid)
+                git(renamed, "config", "--local", old_key, "different")
+                self.assertEqual(store.project_id(renamed), pid)
+
+
+class UpstreamWorktrees(Home):
+    def test_cleanup_finds_a_preserved_upstream_worktree(self):
+        from herdr_task import home
+        data = os.path.join(self.home, ".local", "share", LEGACY["OLD"])
+        worktree = os.path.join(data, "worktrees", "shop", "old-task")
+        os.makedirs(worktree)
+        git(worktree, "init", "-q", "-b", "main")
+        os.utime(worktree, (1, 1))
+        with mock.patch.multiple(home, HOME=self.home, WHERE=L.Where(home=self.home, env={}),
+                                 store_files=lambda: [], read_settings=lambda: {}):
+            self.assertEqual(home.leftover_worktrees(), [{
+                "path": "~" + worktree[len(self.home):], "task": None, "state": None, "days": None, "dirty": False,
+            }])
 
 
 class OneTable(unittest.TestCase):

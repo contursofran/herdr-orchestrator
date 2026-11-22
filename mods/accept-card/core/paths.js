@@ -70,7 +70,7 @@ export const isMigrated = (layoutText, rolledBack = false) => !rolledBack && Num
 
 /** A task worktree's path (any machine, any root this or an older herdr-orchestrator made them in): kept out of the lists of
  *  folders people work in. */
-export const WORKTREE_RE = /\/(\.herdr|herdr-orchestrator)\/worktrees\//;
+export const WORKTREE_RE = /\/(\.herdr|herdr-orchestrator|shepherdr)\/worktrees\//;
 export const isWorktreePath = (p) => !!p && WORKTREE_RE.test(`${p}/`);
 
 const shVar = (k) => "ORCH_" + k.toUpperCase().replace(/-/g, "_");
