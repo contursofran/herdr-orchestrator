@@ -47,6 +47,9 @@ def repo_files(root):
 def old_name_hits(root, name):
     allowed = {"LICENSE", "LICENSE-herdr", "NOTICE", "CHANGELOG.md", "bin/migrate_legacy.py", "test/test_migrate_legacy.py"}
     word = name.lower().encode()
+    if name != LEGACY_OWNER:
+        legacy_symbol = b'UPSTREAM = "' + word + b'"'
+        legacy_worktrees = b"export const WORKTREE_RE = /\\/(\\.herdr|herdr-orchestrator|" + word + b")\\/worktrees\\//;"
     for rel in repo_files(root):
         if word in os.fsencode(rel).lower():
             yield str(rel)
@@ -55,6 +58,13 @@ def old_name_hits(root, name):
             continue
         credits = False
         for n, line in enumerate(file.read_bytes().splitlines(), 1):
+            if name != LEGACY_OWNER and word in line.lower():
+                if rel.as_posix() == "mods/tasks/bin/herdr_task/layout.py" and line == legacy_symbol:
+                    continue
+                if (rel.as_posix() == "core/paths.js" or rel.match("mods/*/core/paths.js")) and line == legacy_worktrees:
+                    continue
+                if rel.as_posix() == "core/paths.test.js" and line == b'  const upstream = "' + word + b'";':
+                    continue
             if rel == Path("README.md"):
                 if line.startswith(b"## "):
                     credits = line.rstrip() == b"## Credits and license"

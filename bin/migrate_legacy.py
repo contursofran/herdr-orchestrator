@@ -25,6 +25,7 @@ NEW_SHARE = Path(".local/share") / NEW
 NEW_RECORD = APP / "data" / NEW / "installed.json"
 OLD_LAYOUT = APP / "layouts" / (OLD + ".json")
 NEW_LAYOUT = APP / "layouts" / (NEW + ".json")
+CORE_JOURNAL = "core-documents.json"
 KEYS = APP / "keys.json"
 SHARED = APP / "shared.json"
 HOOKS = (Path(".claude/settings.json"), Path(".codex/hooks.json"))
@@ -296,7 +297,9 @@ def stop_destination(root, home, port_of):
         remove_share(NEW, port)
 
 
-def restore_install(root, backup, home, state):
+def restore_install(root, backup, home, state, core_docs):
+    if home and (backup / CORE_JOURNAL).is_file():
+        core_docs("restore", backup / CORE_JOURNAL, OLD, NEW)
     restore(root, backup / "before", state["entries"])
     if home:
         if state["service"]["active"] and service_state(OLD)["active"]:
@@ -304,7 +307,7 @@ def restore_install(root, backup, home, state):
         restore_service(root, state["service"])
 
 
-def rollback(root, backup, home, port_of):
+def rollback(root, backup, home, port_of, core_docs):
     root, backup = Path(root), Path(backup).resolve()
     if backup.parent != (root / BACKUPS).resolve():
         raise MigrationError("use the backup directory printed by the move")
@@ -335,7 +338,7 @@ def rollback(root, backup, home, port_of):
                 marker.write_text(str(backup))
                 state["state"] = "restoring"
                 write_json(backup / "manifest.json", state)
-            restore_install(root, backup, home, state)
+            restore_install(root, backup, home, state, core_docs)
             state["state"] = "rolled-back"
             write_json(backup / "manifest.json", state)
             marker.unlink()
@@ -343,9 +346,10 @@ def rollback(root, backup, home, port_of):
 
 
 class Move:
-    def __init__(self, root, home, where, kinds, read_hash, move_layout, port_of):
+    def __init__(self, root, home, where, kinds, read_hash, move_layout, port_of, core_docs):
         self.root, self.home, self.where = Path(root), home, where
         self.port_of = port_of
+        self.core_docs = core_docs
         self.marker = self.root / BACKUPS / "legacy-in-progress"
         self.backup = None
         self.state = None
@@ -466,7 +470,7 @@ class Move:
                     with task_locks(tasks, wait=10):
                         self.state["state"] = "restoring"
                         write_json(self.backup / "manifest.json", self.state)
-                        restore_install(self.root, self.backup, self.home, self.state)
+                        restore_install(self.root, self.backup, self.home, self.state, self.core_docs)
                         self.state["state"] = "rolled-back"
                         write_json(self.backup / "manifest.json", self.state)
                         self.marker.unlink()
@@ -518,6 +522,7 @@ class Move:
         if self.home:
             stop_service(OLD, state["service"])
             remove_share(OLD, self.old_port)
+            self.core_docs("move", self.backup / CORE_JOURNAL, OLD, NEW)
         if self.vault_backups:
             self.new_secrets.mkdir(parents=True, mode=0o700, exist_ok=True)
         for target, source in data.items():

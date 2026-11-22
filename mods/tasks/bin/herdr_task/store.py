@@ -9,6 +9,7 @@ import re
 from contextlib import contextmanager
 
 from .base import Fail, git, hc_json, HOME, LEGACY, MAX_RUNNING, now, run, STORE
+from .layout import UPSTREAM
 from .settings import settings_for
 from .agents import agent_running
 from .sessions import session_of
@@ -58,16 +59,18 @@ def slug_of(folder):
 # worktrees, moved with it), recorded in its task list as "project_id": a folder with no list of its own finds the
 # list whose repo it is, when that list's folder is gone, and goes on with it (same slug, so its tasks' keys stay).
 
-def project_id(folder, make=False):
-    """The repo's id (None outside git); make: give it one when it has none."""
+def project_id(folder, make=False, recorded=None):
+    """Read the current or upstream ID. Writable stores backfill a matching upstream ID."""
     ok, out, _ = git(folder, "config", "--local", "--get", "herdr-orchestrator.id")
     if ok and out.strip():
         return out.strip()
-    if not make:
-        return None
+    ok, out, _ = git(folder, "config", "--local", "--get", f"{UPSTREAM}.id")
+    upstream = out.strip() if ok else ""
+    if not make or (recorded and recorded != upstream):
+        return upstream or None
     import uuid
-    new = str(uuid.uuid4())
-    return new if git(folder, "config", "--local", "herdr-orchestrator.id", new)[0] else None
+    new = upstream or str(uuid.uuid4())
+    return new if git(folder, "config", "--local", "herdr-orchestrator.id", new)[0] else upstream or None
 
 
 def moved_list(folder):
@@ -201,9 +204,10 @@ class Store:
         d.setdefault("next", 1)
         d.setdefault("tasks", [])
         self.new_prefix = False
-        if self.write and self.loc["kind"] == "repo" and not d.get("project_id"):
-            pid = project_id(self.loc["folder"], make=True)
-            if pid:
+        if self.write and self.loc["kind"] == "repo":
+            recorded = d.get("project_id")
+            pid = project_id(self.loc["folder"], make=True, recorded=recorded)
+            if pid and not recorded:
                 d["project_id"] = pid
                 self.dirty = self.dirty or os.path.exists(self.path)
         if self.write:
