@@ -10,8 +10,13 @@ const repeated: [number, () => void][] = [];
 const spawned: Promise<void>[] = [];
 const releaseCalls: string[][] = [];
 const notifications: any[] = [];
+const closed: string[] = [];
+const localFiles = new Map<string, string>();
+const localReads: string[] = [];
+let viewProps: Record<string, unknown>;
 const cx = {
   notify() {}, stop_propagation() {}, spawn: (fn: (cx: any) => Promise<void>) => spawned.push(fn(cx)),
+  focus_handle: () => ({ focus() {} }),
   timer: { after: (_ms: number, fn: (cx: any) => void) => timers.push(() => fn(cx)),
     every: (ms: number, fn: (cx: any) => void) => repeated.push([ms, () => fn(cx)]) },
 };
@@ -30,7 +35,9 @@ mock.module("herdr", () => fakeHerdr({
   layout: () => ({ id: "root", children: [{ id: "sidebar", size: { px: width },
     children: [{ id: "sidebar-footer", size: { px: height } }] }] }),
   run: (command: string, args: any) => { ran.push([command, args]); if (command === "layout.resize") height = args.px; },
-  openOverlay: (options: unknown) => opened.push(options), props: () => ({ footer: true }),
+  openOverlay: (options: unknown) => opened.push(options), closeOverlay: (id: string) => closed.push(id), props: () => viewProps,
+  appHome: () => "/herdr-app-test",
+  readTextFile: async (path: string) => { localReads.push(path); return localFiles.get(path) ?? null; },
   exec: async (_command: string, args: string[]) => {
     const action = args.slice(3);
     releaseCalls.push(action);
@@ -44,6 +51,7 @@ mock.module("gpui-kit", () => fakeGpuiKit());
 mock.module("gpui-base", () => fakeGpuiBase());
 
 const { default: WorkspaceChrome } = await import("../mods/workspace-chrome-orchestrator/main.js");
+const { default: OrchestratorSettings } = await import("../mods/orchestrator-settings/main.js");
 const { planUsage } = await import("../mods/workspace-chrome-orchestrator/foot.js");
 const { layoutSection } = await import("../mods/orchestrator-settings/layout.js");
 const { KEYS } = await import("../mods/tabs-tasks/bridge.js");
@@ -55,6 +63,9 @@ beforeEach(() => {
   shared.clear();
   ran.length = opened.length = timers.length = 0;
   repeated.length = spawned.length = releaseCalls.length = notifications.length = 0;
+  localFiles.clear();
+  localReads.length = closed.length = 0;
+  viewProps = { footer: true };
   releaseState = { state: "no-release" };
   installError = "";
   height = 97;
@@ -124,6 +135,28 @@ test("Settings menu opens both destinations and the plus opens Add machine", () 
   handler(byId("foot-add-machine"), "on_click")?.({}, cx);
   expect(ran.slice(-2)).toEqual([["app.settings", undefined], ["mod.open", { name: "machine-add-chat" }]]);
   expect(opened).toEqual([expect.objectContaining({ mod: "orchestrator-settings" })]);
+});
+
+test("the sidebar opens the installed changelog without loading or syncing settings", async () => {
+  render();
+  await Promise.all(spawned.splice(0));
+  handler(byId("foot-changelog"), "on_click")?.({}, cx);
+  expect(opened.at(-1)).toMatchObject({ mod: "orchestrator-settings", props: { view: "changelog" } });
+  viewProps = { ...opened.at(-1).props, overlay: "release-notes" };
+  const notes = "## 0.1.1\n\n- First release.\n\n## 0.1.0\n\n- Initial work.";
+  localFiles.set("/herdr-app-test/mods/orchestrator-settings/CHANGELOG.md", `# Changelog\n\n${notes}\n`);
+  localFiles.set("/herdr-app-test/data/herdr-orchestrator/installed.json", '{"version":"0.1.1"}');
+  const dialog = new OrchestratorSettings();
+  dialog.init(viewProps, cx);
+  await Promise.all(spawned.splice(0));
+  dialog.render(cx);
+  expect(localReads).toEqual([...localFiles.keys()]);
+  expect(releaseCalls).toEqual([["check", "--json"]]);
+  expect(byId("changelog-version").kids).toEqual(["Installed version v0.1.1"]);
+  expect(byId("changelog-markdown").kids).toEqual([notes]);
+  expect(prop(byId("changelog-markdown"), "selectable")).toBe(true);
+  handler(byId("changelog"), "on_key_down")?.({ key: "escape" }, cx);
+  expect(closed).toEqual(["release-notes"]);
 });
 
 test("Settings checks for a stable release in the background and installs only after a click", async () => {

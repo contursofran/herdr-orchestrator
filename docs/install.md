@@ -106,6 +106,8 @@ updater verifies the package against the SHA-256 digest from GitHub and keeps yo
 The same update is available on the command line with `herdr-orchestrator release check` and
 `herdr-orchestrator release install <tag>`. It uses the release's prebuilt web app and can run without a checkout.
 
+Choose **Changelog** in the sidebar's **Settings** menu to see your installed version and its release history offline.
+
 To update from a checkout, run `git pull` in the checkout you installed from, then run `herdr-orchestrator update`.
 
 ## Options

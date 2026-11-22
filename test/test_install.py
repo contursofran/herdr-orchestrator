@@ -74,6 +74,9 @@ class Install(unittest.TestCase):
         self.assertEqual(rec["version"], run("version").stdout.split()[-1])
         self.assertTrue(os.path.isfile(self.p(APP, "mods/tasks/bin/herdr-task")))
         self.assertTrue(os.path.isfile(self.p(APP, "layouts/herdr-orchestrator.json")))
+        with open(self.p(APP, "mods/orchestrator-settings/CHANGELOG.md"), "rb") as installed, \
+                open(os.path.join(ROOT, "CHANGELOG.md"), "rb") as source:
+            self.assertEqual(installed.read(), source.read())
         self.assertEqual(os.path.realpath(self.p(".local/bin/herdr-task")), os.path.realpath(self.p(APP, "mods/tasks/bin/herdr-task")))
         # A key the person uses is kept (no terminal to ask in); free ones are added.
         keys = json.load(open(self.p(APP, "keys.json")))

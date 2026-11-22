@@ -1,6 +1,6 @@
 import { div, image, svg } from "gpui-kit";
 import { h_flex, v_flex, Popover } from "gpui-base";
-import { exec, layout, run, shared, updates } from "herdr";
+import { exec, layout, openOverlay, run, shared, updates } from "herdr";
 import { ago, failedWords, leftOf, liveWindow, planLevelOf, readOld, SIDEBAR_PLAN_USAGE, span } from "./core/machines.js";
 import { openSettings, RADIUS, TEXT, toast } from "./ui.js";
 
@@ -147,6 +147,8 @@ export class Footer {
       .content(div().pb(6).child(v_flex().w(218).bg(t.popover).shadow_md().border_1().border_color(t.border).rounded(12).p(4)
         .child(choice("foot-settings-herdr", "Herdr settings", () => run("app.settings"), { update: ready }))
         .child(choice("foot-settings-orchestrator", "herdr-orchestrator settings", () => openSettings()))
+        .child(choice("foot-changelog", "Changelog", () => openOverlay({ mod: "orchestrator-settings",
+          kind: "dialog", frame: "none", width: 640, height: 0.8, props: { view: "changelog" } })))
         .child(releaseChoice)));
   }
 

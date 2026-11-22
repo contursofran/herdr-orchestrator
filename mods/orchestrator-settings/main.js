@@ -36,6 +36,7 @@ import { NOTIFY, NOTIFY_DEFAULT, notifyMachine, notifyMachineOwn, notifyOf, noti
 import { machinesSection } from "./machines-section.js";
 import { TEXT, RADIUS, H, button, link, toggleSwitch, segmented, menuRow } from "./ui.js";
 import { webSection } from "./web-section.js";
+import { changelogView, readChangelog } from "./changelog.js";
 import { SH } from "./core/paths.js";
 import { dirs } from "./dirs.js";
 // Every page's, row's and button's words, and the rows' choices: core/settings.js, shared with the web app.
@@ -72,6 +73,16 @@ umask 077; printf '%s\n' "$1" > "$f.tmp" && mv "$f.tmp" "$f"`;
 export default class OrchestratorSettings extends View {
   init(_props, cx) {
     const p = props() ?? {};
+    if (p.view === "changelog") {
+      this.showChangelog = true;
+      this.handle = cx.focus_handle();
+      this.handle.focus();
+      cx.spawn(async (cx) => {
+        this.changelog = await readChangelog();
+        cx.notify();
+      });
+      return;
+    }
     // null: Everywhere; else the space whose own settings these are.
     this.scope = p.space && spaceById(p.space) ? p.space : null;
     const want = MOVED[p.section] ?? p.section;
@@ -663,6 +674,7 @@ export default class OrchestratorSettings extends View {
 
   // One copy of Herdr's live lists for the whole render (live.js): past ~50 ms Herdr stops it.
   render(cx) {
+    if (this.showChangelog) return changelogView(theme(), this.handle, this.changelog, () => closeOverlay(props().overlay));
     return inRender(() => this.draw(cx));
   }
 
