@@ -385,6 +385,8 @@ def cmd_ready(args):
             refresh_sessions(s, t, [k for k in live_agents(s.key(t)) if k["address"] == me])
         if t["state"] == "done":
             raise Fail(f"{s.ref(t)} is already done.")
+        if t["state"] not in resources.ACTIVE and (reason := resources.waiting(s, t)):
+            raise resources.Busy(reason)
         wt = t.get("worktree") if t.get("mode") == "worktree" else None
         signed = reviews.signed(s, t)
         refused, review_wait = None, None
@@ -397,7 +399,8 @@ def cmd_ready(args):
                     review_wait = "has its approval. The task engine is advancing it."
                 elif not reviews.approval(t, head):
                     try:
-                        review_wait = reviews.request(s, t, head, rounds_used(t), review_limits(s, t)[1])
+                        with resources.activate(s, t):
+                            review_wait = reviews.request(s, t, head, rounds_used(t), review_limits(s, t)[1])
                     except Fail as error:
                         refused = str(error)
             if not refused:
@@ -454,7 +457,8 @@ def cmd_ready(args):
             head = reviews.commit(folder)
             if head != t["head"] or (not no_review_work(s, t, wt) and not reviews.approval(t, head)):
                 raise Fail("The current commit needs an independent approval. Run ready for the new commit.")
-        msg = finish_ready(s, t, wt)
+        with resources.activate(s, t):
+            msg = finish_ready(s, t, wt)
         if t["state"] == "done":
             say(args, view(s, t), msg)
             return
@@ -617,14 +621,22 @@ def cmd_reviewed(args):
     say(args, {**v, "round": used + 1, "rounds": rounds}, f"{s.ref(t)}: review round {used + 1} of {rounds} recorded{on_what}.")
 
 
+def is_task_agent(s, t):
+    labels = caller_labels()
+    if "herdr.task" in labels or "herdr.role" in labels:
+        return labels.get("herdr.task") == s.key(t) or labels.get("herdr.role") == "reviewer"
+    me = os.environ.get("HC_TERMINAL_ID")
+    own = (t.get("agents") or []) + (t.get("reviewers") or [])
+    return bool(me) and any(a.get("address") == me for a in own)
+
+
 def cmd_review_more(args):
     """The Assistant gives a task exactly one more review round (as herdr-orchestrator's `task review-more`):
     only once all its rounds are used. The limit stops an agent reviewing for ever, so the task's
     own agent can never raise it. Its agent is told."""
-    labels = caller_labels()
     with open_store(args) as s:
         t = s.find(args.id)
-        if labels.get("herdr.task") == s.key(t) or labels.get("herdr.role") == "reviewer":
+        if is_task_agent(s, t):
             raise Fail("A task's own agent can't add review rounds: say why in your chat and end your turn; your Orchestrator decides.")
         on, rounds = review_limits(s, t)
         if not on:
@@ -915,7 +927,12 @@ def cmd_unarchive(args):
 def cmd_edit(args):
     with open_store(args) as s:
         t = s.find(args.id)
+        guarded = ("prompt", "prompt_file", "require_boundary", "set", "lock")
+        if any(getattr(args, name, None) is not None for name in guarded) and is_task_agent(s, t):
+            raise Fail("A task's own worker or a reviewer can't edit its brief, boundaries, settings, or resource locks. "
+                       "Ask the Orchestrator about scope.")
         old = t["title"]
+        scope = (t.get("prompt"), bool(t.get("require_boundary")))
         if args.title is not None:
             t["title"] = args.title.strip() or t["title"]
         if args.prompt is not None:
@@ -926,6 +943,8 @@ def cmd_edit(args):
         pick = [t.get(k) for k in ("agent", "model", "effort")]
         set_opts(t, args)
         set_scope(t, args)
+        if scope != (t.get("prompt"), bool(t.get("require_boundary"))):
+            boundaries.clear_hold(s, t)
         if [t.get(k) for k in ("agent", "model", "effort")] != pick:
             # The next agent started for it runs on the new choice (start_again), a queued one too.
             t["pick_at"] = now()
@@ -1304,9 +1323,7 @@ def ff_merge(s, t):
         if problem := boundaries.check(s, t, br, base_sha):
             boundaries.hold(s, t, problem)
             return False
-        if (t.get("attention") or "").startswith(boundaries.HOLD):
-            t.pop("attention")
-            s.dirty = True
+        boundaries.clear_hold(s, t)
     elif reviews.signed(s, t):
         br = branch_tip(s, t)
     if reviews.merge_problem(s, t, br):
