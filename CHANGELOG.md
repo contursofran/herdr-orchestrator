@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.3
+
+- Publish images, videos, and self-contained HTML files directly as artifacts. Each artifact has version history and can be attached as proof on a task’s Accept card.
+- Quiet-worker escalations appear in the Inbox and Automations. Herdr skips nudges during known waits.
+- Task file boundaries are checked at merge, including both sides of renamed files.
+- Legacy migration preserves linked storage, private vault recovery backups, shared Herdr Core documents, and repository IDs. Preserved worktrees appear in cleanup. Rollback stops the new service and scheduler before taking task locks.
+
 ## 0.1.2
 
 - Open **Changelog** from the sidebar’s **Settings** menu to see your installed version and what changed in each release. Release notes are available offline.

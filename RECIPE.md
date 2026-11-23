@@ -3,7 +3,7 @@
 Mission control for your coding agents inside Herdr: your spaces in a sidebar, each with its own Assistant you talk to
 as a chat, and a Tasks panel on the right that shows which task needs you, which is ready and which is still working.
 You tell the Assistant what needs doing; it turns it into tasks, each run by its own agent in its own git worktree,
-and asks you on a card when it needs a decision. herdr-orchestrator 0.1.2, for herdr-app 0.1.12 and herdr-core 0.1.17 or newer.
+and asks you on a card when it needs a decision. herdr-orchestrator 0.1.3, for herdr-app 0.1.12 and herdr-core 0.1.17 or newer.
 
 ![herdr-orchestrator](preview.png)
 
